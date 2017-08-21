@@ -1,0 +1,10 @@
+DIR="$(dirname "$0")"
+
+# use local ruby if available
+if [ -d "$DIR/ruby" ]; then
+	RUBY=$DIR/ruby/bin/ruby
+else
+	RUBY=ruby
+fi
+
+$RUBY $DIR/lib/oak.rb "$@"
