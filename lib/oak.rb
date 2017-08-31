@@ -101,7 +101,6 @@ class Proof
 		@active_reason_sets = [[]]
 		@scopes = []
 		@theses = []
-		@parser = Parser.new
 		@label_stack = [[]]
     @line_numbers_by_label = {}
 		@inactive_labels = Set[]
@@ -245,13 +244,14 @@ class Proof
 		end
 	end
 
-	def include input, is_filename = false
-		if is_filename
-			filename = input
+	def include input, is_path = false
+		if is_path
+			dirname = File.dirname input
+			filename = File.basename input
 			begin
-				input = File.read filename
+				input = File.read input
 			rescue
-				puts "error: could not open file \"#{filename}\""
+				puts "error: could not open file \"#{input}\""
 				raise ProofException
 			end
 		else
@@ -262,7 +262,7 @@ class Proof
 			line_number = nil # external scope, for error reporting
 			from_include = false
 			wrapper.print "#{filename}: processing line "
-			@parser.parse_each(input) {|sentence, action, content, reasons, label, fileline|
+			Parser.new.parse_each(input) {|sentence, action, content, reasons, label, fileline|
 				next if action == :empty
 				break if action == :exit
 				line_number = fileline
@@ -271,6 +271,8 @@ class Proof
 				id = {:label => label, :filename => filename, :fileline => fileline}
 				case action
 					when :include then
+						# include relative to path of current proof file
+						content = File.expand_path content, dirname if is_path
 						wrapper.puts
 						from_include = true
 						include content, :is_filename

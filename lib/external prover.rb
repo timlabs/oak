@@ -172,7 +172,7 @@ def valid_e? tree
 		settings << '--detsort-rw --detsort-new' # make it deterministic
 
 		# use local copy if there is one, otherwise call it without a path
-		local = File.expand_path '../eprover/eprover', File.dirname(__FILE__)
+		local = File.expand_path '../eprover/PROVER/eprover', File.dirname(__FILE__)
 		location = File.exist?(local) ? local : 'eprover'
 
 		output = `"#{location}" #{settings.join ' '} --auto --tptp3-format -s #{file_path} 2>&1`

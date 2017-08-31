@@ -1,10 +1,8 @@
-DIR="$(dirname "$0")"
+DIR=$(dirname "$0")
 
-# use local ruby if available
-if [ -d "$DIR/ruby" ]; then
-	RUBY=$DIR/ruby/bin/ruby
+if hash ruby 2>/dev/null; then
+  ruby "$DIR/lib/oak.rb" "$@"  
 else
-	RUBY=ruby
+  echo "error: could not find \"ruby\""
+	echo "Oak requires the Ruby programming language to be installed."
 fi
-
-$RUBY $DIR/lib/oak.rb "$@"

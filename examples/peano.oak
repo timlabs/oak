@@ -1,0 +1,32 @@
+/#
+	"Enhanced" Peano axioms adapted from:
+
+		Kaye, Richard (1991).  Models of Peano Arithmetic.  Pages 16-18.
+
+	We include a comprehension schema for definitions.  This also allows
+	induction to be a statement rather than a schema.
+#/
+
+peano: axiom
+
+	0 is in N 																and (
+	1 is in N																) and (
+	for all x in N, x+1 is in N 						) and (
+
+	for all x,y,z in N, (x+y)+z = x+(y+z)		) and (  #  + is associative
+	for all x,y in N, x+y = y+x							) and (  #  + is commutative
+	for all x,y,z in N, (x*y)*z = x*(y*z)		) and (  #  * is associative
+	for all x,y in N, x*y = y*x							) and (  #  * is commutative
+	for all x,y,z in N, x*(y+z) = x*y + x*z	) and (  #  * distributes over +
+	for all x in N, x+0 = x and x*0 = 0			) and (	 #  identity of 0
+	for all x in N, x*1 = x									)				 #  identity of 1
+
+induction: axiom for all P,
+	if 	P[0] and
+			for all n in N, P[n] implies P[n+1]
+	then
+			for all n in N, P[n]
+
+comprehension: axiom schema
+	for all meta P,n,φ such that not free[P,φ],
+		`for some P, for all n in N, P[n] iff φ`
