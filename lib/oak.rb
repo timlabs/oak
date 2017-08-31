@@ -731,7 +731,7 @@ class SubstituteException < ProofException; end
 ##########################################################################
 
 if $0 == __FILE__
-	name_version = 'oak version 0.1'
+	name_version = 'Oak version 0.1'
 	issues_url = 'https://github.com/smithtim/oak/issues'
 
 	if ARGV.delete '-v'
