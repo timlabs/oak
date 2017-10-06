@@ -1,3 +1,8 @@
+if RUBY_VERSION < '2'
+	puts "Oak requires Ruby version >= 2.0.  (You have Ruby #{RUBY_VERSION}.)"
+	exit
+end
+
 require_relative 'parser.rb'
 require_relative 'external prover.rb'
 require_relative 'schema.rb'

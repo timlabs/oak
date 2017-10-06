@@ -4,7 +4,6 @@ def grammar_rules
 	[:start, :begin_assume, :start5],
 	[:start, :end_assume, :start5],
 	[:start, :include, :start5],
-	[:start, :end_proof, :start5],
 	[:start, :now, :start5],
 	[:start, :end, :start5],
 #	[:start, [:now, :ending], :end, :catch],
@@ -85,7 +84,6 @@ def grammar_rules
 	[:by3, :else, :end],
 
 	[:proof, /\s*proof\b/i, :end],
-	[:end_proof, /\s*end proof\b/i, :end],
 	
 	[:ending, /\s*\.\s|\s*\.\z/, :end],
   [:ending, /\s*;/, :end],
@@ -183,7 +181,6 @@ def grammar_rules
 	[:prefix, :existential, :end],
 
 	[:not, /\s*not\b/i, :not1],
-	[:not, /\s*it is false that\b/i, :not1],
 	[:not1, :prefix, :end],
 	[:not1, :exp2, :end],
 	
@@ -224,17 +221,17 @@ def grammar_rules
 	[:atom_list_base5, :condition, :end],
 	[:atom_list_base5, :else, :end],
 	
-	[:universal, /\s*(for (all|any|each|every))\b/i, :universal2],
+	[:universal, /\s*for (all|any|each|every)\b/i, :universal2],
 	[:universal2, :atom_list, :universal4],
 	[:universal4, [:such_that, :exp, /,/, :exp], :end],
 	[:universal4, [/,/, :exp], :end],
 
-	[:universal_meta, /\s*(for (all|any|each|every) meta)\b/i, :universal2],
+	[:universal_meta, /\s*for (all|any|each|every) meta\b/i, :universal2],
 
 	[:existential, /\s*for (at least one|some)\b/i, :existential2],
-	[:existential, /\s*there (exists|is|are)( (a|an|at least one|some))?\b/i, :existential5],
+	[:existential, /\s*there (exist|exists|is|are)( (a|an|at least one|some))?\b/i, :existential5],
 	[:no_existential, /\s*for no\b/i, :existential2],
-	[:no_existential, /\s*there (exists|is|are) no\b/i, :existential5],
+	[:no_existential, /\s*there (exist|exists|is|are) no\b/i, :existential5],
 	
 	[:existential2, :atom_list, :existential4],
 	[:existential4, [:such_that, :exp, /,/, :exp], :end],
@@ -416,7 +413,7 @@ def grammar_rules
 	[:atom, /(true|false|contradiction|thesis)\b/i, :null],
 	[:atom, /(not|and|or|implies|iff|then)\b/i, :null],
 	[:atom, /(for (at least one|some)|for (all|any|each|every)|for no)\b/i, :null],
-	[:atom, /(such that|with|in|there (is|are|exists))\b/i, :null],
+	[:atom, /(such that|with|in|there (is|are|exist|exists))\b/i, :null],
 	[:atom, /(assume|suppose|by|from|exit|take|define|axiom|schema)\b/i, :null],
 	[:atom, /(every|some|no)\b/i, :null],
 	[:atom, /((?!
