@@ -22,11 +22,11 @@ peano: axiom
 	for all x in N, x*1 = x									)				 #  identity of 1
 
 induction: axiom for all P,
-	if 	P[0] and
-			for all n in N, P[n] implies P[n+1]
+	if 	P(0) and
+			for all n in N, P(n) implies P(n+1)
 	then
-			for all n in N, P[n]
+			for all n in N, P(n)
 
 comprehension: axiom schema
-	for all meta P,n,φ such that not free[P,φ],
-		`for some P, for all n in N, P[n] iff φ`
+	for all meta P,n,φ such that not free(P,φ),
+		`for some P, for all n in N, P(n) iff φ`

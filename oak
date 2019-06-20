@@ -1,7 +1,7 @@
 DIR=$(dirname "$0")
 
 if hash ruby 2>/dev/null; then
-  ruby "$DIR/lib/oak.rb" "$@"  
+  ruby "$DIR/src/oak.rb" "$@"
 else
   echo "error: could not find \"ruby\""
 	echo "Oak requires the Ruby programming language to be installed."

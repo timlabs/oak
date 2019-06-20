@@ -119,9 +119,10 @@ end
 def valid_tptp? tree
 	input = tptp_from tree
 	input = "fof(query,conjecture,#{input})."
-#	puts 'tptp:'
-#	puts input
-#	$stdin.gets
+=begin
+	puts "\ntptp:"
+	puts input
+=end
 	file = Tempfile.new ''
 	file.write input
 	file.close # ensures that input is written
@@ -176,7 +177,7 @@ def valid_e? tree
 		location = File.exist?(local) ? local : 'eprover'
 
 		output = `"#{location}" #{settings.join ' '} --auto --tptp3-format -s #{file_path} 2>&1`
-#		puts output
+#		puts "\n" + output
 		next :valid if output.include? '# Proof found!'
 		next :invalid if output.include? '# No proof found!'
 		next :unknown if output.include? '# Failure: User resource limit exceeded!'

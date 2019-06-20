@@ -203,7 +203,48 @@ class Parser
 			raise ParseException.new "parse failed at line #{line}: \"#{context}\"", line
 		end
 	end
-	
+
+	def process_atom_list node
+		raise unless node.value == :atom_list
+		variables, pending, condition_trees = [], [], []
+		node.branches[0].branches.each {|branch|
+			next if branch.value == ',' or branch.value.downcase == 'and'
+			if branch.value == :definable or branch.value == :definable_raw
+				pending << tree_from_grammar(branch)
+			elsif branch.value == :condition
+				right_side = tree_from_grammar branch.branches[1]
+				condition_trees.concat pending.collect {|variable|
+					if branch.branches[0].value == :inequality
+						relation = branch.branches[0].branches[0].value
+						convert_inequality relation, [variable, right_side]
+					elsif branch.branches[0].value == :not_equal
+						subtrees = [Tree.new(:equals, [variable, right_side])]
+						Tree.new :not, subtrees
+					elsif branch.branches[0].value.downcase == 'in'
+						condition_subtrees = [Tree.new('in', []), variable, right_side]
+						Tree.new :predicate, condition_subtrees
+					elsif branch.branches[0].value == :set
+						relation = branch.branches[0].branches[0].value
+						convert_set relation, [variable, right_side]
+					else
+						raise "unknown condition #{branch.branches[0].value.inspect}"
+					end
+				}
+				variables.concat pending
+				pending = []
+			else
+				raise "unknown branch value #{branch.value.inspect}"
+			end
+		}
+		variables.concat pending
+		if condition_trees.size >= 2
+			condition_tree = Tree.new :and, condition_trees
+		elsif condition_trees.size == 1
+			condition_tree = condition_trees[0]
+		end
+		[variables, condition_tree]
+	end
+
 	def process_statement grammar_tree
 		tree = grammar_tree
 		normalize_whitespace! tree
@@ -233,33 +274,38 @@ class Parser
 		}
 		raise 'could not find an action!' if not action_branch
 		action = action_branch.value
-		content = case action
-			when :include
-				raise unless action_branch.branches.size == 4 # command, quotes around content
-				action_branch.branches[2].text
+
+		return action if action == :begin_assume or action == :end_assume
+
+		if action == :include
+			raise unless action_branch.branches.size == 4 # command, quotes around content
+			return :include, action_branch.branches[2].text
+		end
+
+		content_branch = case action
 			when :assume
 				update_label.call action_branch.branches[1]
 				action = :assume_schema if action_branch.branches[-2].text == 'schema'
-				tree_from_grammar action_branch.branches[-1]
+				action_branch.branches[-1]
 #			when :assume_schema
 #				tree_from_grammar action_branch.branches[1]
 			when :axiom
 				update_label.call action_branch.branches[1]
 				action = :axiom_schema if action_branch.branches[-2].text == 'schema'
-				tree_from_grammar action_branch.branches[-1]
+				action_branch.branches[-1]
 #			when :axiom_schema
 #				tree_from_grammar action_branch.branches[1]
 			when :suppose
 				update_label.call action_branch.branches[1]
-				tree_from_grammar action_branch.branches[-1]
+				action_branch.branches[-1]
 			when :take
 				action = :suppose
 				branch = action_branch.branches[0]
 				raise unless branch.value == :take_label
 				update_label.call branch.branches[1] if branch.branches.size > 1
-				tree_from_grammar action_branch
+				action_branch
 			when :derive
-				tree_from_grammar action_branch.branches[0]
+				action_branch.branches[0]
 			when :so
 				if action_branch.branches[1].value == :assume
 					action = :so_assume
@@ -268,13 +314,15 @@ class Parser
 					if action_branch.branches[-2].text == 'schema'
 						raise ParseException, 'cannot use "so" with schema'
 					end
-					tree_from_grammar action_branch.branches[-1]
+					action_branch.branches[-1]
 				else
 					action = :so
 					update_label.call action_branch.branches[1]
-					tree_from_grammar action_branch.branches[-1]
+					action_branch.branches[-1]
 				end
 		end
+
+		content = tree_from_grammar content_branch
 
 		proof_branch = tree.root.branches.find {|branch| branch.value == :proof}
 		if proof_branch
@@ -299,7 +347,7 @@ class Parser
 			if not check_schema_format content
 				raise ParseException, 'unrecognized schema format'
 			end
-		elsif content.is_a? Tree
+		else
 			if content.contains? :quote
 				raise ParseException, 'cannot use `...` outside schema'
 			elsif content.contains? :for_all_meta
@@ -591,50 +639,13 @@ class Parser
 					tree_from_grammar(node.branches[1]), tree_from_grammar(node.branches[3])
 				]
 			when :universal, :existential, :take, :no_existential, :define, :universal_meta
-#				operator = (node.value == :universal ? :for_all : :for_some)
 				operator = case node.value
 					when :universal then :for_all
 					when :universal_meta then :for_all_meta
 					else :for_some
 				end
 
-				raise unless node.branches[1].value == :atom_list
-				variables, pending, condition_trees = [], [], []
-				node.branches[1].branches[0].branches.each {|branch|
-					next if branch.value == ',' or branch.value.downcase == 'and'
-					if branch.value == :definable or branch.value == :definable_raw
-						pending << tree_from_grammar(branch)
-					elsif branch.value == :condition
-						right_side = tree_from_grammar branch.branches[1]
-						condition_trees.concat pending.collect {|variable|
-							if branch.branches[0].value == :inequality
-								relation = branch.branches[0].branches[0].value
-								convert_inequality relation, [variable, right_side]
-							elsif branch.branches[0].value == :not_equal
-								subtrees = [Tree.new(:equals, [variable, right_side])]
-								Tree.new :not, subtrees
-							elsif branch.branches[0].value.downcase == 'in'
-								condition_subtrees = [Tree.new('in', []), variable, right_side]
-								Tree.new :predicate, condition_subtrees
-							elsif branch.branches[0].value == :set
-								relation = branch.branches[0].branches[0].value
-								convert_set relation, [variable, right_side]
-							else
-								raise "unknown condition #{branch.branches[0].value.inspect}"
-							end
-						}
-						variables.concat pending
-						pending = []
-					else
-						raise "unknown branch value #{branch.value.inspect}"
-					end
-				}
-				variables.concat pending
-				if condition_trees.size >= 2
-					condition_tree = Tree.new :and, condition_trees
-				elsif condition_trees.size == 1
-					condition_tree = condition_trees[0]
-				end
+				variables, condition_tree = process_atom_list node.branches[1]
 
 				if (i = node.branches.index {|branch| branch.value == :such_that})
 					such_that = tree_from_grammar node.branches[i+1]
