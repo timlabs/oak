@@ -86,7 +86,7 @@ end
 def substitute tree, substitution, repeatedly = false
 	# note: expects substitution keys to be strings!
   case tree.operator
-    when :for_all, :for_some
+		when :for_all, :for_some, :define
       variable = tree.subtrees[0].operator
       occurs = false
       occurs = true if substitution.keys.include? variable

@@ -154,7 +154,14 @@ class Proof
 	end
 
 	def check_admission sentence
- 		variables, body = read_binding sentence
+		# replace defines with for somes
+		defines, replaced = read_defines sentence
+		defines.reverse.each {|v|
+			replaced = Tree.new :for_some, [Tree.new(v, []), replaced]
+		}
+		sentence = replaced
+
+		variables, body = read_binding sentence
 		variables.each {|variable|
 			@lines.each {|line|
 				next if line.schema?
@@ -437,6 +444,13 @@ class Proof
 
 	def add sentence, reason, id
 		unless reason == :'assumption schema' or reason == :'axiom schema'
+			# replace defines with for somes
+			defines, replaced = read_defines sentence
+			defines.reverse.each {|v|
+				replaced = Tree.new :for_some, [Tree.new(v, []), replaced]
+			}
+			sentence = replaced
+
 			variables, body = read_binding sentence
 			scopes = get_scopes
 			variables.each {|variable|
@@ -580,6 +594,14 @@ class Proof
 
 	def derive_internal sentence, line_numbers, id
 		check_admission sentence
+
+		# replace defines with for somes
+		defines, replaced = read_defines sentence
+		defines.reverse.each {|v|
+			replaced = Tree.new :for_some, [Tree.new(v, []), replaced]
+		}
+		sentence = replaced
+
 		result = check sentence, line_numbers
 		if result == :valid
 			add sentence, :derivation, id
@@ -593,6 +615,11 @@ class Proof
 	end
 
   def get_scopes
+		# for each line l:
+		#   if l is a supposition, gives the last line at which l is active
+		#		if l is a binding, gives the last line at which l is required to be active,
+		#			taking into account last_used *and* the rule that bindings cannot interleave
+		#			suppositions or other bindings
 		last_used = make_last_used
 		scopes = {}
 		(@lines.size-1).downto(0) {|n|
@@ -705,6 +732,15 @@ class Proof
     end
     [variables, body]
   end
+
+	def read_defines tree
+		defines = []
+		while tree.operator == :define
+			defines << tree.subtrees[0].operator
+			tree = tree.subtrees[1]
+		end
+		[defines, tree]
+	end
 end
 
 ### end of Proof class ###################################################

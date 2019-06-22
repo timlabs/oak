@@ -641,8 +641,9 @@ class Parser
 			when :universal, :existential, :take, :no_existential, :define, :universal_meta
 				operator = case node.value
 					when :universal then :for_all
+					when :existential, :take, :no_existential then :for_some
+					when :define then :define
 					when :universal_meta then :for_all_meta
-					else :for_some
 				end
 
 				variables, condition_tree = process_atom_list node.branches[1]
@@ -659,6 +660,7 @@ class Parser
 					relation = case operator
 						when :for_all, :for_all_meta then :implies
 						when :for_some then :and
+						# :define cannot occur here
 					end
 #         relation = (node.value == :universal ? :implies : :and)
           body = (such_that ? Tree.new(relation, [such_that, body]) : body)
@@ -710,7 +712,7 @@ class Tree
 		case operator
 			when :not
 				raise unless subtrees.size == 1
-			when :for_all, :for_all_meta
+			when :for_all, :for_all_meta, :define
 				raise unless subtrees.size == 2 and not subtrees[0].operator.is_a? Symbol
 			when :for_some
 				raise unless [1, 2].include? subtrees.size
