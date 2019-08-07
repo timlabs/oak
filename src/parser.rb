@@ -344,7 +344,7 @@ class Parser
 		end
 
 		if action == :assume_schema or action == :axiom_schema
-			if not check_schema_format content
+			if not Schema.check_schema_format content
 				raise ParseException, 'unrecognized schema format'
 			end
 		else

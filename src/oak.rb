@@ -328,6 +328,14 @@ class Proof
 		@theses << @theses[-1] # inherit thesis if it exists
 	end
 
+	def print_axioms
+		groups = @axioms.group_by {|i| @lines[i].filename}
+		groups.each {|filename, axioms|
+			s = (axioms.size == 1 ? 'axiom' : 'axioms')
+			puts "#{axioms.size} #{s} in #{filename}"
+		}
+	end
+
 	def print_assumptions
 		ids = @assumptions.collect {|i| [@lines[i].filename, @lines[i].fileline]}
 		ids.concat @assume_blocks.collect {|id| [id[:filename], id[:fileline]]}
@@ -354,7 +362,10 @@ class Proof
 			when Array then '"process" not allowed in "proof" block'
 			when :assume then '"process" not allowed in assume block'
 		end
-		raise ProofException, message if message
+		if message
+			puts message
+			raise ProofException, message
+		end
 
 		include input, is_filename
 
@@ -372,11 +383,7 @@ class Proof
 		puts "all lines accepted"
 
 		if @assumptions.empty? and @assume_blocks.empty?
-			groups = @axioms.group_by {|i| @lines[i].filename}
-			groups.each {|filename, axioms|
-				s = (axioms.size == 1 ? 'axiom' : 'axioms')
-				puts "#{axioms.size} #{s} in #{filename}"
-			}
+			print_axioms
 			puts 'proof successful!'
 		else
 			print_assumptions
@@ -508,7 +515,7 @@ class Proof
 		if schema_line_number
 			schema = @lines[schema_line_number].sentence
 			begin
-				tree = instantiate_schema schema, tree
+				tree = Schema.instantiate_schema schema, tree
 			rescue ProofException => e
 				raise unless e.message == 'ProofException' # re-raise with original message
 				raise ProofException, 'could not instantiate schema'
@@ -518,11 +525,11 @@ class Proof
 #		puts 'checking tree:'
 #		p tree
 
-#		result = valid_cvc4? tree
-		result = valid_e? tree
-#		result = valid_iprover? tree
-#		result = valid_prover9? tree
-#		result = valid_spass? tree
+#		result = ExternalProver.valid_cvc4? tree
+		result = ExternalProver.valid_e? tree
+#		result = ExternalProver.valid_iprover? tree
+#		result = ExternalProver.valid_prover9? tree
+#		result = ExternalProver.valid_spass? tree
 #	  result = EnglishChecker.valid? tree
 #   puts
 #   if result == :valid

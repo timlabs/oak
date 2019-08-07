@@ -1,26 +1,5 @@
-def apply_resolved requirement, resolved
-	case requirement.operator
-		when :and, :or, :not, :implies, :iff
-			subtrees = requirement.subtrees.collect {|subtree|
-				apply_resolved subtree, resolved
-			}
-			Tree.new requirement.operator, subtrees
-		when :predicate
-			raise unless requirement.subtrees[0].operator == 'free'
-			variable = resolved[requirement.subtrees[1].operator].operator
-			formula = resolved[requirement.subtrees[2].operator]
-			raise ProofException unless variable.is_a? String
-#			puts "variable = #{variable}"
-#			puts "formula = #{formula}"
-#			puts "formula free vars = #{formula.free_variables}"
-			if formula.free_variables.include? variable
-				tree_for_true
-			else
-				tree_for_false
-			end
-		else raise
-	end
-end
+module Schema
+extend self
 
 def check_schema_format tree, state = :top, vars = []
 	case state
@@ -67,6 +46,58 @@ def check_schema_format tree, state = :top, vars = []
 				else
 					tree.subtrees.all? {|subtree| check_schema_format subtree, :normal, vars}
 			end
+	end
+end
+
+def instantiate_schema schema, instance
+#	puts "schema: #{schema}"
+
+	variables, pattern, requirements = parse_schema schema
+#	puts "variables: #{variables}"
+#	puts "pattern: #{pattern}"
+#	puts "requirements: #{requirements}"
+#	puts "instance: #{instance}"
+
+	constraints = find_constraints pattern, instance, variables
+	raise ProofException if not constraints
+#	puts "constraints are:"
+#	constraints.each {|constraint| puts "#{constraint[0]} = #{constraint[1]}"}
+#	puts
+
+	resolved = resolve_constraints constraints
+	raise ProofException if not resolved
+#	puts "resolved:"
+#	p resolved
+
+	# every variable must have an assignment
+	raise ProofException unless (variables - resolved.keys).empty?
+
+	requirements_tree requirements, resolved
+end
+
+private #######################################################################
+
+def apply_resolved requirement, resolved
+	case requirement.operator
+		when :and, :or, :not, :implies, :iff
+			subtrees = requirement.subtrees.collect {|subtree|
+				apply_resolved subtree, resolved
+			}
+			Tree.new requirement.operator, subtrees
+		when :predicate
+			raise unless requirement.subtrees[0].operator == 'free'
+			variable = resolved[requirement.subtrees[1].operator].operator
+			formula = resolved[requirement.subtrees[2].operator]
+			raise ProofException unless variable.is_a? String
+#			puts "variable = #{variable}"
+#			puts "formula = #{formula}"
+#			puts "formula free vars = #{formula.free_variables}"
+			if formula.free_variables.include? variable
+				tree_for_true
+			else
+				tree_for_false
+			end
+		else raise
 	end
 end
 
@@ -163,28 +194,4 @@ def resolve_constraints constraints
 	substitution
 end
 
-def instantiate_schema schema, instance
-#	puts "schema: #{schema}"
-
-	variables, pattern, requirements = parse_schema schema
-#	puts "variables: #{variables}"
-#	puts "pattern: #{pattern}"
-#	puts "requirements: #{requirements}"
-#	puts "instance: #{instance}"
-
-	constraints = find_constraints pattern, instance, variables
-	raise ProofException if not constraints
-#	puts "constraints are:"
-#	constraints.each {|constraint| puts "#{constraint[0]} = #{constraint[1]}"}
-#	puts
-
-	resolved = resolve_constraints constraints
-	raise ProofException if not resolved
-#	puts "resolved:"
-#	p resolved
-
-	# every variable must have an assignment
-	raise ProofException unless (variables - resolved.keys).empty?
-
-	requirements_tree requirements, resolved
 end
