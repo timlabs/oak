@@ -24,5 +24,7 @@ rescue => e
 	exit if e.is_a? ProofException # already printed
 	puts "\n\n#{e.message} (#{e.class}) [#{name_version}]"
   puts "\tfrom #{e.backtrace.join "\n\tfrom "}"
-	puts "\nBUG: You have found a bug in the proof checker!  It would be greatly appreciated if you could report it at #{issues_url} so that it can be fixed."
+	puts "\nBUG: You have found a bug in the proof checker!  It would be " \
+       "greatly appreciated if you could report it at #{issues_url} so that " \
+       "it can be fixed."
 end
