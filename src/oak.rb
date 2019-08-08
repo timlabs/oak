@@ -19,7 +19,7 @@ if ARGV.size != 1 or ARGV[0].start_with? '-'
 end
 
 begin
-	Proof.new.process ARGV[0], :is_filename
+	Proof.process ARGV[0], :is_filename
 rescue => e
 	exit if e.is_a? ProofException # already printed
 	puts "\n\n#{e.message} (#{e.class}) [#{name_version}]"
