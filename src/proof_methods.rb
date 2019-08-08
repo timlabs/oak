@@ -1,15 +1,191 @@
 require_relative 'external prover.rb'
 require_relative 'schema.rb'
 
+module ProofUtils
+  def bind_variables variables, body, quantifier
+		(variables.reverse & body.free_variables).each {|variable|
+			body = Tree.new quantifier, [Tree.new(variable, []), body]
+		}
+		body
+  end
+
+  def read_binding tree
+    variables = []
+		body = tree
+    while body and body.operator == :for_some
+      variables << body.subtrees[0].operator
+      body = body.subtrees[1]
+    end
+    [variables, body]
+  end
+
+	def read_defines tree
+		defines = []
+		while tree.operator == :define
+			defines << tree.subtrees[0].operator
+			tree = tree.subtrees[1]
+		end
+		[defines, tree]
+	end
+end
+
+class Proof
+	class ActiveNode
+		attr_reader :variables, :branches, :line
+		attr_accessor :parent, :active
+
+		def initialize variables, branches, parent, line
+			@variables, @branches, @parent, @line = variables, branches, parent, line
+			@active = true
+		end
+	end
+
+	class ActiveScopes
+		include ProofUtils
+
+		attr_reader :root
+
+		def initialize
+			@constants = Set[]
+			@bound = {}
+			@unbound = Set[]
+			@root = ActiveNode.new [], [], nil, nil
+			@blocks = [@root]
+			@bound_lines = {}
+		end
+
+		def check_admission sentence
+			defines, sentence = read_defines sentence
+			binds, body = read_binding sentence
+			uses = sentence.free_variables
+
+			unless (binds & defines).empty?
+				variable = (binds & defines).first
+				raise ProofException, "cannot bind #{variable} inside its own definition"
+			end
+
+			# having checked defines, merge it into binds
+			binds = defines + binds
+			uses = uses - defines
+
+			unless (@constants & binds).empty?
+				variable = (@constants & binds).first
+				raise ProofException, "cannot bind #{variable}: already occurred as a constant"
+			end
+
+			unless (@unbound & uses).empty?
+				variable = (@unbound & uses).first
+				raise ProofException, "variable #{variable} is no longer in scope"
+			end
+
+			binds.each {|variable|
+				next unless @bound[variable]
+				begin
+					to_unbind = variables_for_unbinding @bound[variable]
+				rescue ProofException
+#					raise ProofException, "cannot bind #{variable}: previous binding would interleave active supposition"
+					raise ProofException, "binding of variable #{variable} causes scope interleaving"
+				end
+				unless (uses & to_unbind).empty?
+					culprit = (uses & to_unbind).first
+					raise ProofException, "placement of variable #{culprit} causes scope interleaving"
+				end
+			}
+		end
+
+		def admit sentence, line
+			# assumes check_admission has already been called!
+
+			defines, sentence = read_defines sentence
+			begin_block defines unless defines.empty?
+
+			binds, body = read_binding sentence
+			uses = sentence.free_variables
+			admit_internal binds, uses, line
+		end
+
+		def admit_internal binds, uses, line = nil
+			# unbind any of the variables to be bound which were already bound
+			binds.each {|variable| deactivate_node @bound[variable] if @bound[variable]}
+
+			# add the new bindings
+			node = ActiveNode.new binds, [], @blocks.last, line
+			@blocks.last.branches << node
+			binds.each {|variable|
+				@bound[variable] = node
+				@bound_lines[variable] = node.line
+			}
+			@unbound.subtract binds
+
+			uses.each {|variable|
+				if @bound[variable]
+					# shift so that this appearance of variable will be in the binding scope
+					shift_under_variable variable
+				else
+					# variable was never bound, so register it as a constant
+					@constants << variable
+				end
+			}
+
+			node
+		end
+
+		def deactivate_node n
+			return if not n.active
+			n.branches.each {|branch| deactivate_node branch}
+			n.variables.each {|v|
+				@bound.delete v
+				@bound_lines.delete v
+			}
+			@unbound.merge n.variables
+			n.active = false
+		end
+
+		def shift_under_variable v
+			# shift everything after the binding of v to be in v's scope
+			holder = @bound[v]
+			while holder != @root
+				parent = holder.parent
+				i = parent.branches.index holder
+				nodes = parent.branches[i+1..-1]
+				parent.branches.slice! i+1..-1
+				@bound[v].branches.concat nodes
+				nodes.each {|node| node.parent = @bound[v]}
+				holder = parent
+			end
+		end
+
+		def variables_for_unbinding n
+			return [] if not n.active
+			raise ProofException if @blocks.include? n # can't unbind a block
+			result = n.variables.dup
+			n.branches.each {|branch| result.concat variables_for_unbinding(branch)}
+			result
+		end
+
+		def begin_block defines = []
+			node = admit_internal defines, []
+			@blocks << node
+			node
+		end
+
+		def end_block
+			@blocks.pop until @blocks.last.variables.empty? # pop define blocks
+			node = @blocks.pop
+			deactivate_node node
+		end
+	end
+end
+
 class Proof
 	class Line
-		attr_reader :sentence, :reason, :suppositions, :bindings,
-								:label, :filename, :fileline
-
-		def initialize sentence, reason, suppositions, bindings, id
-			@sentence, @reason = sentence, reason
-			@suppositions, @bindings = suppositions, bindings
+		attr_reader :sentence, :reason, :suppositions, :label, :filename, :fileline,
+		 						:node
+								
+		def initialize sentence, reason, suppositions, id, node
+			@sentence, @reason, @suppositions = sentence, reason, suppositions
 			@label, @filename, @fileline = id[:label], id[:filename], id[:fileline]
+			@node = node
 			sentence_string = @sentence.to_s.rstrip
 			reason_string = @reason.to_s.rstrip
 			if sentence_string.empty?
@@ -68,26 +244,11 @@ class Proof
 	end
 end
 
-class Proof
-  class ScopeTree
-    attr_reader :line, :branches
-    
-    def initialize line, branches, lines
-      @line, @branches, @lines = line, branches, lines
-    end
-    
-    def inspect level = 1
-			text = @line ? @lines[@line].sentence.to_s : @line.inspect
-  		@branches.inject(text) {|result, branch|
-  	    result + "\n" + '  ' * level + branch.inspect(level + 1)
-  		}
-  	end
-  end
-end
-
 ### start of Proof class #################################################
 
 class Proof
+	include ProofUtils
+
 	attr_reader :scopes, :theses
 
 	def initialize
@@ -97,13 +258,13 @@ class Proof
 		@assume_blocks = []
 		@axioms = []
 		@active_suppositions = []
-		@active_bindings = {}
 		@active_reason_sets = [[]]
 		@scopes = []
 		@theses = []
 		@label_stack = [[]]
     @line_numbers_by_label = {}
 		@inactive_labels = Set[]
+		@active_scopes = ActiveScopes.new
 	end
 
 	def assume sentence, id = nil
@@ -149,41 +310,9 @@ class Proof
 	end
 
 	def check_admission sentence
-		# replace defines with for somes
-		defines, replaced = read_defines sentence
-		defines.reverse.each {|v|
-			replaced = Tree.new :for_some, [Tree.new(v, []), replaced]
-		}
-		sentence = replaced
+		@active_scopes.check_admission sentence
+		return
 
-		variables, body = read_binding sentence
-		variables.each {|variable|
-			@lines.each {|line|
-				next if line.schema?
-				free_variables = line.sentence.free_variables
-				next unless (free_variables - line.bindings.keys).include? variable
-				raise ProofException, "cannot bind #{variable}: already occurred as a constant"
-			}
-		}
-		scopes = get_scopes
-		still_active = @active_bindings.dup
-		(variables & @active_bindings.keys).each {|variable|
-			last_start = @active_bindings[variable]
-			last_stop = scopes[@active_bindings[variable]]
-			if not (@active_suppositions & (last_start..last_stop).to_a).empty?
-				raise ProofException, "cannot bind #{variable}: previous binding would interleave active supposition"
-			end
-			still_active.delete_if {|v, i| i >= last_start and i <= last_stop}
-		}
- 		(sentence.free_variables - still_active.keys).each {|variable|
-			if @lines.find {|line| line.bindings[variable]}
-				if @active_bindings[variable]
-					raise ProofException, "placement of variable #{variable} causes scope interleaving"
-				else
-					raise ProofException, "variable #{variable} is no longer in scope"
-				end
-			end
-		}
 =begin
 		constants = sentence.free_variables - @active_bindings.keys
 		intersection = constants & sentence.bound_variables
@@ -233,19 +362,25 @@ class Proof
 			@label_stack.pop
 			content, id, lines_size_before = last_scope
 			# delete any bindings made in the proof block
-			@active_bindings.delete_if {|variable, line_number|
-				line_number >= lines_size_before
-			}
+#			@active_bindings.delete_if {|variable, line_number|
+#				line_number >= lines_size_before
+#			}
+
+			@active_scopes.end_block
+
       if @scopes.include? :assume then assume content, id # assume block
       else derive_internal content, last_reason_set, id end
 		else
 			if last_scope == :suppose
 				# delete any bindings made while this supposition was active
 				supposition = @active_suppositions.last
-				@active_bindings.delete_if {|variable, line_number|
-					@lines[line_number].suppositions.include? supposition
-				}
+#				@active_bindings.delete_if {|variable, line_number|
+#					@lines[line_number].suppositions.include? supposition
+#				}
 				@active_suppositions.pop
+
+				@active_scopes.end_block
+
 			end
 			@active_reason_sets.last.concat last_reason_set
 		end
@@ -293,6 +428,8 @@ class Proof
 		@active_reason_sets << []
 		@theses << content
 		@label_stack << []
+
+		@active_scopes.begin_block
 	end
 
 	def so sentence, reasons = [], id = nil
@@ -348,33 +485,39 @@ class Proof
 
 	def add sentence, reason, id
 		unless reason == :'assumption schema' or reason == :'axiom schema'
+=begin
+			node = case reason
+#				when :axiom then @active_scopes.begin_block sentence, @lines.size
+#				when :supposition then @active_scopes.begin_block sentence, @lines.size
+				when :axiom, :supposition
+					@active_scopes.begin_block
+					@active_scopes.admit sentence, @lines.size
+				else @active_scopes.admit sentence, @lines.size
+			end
+=end
+
+			# think about moving check_admission in here?  (will have to move derive_internal as well,
+			#	not sure if that works)
+
+			@active_scopes.begin_block if reason == :axiom or reason == :supposition
+			node = @active_scopes.admit sentence, @lines.size
+
+			defines, sentence = read_defines sentence
+=begin
 			# replace defines with for somes
 			defines, replaced = read_defines sentence
 			defines.reverse.each {|v|
 				replaced = Tree.new :for_some, [Tree.new(v, []), replaced]
 			}
 			sentence = replaced
-
-			variables, body = read_binding sentence
-			scopes = get_scopes
-			variables.each {|variable|
-				if @active_bindings[variable]
-					# deactivate any variables forced to be in the last one's scope
-					last_start = @active_bindings[variable]
-					last_stop = scopes[@active_bindings[variable]]
-					@active_bindings.delete_if {|variable, i|
-						i >= last_start and i <= last_stop
-					}
-				end
-				@active_bindings[variable] = @lines.size
-			}
+=end
 		end
 		label = id[:label]
     if @line_numbers_by_label[label]
       raise ProofException, "label #{label} already in scope"
     end
 		@lines << Line.new(
-			sentence, reason, @active_suppositions.dup, @active_bindings.dup, id
+			sentence, reason, @active_suppositions.dup, id, node
 		)
     n = @lines.size - 1
 		if label
@@ -384,13 +527,6 @@ class Proof
     	@active_reason_sets[-1] << n
 		end
     n
-  end
-
-  def bind_variables variables, body, quantifier
-		(variables.reverse & body.free_variables).each {|variable|
-			body = Tree.new quantifier, [Tree.new(variable, []), body]
-		}
-		body
   end
 
 	def check tree, line_numbers
@@ -447,54 +583,123 @@ class Proof
 	  result
 	end
 
-  def cited_tree cited_lines, scope_tree = nil
 
-		scope_tree = make_scope_tree if not scope_tree
+
+
+	def get_cited_ancestors cited_lines
+		result = Set[]
+		cited_lines.each {|line|
+			node = @lines[line].node
+			while node
+				result << node
+				node = node.parent
+			end
+		}
+		result
+	end
+
+#=begin
+  def cited_tree cited_lines, scope_tree = nil, cited_ancestors = nil
+
+		if not scope_tree
+			scope_tree = @active_scopes.root
+			cited_ancestors = get_cited_ancestors cited_lines
+		end
+
+		# nothing under it was cited, so there will be nothing to return
+		return nil unless cited_ancestors.include? scope_tree
 
 		# make trees recursively
 		trees = scope_tree.branches.collect {|branch|
-			cited_tree cited_lines, branch
+			cited_tree cited_lines, branch, cited_ancestors
 		}.compact
 
-		# top scope		
-    return conjunction_tree trees if not scope_tree.line
+		# top scope
+    return conjunction_tree trees if not scope_tree.parent
 
+		# supposition start block (determined by checking if first branch is the supposition itself)
+		if scope_tree.branches[0] and scope_tree.branches[0].line
+			line = @lines[scope_tree.branches[0].line]
+			if line.supposition?
+				# if supposition is active, nothing further to do
+				return conjunction_tree trees if scope_tree.active
+
+				tree = conjunction_tree trees
+				return nil if not tree
+				if line.binding?
+			    variables, body = read_binding line.sentence
+					tree = Tree.new :implies, [body, tree] if body
+					# generalize the binding
+					tree = bind_variables variables, tree, :for_all
+				else
+					tree = Tree.new :implies, [line.sentence, tree]
+				end
+				return tree
+			end
+		end
+
+		# start of proof block (nothing to do)
+		return conjunction_tree trees if not scope_tree.line and scope_tree.variables.empty?
+
+		# start of define block (contains defined variables, without a body)
+		if not scope_tree.line
+			tree = conjunction_tree trees
+			if tree and not scope_tree.active
+				tree = bind_variables scope_tree.variables, tree, :for_some
+			end
+			return tree
+		end
+
+		# normal line
     line = @lines[scope_tree.line]
     cited = cited_lines.include? scope_tree.line
     if line.binding?
       variables, body = read_binding line.sentence
-      if @active_bindings.values.include? scope_tree.line
+      if scope_tree.active
 				trees.unshift body if body and cited # add to start
 				tree = conjunction_tree trees
 			else
 				tree = conjunction_tree trees
+				return tree if line.supposition? # will be handled next level up
 				if not tree
 					return nil unless body and not line.supposition? and cited
 					tree = bind_variables variables, body, :for_some
+=begin
 				elsif line.supposition?
 					tree = Tree.new :implies, [body, tree] if body
 					# generalize the binding
 					tree = bind_variables variables, tree, :for_all
+=end
 				else
 					tree = Tree.new :and, [body, tree] if body and cited
 					tree = bind_variables variables, tree, :for_some
 				end
 			end
+=begin
 		elsif line.supposition?
-			active_supposition = @active_suppositions.include? scope_tree.line
-			if active_supposition
+			if scope_tree.active
 				trees.unshift line.sentence if cited # add to start
 				tree = conjunction_tree trees
 			else
 				tree = conjunction_tree trees
 				tree = Tree.new :implies, [line.sentence, tree] if tree
 			end
+=end
+
+=begin
+		elsif line.reason == :axiom
+			raise unless scope_tree.active # axioms are always active
+			trees.unshift line.sentence if cited # add to start
+			tree = conjunction_tree trees
+=end
+
 		else
 			raise unless trees.empty?
 			tree = line.sentence if cited
     end
     tree
 	end
+#=end
 
 	def derive_internal sentence, line_numbers, id
 		check_admission sentence
@@ -504,95 +709,18 @@ class Proof
 		defines.reverse.each {|v|
 			replaced = Tree.new :for_some, [Tree.new(v, []), replaced]
 		}
-		sentence = replaced
 
-		result = check sentence, line_numbers
+		result = check replaced, line_numbers
 		if result == :valid
 			add sentence, :derivation, id
 		elsif result == :invalid
-			raise DeriveException.new 'invalid derivation', sentence
+			raise DeriveException.new 'invalid derivation', replaced
 		elsif result == :unknown
-			raise DeriveException.new 'could not determine validity of derivation', sentence
+			raise DeriveException.new 'could not determine validity of derivation', replaced
 		else
 			raise
 		end
 	end
-
-  def get_scopes
-		# for each line l:
-		#   if l is a supposition, gives the last line at which l is active
-		#		if l is a binding, gives the last line at which l is required to be active,
-		#			taking into account last_used *and* the rule that bindings cannot interleave
-		#			suppositions or other bindings
-		last_used = make_last_used
-		scopes = {}
-		(@lines.size-1).downto(0) {|n|
-		  line = @lines[n]
-		  if line.supposition?
-		    after = (n+1...@lines.size).find {|i| not @lines[i].suppositions.include? n}
-		    scopes[n] = (after ? after - 1 : @lines.size - 1)
-		  elsif line.binding?
-				last = last_used[n]
-		    if not last
-#					puts "no last, so setting scopes[#{n}] to #{n}"
-		      scopes[n] = n
-		    else
-#					puts "last = #{last}"
-		      added_suppositions = @lines[last].suppositions - @lines[n].suppositions
-		      added_bindings = @lines[last].bindings.values - @lines[n].bindings.values
-		      added = added_suppositions + added_bindings
-		      scopes[n] = ([last] + added.collect {|i| scopes[i]}).max
-#					puts "now set scopes[#{n}] to #{scopes[n]}"
-		    end
-		  end
-#			if n == 0
-#				puts "scopes are:"
-#				p scopes.sort
-#			end
-		}
-		scopes
-  end
-
-	def make_last_used
-		# for each line l, gives the last line at which any variables bound
-		# at l are referenced
-		last_used = {}
-		@lines.each_with_index {|line, i|
-			line.sentence.free_variables.each {|variable|
-				next if not line.bindings[variable]
-				last_used[line.bindings[variable]] = i
-			}
-		}
-		last_used
-	end
-
-  def make_scope_tree line_numbers = nil, scopes = nil
-    scopes = get_scopes if not scopes
-    if not line_numbers
-			line_numbers = @lines.each_index.to_a 
-			result = make_scope_tree line_numbers, scopes
-#     puts 'scope_tree:'
-#			p result
-#			puts
-			return result
-		end
-#   puts "make_scope_tree running with line numbers = #{line_numbers}"
-    branches = []
-    until line_numbers.empty?
-      n = line_numbers.shift # take from start
-#     puts "line number is #{n}"
-#     line = @lines[line_number]
-      if (@lines[n].supposition? or @lines[n].binding?) and scopes[n] > n
-        last = line_numbers.index scopes[n]
-        subtree = make_scope_tree line_numbers[0..last], scopes
-        branches << ScopeTree.new(n, subtree.branches, @lines)
-        line_numbers = line_numbers[last+1..-1]
-      else
-        branches << ScopeTree.new(n, [], @lines)
-      end
-    end
-    ScopeTree.new nil, branches, @lines
-  end
 
 	def process_reasons reasons
 		line_numbers = []
@@ -611,25 +739,6 @@ class Proof
 			i
 		}
     line_numbers
-	end
-
-  def read_binding tree
-    variables = []
-		body = tree
-    while body and body.operator == :for_some
-      variables << body.subtrees[0].operator
-      body = body.subtrees[1]
-    end
-    [variables, body]
-  end
-
-	def read_defines tree
-		defines = []
-		while tree.operator == :define
-			defines << tree.subtrees[0].operator
-			tree = tree.subtrees[1]
-		end
-		[defines, tree]
 	end
 end
 
