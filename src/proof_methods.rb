@@ -2,23 +2,6 @@ require_relative 'external prover.rb'
 require_relative 'schema.rb'
 
 module ProofUtils
-  def bind_variables variables, body, quantifier
-		(variables.reverse & body.free_variables).each {|variable|
-			body = Tree.new quantifier, [Tree.new(variable, []), body]
-		}
-		body
-  end
-
-  def read_binding tree
-    variables = []
-		body = tree
-    while body and body.operator == :for_some
-      variables << body.subtrees[0].operator
-      body = body.subtrees[1]
-    end
-    [variables, body]
-  end
-
 	def read_defines tree
 		defines = []
 		while tree.operator == :define
@@ -43,15 +26,30 @@ class Proof
 	class ActiveScopes
 		include ProofUtils
 
-		attr_reader :root
-
-		def initialize
+		def initialize lines
 			@constants = Set[]
 			@bound = {}
 			@unbound = Set[]
 			@root = ActiveNode.new [], [], nil, nil
 			@blocks = [@root]
-			@bound_lines = {}
+			@lines = lines
+		end
+
+		def admit sentence, line
+			# assumes check_admission has already been called!
+
+			defines, sentence = read_defines sentence
+			begin_block defines unless defines.empty?
+
+			binds, body = read_binding sentence
+			uses = sentence.free_variables
+			admit_internal binds, uses, line
+		end
+
+		def begin_block defines = []
+			node = admit_internal defines, []
+			@blocks << node
+			node
 		end
 
 		def check_admission sentence
@@ -93,16 +91,90 @@ class Proof
 			}
 		end
 
-		def admit sentence, line
-			# assumes check_admission has already been called!
+	  def cited_tree cited_lines, scope_tree = nil, cited_ancestors = nil
 
-			defines, sentence = read_defines sentence
-			begin_block defines unless defines.empty?
+			if not scope_tree
+				scope_tree = @root
+				cited_ancestors = get_cited_ancestors cited_lines
+			end
 
-			binds, body = read_binding sentence
-			uses = sentence.free_variables
-			admit_internal binds, uses, line
+			# nothing under it was cited, so there will be nothing to return
+			return nil unless cited_ancestors.include? scope_tree
+
+			# make trees recursively
+			trees = scope_tree.branches.collect {|branch|
+				cited_tree cited_lines, branch, cited_ancestors
+			}.compact
+
+			# top scope
+	    return conjunction_tree trees if not scope_tree.parent
+
+			# supposition start block (determined by checking if first branch is the supposition itself)
+			if scope_tree.branches[0] and scope_tree.branches[0].line
+				line = @lines[scope_tree.branches[0].line]
+				if line.supposition?
+					# if supposition is active, nothing further to do
+					return conjunction_tree trees if scope_tree.active
+
+					tree = conjunction_tree trees
+					return nil if not tree
+					if line.binding?
+				    variables, body = read_binding line.sentence
+						tree = Tree.new :implies, [body, tree] if body
+						# generalize the binding
+						tree = bind_variables variables, tree, :for_all
+					else
+						tree = Tree.new :implies, [line.sentence, tree]
+					end
+					return tree
+				end
+			end
+
+			# start of proof block (nothing to do)
+			return conjunction_tree trees if not scope_tree.line and scope_tree.variables.empty?
+
+			# start of define block (contains defined variables, without a body)
+			if not scope_tree.line
+				tree = conjunction_tree trees
+				if tree and not scope_tree.active
+					tree = bind_variables scope_tree.variables, tree, :for_some
+				end
+				return tree
+			end
+
+			# normal line
+	    line = @lines[scope_tree.line]
+	    cited = cited_lines.include? scope_tree.line
+	    if line.binding?
+	      variables, body = read_binding line.sentence
+	      if scope_tree.active
+					trees.unshift body if body and cited # add to start
+					tree = conjunction_tree trees
+				else
+					tree = conjunction_tree trees
+					return tree if line.supposition? # will be handled next level up
+					if not tree
+						return nil unless body and not line.supposition? and cited
+						tree = bind_variables variables, body, :for_some
+					else
+						tree = Tree.new :and, [body, tree] if body and cited
+						tree = bind_variables variables, tree, :for_some
+					end
+				end
+			else
+				raise unless trees.empty?
+				tree = line.sentence if cited
+	    end
+	    tree
 		end
+
+		def end_block
+			@blocks.pop until @blocks.last.variables.empty? # pop define blocks
+			node = @blocks.pop
+			deactivate_node node
+		end
+
+		private ###################################################################
 
 		def admit_internal binds, uses, line = nil
 			# unbind any of the variables to be bound which were already bound
@@ -111,10 +183,7 @@ class Proof
 			# add the new bindings
 			node = ActiveNode.new binds, [], @blocks.last, line
 			@blocks.last.branches << node
-			binds.each {|variable|
-				@bound[variable] = node
-				@bound_lines[variable] = node.line
-			}
+			binds.each {|variable| @bound[variable] = node}
 			@unbound.subtract binds
 
 			uses.each {|variable|
@@ -130,16 +199,42 @@ class Proof
 			node
 		end
 
+	  def bind_variables variables, body, quantifier
+			(variables.reverse & body.free_variables).each {|variable|
+				body = Tree.new quantifier, [Tree.new(variable, []), body]
+			}
+			body
+	  end
+
+		def get_cited_ancestors cited_lines
+			result = Set[]
+			cited_lines.each {|line|
+				node = @lines[line].node
+				while node
+					result << node
+					node = node.parent
+				end
+			}
+			result
+		end
+
 		def deactivate_node n
 			return if not n.active
 			n.branches.each {|branch| deactivate_node branch}
-			n.variables.each {|v|
-				@bound.delete v
-				@bound_lines.delete v
-			}
+			n.variables.each {|v| @bound.delete v}
 			@unbound.merge n.variables
 			n.active = false
 		end
+
+	  def read_binding tree
+	    variables = []
+			body = tree
+	    while body and body.operator == :for_some
+	      variables << body.subtrees[0].operator
+	      body = body.subtrees[1]
+	    end
+	    [variables, body]
+	  end
 
 		def shift_under_variable v
 			# shift everything after the binding of v to be in v's scope
@@ -161,18 +256,6 @@ class Proof
 			result = n.variables.dup
 			n.branches.each {|branch| result.concat variables_for_unbinding(branch)}
 			result
-		end
-
-		def begin_block defines = []
-			node = admit_internal defines, []
-			@blocks << node
-			node
-		end
-
-		def end_block
-			@blocks.pop until @blocks.last.variables.empty? # pop define blocks
-			node = @blocks.pop
-			deactivate_node node
 		end
 	end
 end
@@ -264,7 +347,7 @@ class Proof
 		@label_stack = [[]]
     @line_numbers_by_label = {}
 		@inactive_labels = Set[]
-		@active_scopes = ActiveScopes.new
+		@active_scopes = ActiveScopes.new @lines
 	end
 
 	def assume sentence, id = nil
@@ -541,7 +624,7 @@ class Proof
 		schema_line_number = schema_line_numbers[0]
     line_numbers -= [schema_line_number] if schema_line_number
 		
-    antecedent = cited_tree line_numbers
+    antecedent = @active_scopes.cited_tree line_numbers
 
 		tree = Tree.new :implies, [antecedent, tree] if antecedent
 
@@ -582,124 +665,6 @@ class Proof
 
 	  result
 	end
-
-
-
-
-	def get_cited_ancestors cited_lines
-		result = Set[]
-		cited_lines.each {|line|
-			node = @lines[line].node
-			while node
-				result << node
-				node = node.parent
-			end
-		}
-		result
-	end
-
-#=begin
-  def cited_tree cited_lines, scope_tree = nil, cited_ancestors = nil
-
-		if not scope_tree
-			scope_tree = @active_scopes.root
-			cited_ancestors = get_cited_ancestors cited_lines
-		end
-
-		# nothing under it was cited, so there will be nothing to return
-		return nil unless cited_ancestors.include? scope_tree
-
-		# make trees recursively
-		trees = scope_tree.branches.collect {|branch|
-			cited_tree cited_lines, branch, cited_ancestors
-		}.compact
-
-		# top scope
-    return conjunction_tree trees if not scope_tree.parent
-
-		# supposition start block (determined by checking if first branch is the supposition itself)
-		if scope_tree.branches[0] and scope_tree.branches[0].line
-			line = @lines[scope_tree.branches[0].line]
-			if line.supposition?
-				# if supposition is active, nothing further to do
-				return conjunction_tree trees if scope_tree.active
-
-				tree = conjunction_tree trees
-				return nil if not tree
-				if line.binding?
-			    variables, body = read_binding line.sentence
-					tree = Tree.new :implies, [body, tree] if body
-					# generalize the binding
-					tree = bind_variables variables, tree, :for_all
-				else
-					tree = Tree.new :implies, [line.sentence, tree]
-				end
-				return tree
-			end
-		end
-
-		# start of proof block (nothing to do)
-		return conjunction_tree trees if not scope_tree.line and scope_tree.variables.empty?
-
-		# start of define block (contains defined variables, without a body)
-		if not scope_tree.line
-			tree = conjunction_tree trees
-			if tree and not scope_tree.active
-				tree = bind_variables scope_tree.variables, tree, :for_some
-			end
-			return tree
-		end
-
-		# normal line
-    line = @lines[scope_tree.line]
-    cited = cited_lines.include? scope_tree.line
-    if line.binding?
-      variables, body = read_binding line.sentence
-      if scope_tree.active
-				trees.unshift body if body and cited # add to start
-				tree = conjunction_tree trees
-			else
-				tree = conjunction_tree trees
-				return tree if line.supposition? # will be handled next level up
-				if not tree
-					return nil unless body and not line.supposition? and cited
-					tree = bind_variables variables, body, :for_some
-=begin
-				elsif line.supposition?
-					tree = Tree.new :implies, [body, tree] if body
-					# generalize the binding
-					tree = bind_variables variables, tree, :for_all
-=end
-				else
-					tree = Tree.new :and, [body, tree] if body and cited
-					tree = bind_variables variables, tree, :for_some
-				end
-			end
-=begin
-		elsif line.supposition?
-			if scope_tree.active
-				trees.unshift line.sentence if cited # add to start
-				tree = conjunction_tree trees
-			else
-				tree = conjunction_tree trees
-				tree = Tree.new :implies, [line.sentence, tree] if tree
-			end
-=end
-
-=begin
-		elsif line.reason == :axiom
-			raise unless scope_tree.active # axioms are always active
-			trees.unshift line.sentence if cited # add to start
-			tree = conjunction_tree trees
-=end
-
-		else
-			raise unless trees.empty?
-			tree = line.sentence if cited
-    end
-    tree
-	end
-#=end
 
 	def derive_internal sentence, line_numbers, id
 		check_admission sentence
