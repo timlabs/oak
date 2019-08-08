@@ -1,5 +1,5 @@
 require_relative 'parser.rb'
-require_relative 'proof_methods.rb'
+require_relative 'commands.rb'
 require_relative 'utilities.rb'
 
 class Proof
