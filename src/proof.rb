@@ -95,7 +95,7 @@ class Proof
 		puts
 	end
 
-	private_class_method def self.process_content tree, thesis
+	def self.process_content tree, thesis
 		if thesis
 			begin
 				substitute tree, {'thesis' => thesis}
@@ -108,4 +108,6 @@ class Proof
 			tree
 		end
 	end
+
+	private_class_method :process_content
 end
