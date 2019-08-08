@@ -1,36 +1,26 @@
 require_relative 'external prover.rb'
 require_relative 'schema.rb'
 
-module ProofUtils
-	def read_defines tree
-		defines = []
-		while tree.operator == :define
-			defines << tree.subtrees[0].operator
-			tree = tree.subtrees[1]
-		end
-		[defines, tree]
-	end
-end
-
 class Proof
-	class ActiveNode
-		attr_reader :variables, :branches, :line
-		attr_accessor :parent, :active
 
-		def initialize variables, branches, parent, line
-			@variables, @branches, @parent, @line = variables, branches, parent, line
-			@active = true
+	class Bindings
+		class Node
+			attr_reader :variables, :branches, :line
+			attr_accessor :parent, :active
+
+			def initialize variables, branches, parent, line
+				@variables, @branches, @parent, @line = variables, branches, parent, line
+				@active = true
+			end
 		end
 	end
 
-	class ActiveScopes
-		include ProofUtils
-
+	class Bindings
 		def initialize lines
 			@constants = Set[]
 			@bound = {}
 			@unbound = Set[]
-			@root = ActiveNode.new [], [], nil, nil
+			@root = Node.new [], [], nil, nil
 			@blocks = [@root]
 			@lines = lines
 		end
@@ -91,19 +81,55 @@ class Proof
 			}
 		end
 
-	  def cited_tree cited_lines, scope_tree = nil, cited_ancestors = nil
+		def cited_tree cited_lines
+			cited_tree_internal @root, cited_lines, get_cited_ancestors(cited_lines)
+		end
 
-			if not scope_tree
-				scope_tree = @root
-				cited_ancestors = get_cited_ancestors cited_lines
-			end
+		def end_block
+			@blocks.pop until @blocks.last.variables.empty? # pop define blocks
+			node = @blocks.pop
+			deactivate_node node
+		end
 
+		private ###################################################################
+
+		def admit_internal binds, uses, line = nil
+			# unbind any of the variables to be bound which were already bound
+			binds.each {|variable| deactivate_node @bound[variable] if @bound[variable]}
+
+			# add the new bindings
+			node = Node.new binds, [], @blocks.last, line
+			@blocks.last.branches << node
+			binds.each {|variable| @bound[variable] = node}
+			@unbound.subtract binds
+
+			uses.each {|variable|
+				if @bound[variable]
+					# shift so that this appearance of variable will be in the binding scope
+					shift_under_variable variable
+				else
+					# variable was never bound, so register it as a constant
+					@constants << variable
+				end
+			}
+
+			node
+		end
+
+	  def bind_variables variables, body, quantifier
+			(variables.reverse & body.free_variables).each {|variable|
+				body = Tree.new quantifier, [Tree.new(variable, []), body]
+			}
+			body
+	  end
+
+	  def cited_tree_internal scope_tree, cited_lines, cited_ancestors
 			# nothing under it was cited, so there will be nothing to return
 			return nil unless cited_ancestors.include? scope_tree
 
 			# make trees recursively
 			trees = scope_tree.branches.collect {|branch|
-				cited_tree cited_lines, branch, cited_ancestors
+				cited_tree_internal branch, cited_lines, cited_ancestors
 			}.compact
 
 			# top scope
@@ -168,43 +194,13 @@ class Proof
 	    tree
 		end
 
-		def end_block
-			@blocks.pop until @blocks.last.variables.empty? # pop define blocks
-			node = @blocks.pop
-			deactivate_node node
+		def deactivate_node n
+			return if not n.active
+			n.branches.each {|branch| deactivate_node branch}
+			n.variables.each {|v| @bound.delete v}
+			@unbound.merge n.variables
+			n.active = false
 		end
-
-		private ###################################################################
-
-		def admit_internal binds, uses, line = nil
-			# unbind any of the variables to be bound which were already bound
-			binds.each {|variable| deactivate_node @bound[variable] if @bound[variable]}
-
-			# add the new bindings
-			node = ActiveNode.new binds, [], @blocks.last, line
-			@blocks.last.branches << node
-			binds.each {|variable| @bound[variable] = node}
-			@unbound.subtract binds
-
-			uses.each {|variable|
-				if @bound[variable]
-					# shift so that this appearance of variable will be in the binding scope
-					shift_under_variable variable
-				else
-					# variable was never bound, so register it as a constant
-					@constants << variable
-				end
-			}
-
-			node
-		end
-
-	  def bind_variables variables, body, quantifier
-			(variables.reverse & body.free_variables).each {|variable|
-				body = Tree.new quantifier, [Tree.new(variable, []), body]
-			}
-			body
-	  end
 
 		def get_cited_ancestors cited_lines
 			result = Set[]
@@ -216,14 +212,6 @@ class Proof
 				end
 			}
 			result
-		end
-
-		def deactivate_node n
-			return if not n.active
-			n.branches.each {|branch| deactivate_node branch}
-			n.variables.each {|v| @bound.delete v}
-			@unbound.merge n.variables
-			n.active = false
 		end
 
 	  def read_binding tree
@@ -330,8 +318,6 @@ end
 ### start of Proof class #################################################
 
 class Proof
-	include ProofUtils
-
 	attr_reader :scopes, :theses
 
 	def initialize
@@ -347,7 +333,7 @@ class Proof
 		@label_stack = [[]]
     @line_numbers_by_label = {}
 		@inactive_labels = Set[]
-		@active_scopes = ActiveScopes.new @lines
+		@bindings = Bindings.new @lines
 	end
 
 	def assume sentence, id = nil
@@ -393,7 +379,7 @@ class Proof
 	end
 
 	def check_admission sentence
-		@active_scopes.check_admission sentence
+		@bindings.check_admission sentence
 		return
 
 =begin
@@ -449,7 +435,7 @@ class Proof
 #				line_number >= lines_size_before
 #			}
 
-			@active_scopes.end_block
+			@bindings.end_block
 
       if @scopes.include? :assume then assume content, id # assume block
       else derive_internal content, last_reason_set, id end
@@ -462,7 +448,7 @@ class Proof
 #				}
 				@active_suppositions.pop
 
-				@active_scopes.end_block
+				@bindings.end_block
 
 			end
 			@active_reason_sets.last.concat last_reason_set
@@ -512,7 +498,7 @@ class Proof
 		@theses << content
 		@label_stack << []
 
-		@active_scopes.begin_block
+		@bindings.begin_block
 	end
 
 	def so sentence, reasons = [], id = nil
@@ -568,22 +554,12 @@ class Proof
 
 	def add sentence, reason, id
 		unless reason == :'assumption schema' or reason == :'axiom schema'
-=begin
-			node = case reason
-#				when :axiom then @active_scopes.begin_block sentence, @lines.size
-#				when :supposition then @active_scopes.begin_block sentence, @lines.size
-				when :axiom, :supposition
-					@active_scopes.begin_block
-					@active_scopes.admit sentence, @lines.size
-				else @active_scopes.admit sentence, @lines.size
-			end
-=end
 
 			# think about moving check_admission in here?  (will have to move derive_internal as well,
 			#	not sure if that works)
 
-			@active_scopes.begin_block if reason == :axiom or reason == :supposition
-			node = @active_scopes.admit sentence, @lines.size
+			@bindings.begin_block if reason == :axiom or reason == :supposition
+			node = @bindings.admit sentence, @lines.size
 
 			defines, sentence = read_defines sentence
 =begin
@@ -623,8 +599,8 @@ class Proof
 		raise ProofException, 'cannot cite multiple schemas' if schema_line_numbers.size > 1
 		schema_line_number = schema_line_numbers[0]
     line_numbers -= [schema_line_number] if schema_line_number
-		
-    antecedent = @active_scopes.cited_tree line_numbers
+
+    antecedent = @bindings.cited_tree line_numbers
 
 		tree = Tree.new :implies, [antecedent, tree] if antecedent
 

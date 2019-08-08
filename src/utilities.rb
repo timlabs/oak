@@ -70,6 +70,15 @@ def new_name names, prefix = 'x'
 	available.first
 end
 
+def read_defines tree
+	defines = []
+	while tree.operator == :define
+		defines << tree.subtrees[0].operator
+		tree = tree.subtrees[1]
+	end
+	[defines, tree]
+end
+
 def replace_empty_quantifiers tree
   # we assume that the domain is not empty, and replace
   # each occurrence of "there is an x" with a tautology
