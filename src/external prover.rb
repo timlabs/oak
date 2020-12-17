@@ -34,11 +34,11 @@ def valid_e? tree
 		# conjugates needs -P 267, L systems needs -P 309 *
 
 		settings = []
-#		settings << '-C 122' # 588 # 486
-#		settings << '-P 29'
-#		settings << '-T 1481'
-#		settings << '-U 8'
-#		settings << '--generated-limit=45'
+		# settings << '-C 600'
+		# settings << '-P 300'
+		# settings << '-T 2000'
+		# settings << '-U 1900'
+		# settings << '--generated-limit=2400'
 
 		settings << '--tb-insert-limit=60000'
 		settings << '-m 128' # memory limit for safety
