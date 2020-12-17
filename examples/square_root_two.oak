@@ -1,0 +1,780 @@
+#### INTENDED DOMAIN #####################################################
+
+# Our intended domain D is the nonnegative reals.
+
+#### COMPREHENSION AXIOMS ################################################
+
+comprehension: axiom schema
+	for all meta P,n,φ such that not free[P,φ],
+		`for some P, for all n in D, P[n] iff φ`
+
+comprehension2: axiom schema
+	for all meta P,m,n,φ such that not free[P,φ],
+		`for some P, for all m,n in D, P[m,n] iff φ`
+
+comprehension_eq2: axiom schema
+	for all meta f,m,n,φ such that not free[f,φ],
+		`for some f, for all m,n in D, f[m,n] = φ`
+
+# not necessary, but convenient
+comprehension_nat: axiom schema
+	for all meta P,n,φ such that not free[P,φ],
+		`for some P, for all n in N, P[n] iff φ`
+
+comprehension_eq_partial: axiom schema
+	for all meta f,n,m,φ,x,y such that not free[f,φ],
+		`	(for all n,x,y in D, (φ{m:x} and φ{m:y}) implies x = y)
+				implies
+			(for some f, for all n,m in D, f[n] = m iff φ)	`
+
+#### CLOSURE AXIOMS ######################################################
+
+closure_orig: axiom for all a,b in D,
+	a+b is in D and
+	a*b is in D and
+	inverse[a] is in D
+
+#### FIELD AXIOMS ########################################################
+
+field_orig: axiom for all a,b,c,				(
+	a+(b+c) = (a+b)+c								) and (
+	a*(b*c) = (a*b)*c								) and (
+	a+b = b+a												) and (
+	a*b = b*a												) and (
+	a+0 = a													) and (
+	a*1 = a													) and (
+#	a+(-a) = 0											) and (
+	if a ≠ 0 then a*inverse[a] = 1	) and (
+	a*(b+c) = (a*b)+(a*c)						) and (
+	0 != 1													)      
+
+# apparently necessary in the absence of additive inverses
+cancellation: axiom for all a,b,c, if a+c = b+c then a=b
+
+# we include this axiom of a real closed field
+square_root_exists: axiom for all n in D, for some m in D, m*m = n
+
+#### ORDER AXIOMS ########################################################
+
+ineq_def: axiom for all m,n, m < n iff for some d in D such that d != 0, m+d = n
+
+connex: axiom for all a,b, a < b or a = b or b < a
+
+nonnegative: axiom there is no n such that n < 0
+
+#### PEANO AXIOMS ########################################################
+
+0_in_N: axiom 0 is in N
+
+nat_closed: axiom for all n in N, n+1 is in N
+
+induction: axiom for all P,
+	if 	P[0] and
+			for all n in N, P[n] implies P[n+1]
+	then
+			for all n in N, P[n]
+
+nat_in_D: axiom for all n in N, n is in D # TO DO: move me?
+
+#### DEFINITIONS #########################################################
+
+2_def: let 2 = 1+1
+
+div_def_orig: define / such that for all a,b in D,
+	a/b = a * inverse[b]
+		by comprehension_eq2
+
+rational_def: define rational such that for all n in D,
+	rational[n] iff for some a,b in N such that b != 0, n = a/b
+		by comprehension
+
+rational_irrational: define irrational such that for all n in D,
+	irrational[n] iff not rational[n]
+		by comprehension
+
+even_def: define even such that for all n in N,
+	n is even iff for some k in N, n = 2*k
+		by comprehension_nat
+
+odd_def: define odd such that for all n in N,
+	n is odd iff for some k in N, n = (2*k)+1
+		by comprehension_nat
+
+divides_def: define divides such that for all a,b in D,
+	divides[a,b] iff (a is in N and for some c in N, a*c = b)
+		by comprehension2
+
+coprime_divides: define coprime such that for all a,b in D,
+	(coprime[a,b] iff there is no c in D such that c > 1 and
+			divides[c,a] and divides[c,b])
+		by comprehension2
+
+simplified_def: define simplified such that for all a,b in D,
+	simplified[a,b] iff
+		(b != 0 and for all c,d in N such that a/b = c/d and d != 0, a <= c and b <= d)
+			by comprehension2
+
+##########################################################################
+
+0_in_D: 0 is in D
+	by 0_in_N,nat_in_D
+
+1_in_N: 1 is in N
+	by 0_in_N,nat_closed,field_orig
+
+1_in_D: 1 is in D
+	by 1_in_N,nat_in_D
+
+2_in_N: 2 is in N
+	by 0_in_N,nat_closed,field_orig,2_def
+
+2_in_D: 2 is in D
+	by 2_in_N,nat_in_D
+
+closure: for all a,b in D,
+	a+b is in D and
+	a*b is in D and
+	if b != 0 then a/b is in D
+		by closure_orig,div_def_orig
+
+domain:
+	0 is in D and
+	1 is in D and
+	2 is in D and
+	0 is in N and
+	1 is in N and
+	2 is in N and
+	(for all n in N, n is in D and n+1 is in N) and
+	for all a,b in D,
+		a+b is in D and
+		a*b is in D and
+		if b != 0 then a/b is in D
+by 0_in_N,1_in_N,2_in_N,closure,nat_in_D,nat_closed
+
+field: for all a,b,c in D,				(
+	a+(b+c) = (a+b)+c					) and (
+	a*(b*c) = (a*b)*c					) and (
+	a+b = b+a									) and (
+	a*b = b*a									) and (
+	a+0 = a										) and (
+	a*1 = a										) and (
+	if a ≠ 0 then a*(1/a)=1		) and (
+	a*(b+c) = (a*b)+(a*c)			) and (
+	0 != 1										)
+		by field_orig,div_def_orig,1_in_D
+
+div_def: for all a,b in D,
+	a/b = a*(1/b)
+		by field_orig,div_def_orig,1_in_D
+
+1_less_2: 1 < 2
+	by ineq_def,2_def,field,1_in_D
+
+2_not_0: 2 != 0
+	by nonnegative,2_def,field,ineq_def,1_in_D
+
+greater_eq_one_zero: for all n in D, if n >= 1 then n != 0
+	by nonnegative,field
+
+double: for all a in D, a+a = 2*a
+	by 2_def,field,2_in_D,1_in_D
+
+irreflexive: for all a in D, not (a < a)
+	by field,ineq_def,cancellation,0_in_D
+
+transitive: for all a,b,c in D,
+	if a < b and b < c then a < c
+proof
+	tr0: take any a,b,c in D such that a < b and b < c
+		tr1: for some d in D such that d != 0, a+d = b by ineq_def,tr0
+		tr2: for some e in D such that e != 0, b+e = c by ineq_def,tr0
+		a+(d+e) = c by field,tr1,tr2
+		d+e != 0 by tr2,nonnegative,ineq_def
+		so a < c by ineq_def,closure
+	end
+end
+
+total_order: for all a,b,c in D,
+	(not (a < a)) 									and		# irreflexive
+	(if a < b and b < c then a < c) and 	# transitive
+	(a < b or a = b or b < a)							# connex
+		by irreflexive,transitive,connex
+
+0_mult: for all a in D, 0*a = 0
+proof
+	take any a in D
+		(0+0)*a = 0*a by field,0_in_D
+		so 0*a+0*a = 0*a by field,0_in_D
+		0*a = 0+0*a by field,0_in_D,closure
+		so 0*a = 0 by cancellation
+	end
+end
+
+mult_not_0: for all a,b in D such that a != 0 and b != 0, a*b != 0
+	by 1_in_D,closure,field,0_mult
+
+inequality_ops: for all a,b,c in D,
+	(if a < b, then a+c < b+c) 						and
+	(if a < b and c > 0, then a*c < b*c)
+proof
+	take any a,b,c in D
+		suppose a < b
+			so 2: for some d in D such that d != 0, a+d = b by ineq_def
+			a+c+d = b+c by field,2
+			so a+c < b+c by ineq_def,2
+		end
+		io0: suppose a < b and c > 0
+			io1: for some d in D such that d != 0, b = a+d by ineq_def,io0
+			c != 0 by total_order,io0
+			so d*c != 0 by io1,mult_not_0
+			so a*c < (a*c)+(d*c) by ineq_def,closure
+			so a*c < (a+d)*c by field,io1
+			so a*c < b*c by io1
+		end
+	end
+end
+
+square_def: define ^ such that for all n in D, n^2 = n*n
+proof
+	for some P, for all n,m in D, P[n,m] = n*n by comprehension_eq2
+	so thesis by 2_in_D
+end
+
+squares_equal: for all x,y in D, x^2 = y^2 implies x = y
+proof
+	take any x,y in D such that x^2 = y^2
+		se0: so x*x = y*y by square_def
+		if x = 0 or y = 0 then x = y by se0,mult_not_0,0_mult
+		suppose x < y and x > 0 and y > 0
+			so x*x < y*x and x*y < y*y by inequality_ops
+			so x*x < y*y by total_order,field,closure
+			so contradiction by se0,total_order,closure
+		end
+		suppose x > y and x > 0 and y > 0
+			so x*x > y*x and x*y > y*y by inequality_ops
+			so x*x > y*y by total_order,field,closure
+			so contradiction by se0,total_order,closure
+		end
+		so x = y by total_order,nonnegative,0_in_D
+	end
+end
+
+√_square: define √ such that for all n,k in D, √n = k iff k^2 = n
+proof
+	for all n,x,y in D, (x^2 = n and y^2 = n) implies x = y
+		by squares_equal
+	so thesis by comprehension_eq_partial
+end
+
+nat_reduce: for all n in N such that n != 0, for some m in N, n = m+1
+proof
+	P_defr: for some P, for all n in N, P[n] iff (n = 0 or for some m in N, n = m+1)
+		by comprehension_nat
+	
+	P[0] by P_defr,0_in_N
+	for all n in N, P[n+1] by P_defr,nat_closed
+	so for all n in N, P[n] by induction
+	so thesis by P_defr
+end
+
+even_or_odd: for all n in N, n is even or n is odd
+proof
+	P_defeo: for some P, for all n in N, P[n] iff (n is even or n is odd)
+		by comprehension_nat
+
+	0 is even by 0_in_N,even_def,0_mult,field,2_in_D,0_in_D
+	so P[0] by 0_in_N,P_defeo
+	take any n in N such that P[n]
+		if n is even, then n+1 is odd by even_def,odd_def,nat_closed
+		suppose n is odd
+			so for some k in N, n = (2*k)+1 by odd_def
+			so n+1 = (k+1)+(k+1) by double,domain,field
+			so n+1 = 2*(k+1) by double,domain
+			so n+1 is even by even_def,domain
+		end
+		so P[n+1] by P_defeo,nat_closed
+	end
+	so thesis by induction,P_defeo
+end
+
+not_even_and_odd: for all n in N, not (n is even and n is odd)
+proof
+	P_defneo: for some P, for all n in N, P[n] iff not (n is even and n is odd)
+		by comprehension_nat
+
+	0 is not odd by odd_def,ineq_def,field,nonnegative,domain
+	so P[0] by P_defneo,0_in_N
+
+	neo0: take any n in N such that P[n] and not P[n+1]
+
+		n is even
+		proof
+			for some k in N, n+1 = (2*k)+1 by neo0,P_defneo,odd_def,nat_closed
+			so thesis by even_def,cancellation
+		end
+
+		n is odd
+		proof
+			neo1: for some k in N, n+1 = 2*k by neo0,P_defneo,even_def,nat_closed
+			2*k != 0 by neo1,nonnegative,field,ineq_def,domain
+			so k != 0 by field,domain,0_mult
+			so for some l in N, k = l+1 by nat_reduce
+			so n+1 = 2*(l+1) by neo1
+			so n+1 = l+1+l+1 by double,field,domain
+			so n = l+1+l by cancellation
+			so n = (2*l)+1 by double,field,domain
+			so thesis by odd_def
+		end
+
+		so contradiction by neo0,P_defneo
+	end
+
+	so thesis by induction,P_defneo
+end
+
+even_odd: for all n in N, n is even iff n is not odd
+	by even_or_odd, not_even_and_odd
+
+nat_closed_add: for all a,b in N,
+	a+b is in N
+proof
+	P_def: for some P, for all a in N, P[a] iff for all b in N, a+b is in N
+		by comprehension_nat
+
+	P[0] by P_def,field,domain
+	nca0: take any a in N such that P[a]
+		take any b in N
+			a+b is in N by P_def,nca0
+			so (a+b)+1 is in N by nat_closed
+			so (a+1)+b is in N by field,domain
+		end
+		so P[a+1] by P_def,nat_closed
+	end
+	so for all a in N, P[a] by induction
+	so thesis by P_def
+end
+
+nat_closed_mult: for all a,b in N,
+	a*b is in N
+proof
+	P_defm: for some P, for all a in N, P[a] iff for all b in N, a*b is in N
+		by comprehension_nat
+
+	P[0] by P_defm,0_mult,domain
+	ncm0: take any a in N such that P[a]
+		take any b in N
+			a*b is in N by P_defm,ncm0
+			so (a*b)+b is in N by nat_closed_add
+			now
+				1: let x = (a*b)+b
+				a*b = b*a by field,domain
+				so x = b*(a+1) by field,domain,ncm0,1
+				b is in D and a+1 is in D by domain
+				so x = (a+1)*b by field
+			end
+			so (a+1)*b is in N by 1
+		end
+		so P[a+1] by P_defm,nat_closed
+	end
+	so for all a in N, P[a] by induction
+	so thesis by P_defm
+end
+
+nat_closed_sub: for all a,b in N, for all c in D,
+	if a = b+c then c is in N
+proof
+	P_defs: for some P, for all a in N, P[a] iff for all b in N, for all c in D,
+		if a = b+c then c is in N
+			by comprehension_nat
+
+	P[0] by P_defs,nonnegative,ineq_def,domain
+	ncs0: take any a in N such that P[a]
+		ncs1: take any b in N and c in D such that a+1 = b+c
+			b = 0 implies c is in N by ncs1,field,domain
+			suppose b != 0
+				so for some d in N, b=d+1 by nat_reduce
+				so a+1 = d+c+1 by ncs1,field,domain
+				so a = d+c by cancellation
+				so c is in N by P_defs,ncs0
+			end
+		end
+		so P[a+1] by P_defs,nat_closed
+	end
+	so for all a in N, P[a] by induction
+	so thesis by P_defs
+end
+
+nat_ineq_2: for all m,n in N, (m < n+1) iff (m < n or m = n)
+proof
+	take any m,n in N
+		suppose m < n+1
+			ni1: so for some d in D such that d != 0, m+d = n+1 by ineq_def
+			d is in N by nat_closed_sub,ni1,domain
+			so for some c in N, d = c+1 by nat_reduce,ni1
+			so m+c+1 = n+1 by ni1,field,domain
+			so m+c = n by cancellation
+			so m < n or m = n by ineq_def,field,domain
+		end
+		if m = n, then m < n+1 by ineq_def,field,domain
+		suppose m < n
+			so for some d in D such that d != 0, n = m+d by ineq_def
+			d+1 != 0 by field,ineq_def,nonnegative,domain
+			so m < n+1 by ineq_def,field,domain
+		end
+	end
+end
+
+nat_greater_eq_0: for all n in N, n >= 0
+	by nonnegative,total_order,domain
+
+nat_if_not_0: for all n in N, if n != 0 then n >= 1
+proof
+	take any n in N such that n != 0
+		so n > 0 by nat_greater_eq_0
+		so n >= 1 by inequality_ops,nat_ineq_2,field,domain
+	end
+end
+
+ineq_cancel: for all a,b,c in D,
+	if a+c < b+c then a < b
+proof
+	take 1: any a,b,c in D such that a+c < b+c
+		ic1: for some d in D such that d != 0, a+c+d = b+c by ineq_def,1
+		(a+d)+c = b+c by ic1,field
+		so a+d = b by cancellation
+		so a < b by ic1,ineq_def
+	end
+end
+
+mult_greater: for all a,b in D such that a != 0 and b > 1,
+	a*b > a
+proof
+	mg0: take any a,b in D such that a != 0 and b > 1
+		suppose a > 0
+			so b*a > 1*a by inequality_ops,mg0,domain
+			so a*b > a by field,domain
+		end
+	end
+	so thesis by total_order,nonnegative,domain
+end
+
+fraction_vs_one: for all a,b in D such that b != 0,
+	(if a < b then a/b < 1) and
+	(if a = b then a/b = 1) and
+	(if a > b then a/b > 1)
+proof
+	take any a,b in D with b != 0
+		1/b != 0 by total_order,field,domain,mult_not_0
+		fv1: so 1/b > 0 by nonnegative,total_order,domain
+		suppose a < b
+			so a*(1/b) < b*(1/b) by inequality_ops,fv1,domain
+			so a/b < 1 by field,div_def
+		end
+		a = b implies a/b = 1 by field,div_def
+		suppose a > b
+			so a*(1/b) > b*(1/b) by inequality_ops,fv1,domain
+			so a/b > 1 by field,div_def
+		end
+	end
+end
+
+mult_drop: for all a,b,c in D such that a != 0, a*b = a*c implies b=c
+proof
+	take 1: any a,b,c in D such that a != 0
+		suppose a*b = a*c
+			so (1/a)*a*b = (1/a)*a*c by 1,field,domain
+			now
+				1/a is in D by 1,domain
+				so (1/a)*a = 1 by 1,field
+			end
+			so b=c by field,domain
+		end
+	end
+end
+
+mult_denom: for all a,b,c in D such that c != 0,
+	a = b/c iff a*c = b
+proof
+	take 1: any a,b,c in D such that c != 0
+		suppose a = b/c
+			so a*c = (b/c)*c
+			so a*c = b*(1/c)*c by div_def
+			now
+				1/c is in D by domain,1
+				so c*(1/c) = (1/c)*c by field
+			end
+			so a*c = b*(c*(1/c)) by field,domain,1
+			so a*c = b by field,1
+		end
+		suppose a*c = b
+			so a = b/c by domain,field,div_def,1
+		end
+	end
+end
+
+mult_div_commute: for all a,b,c in D such that c != 0,
+	(a*b)/c = (a/c)*b
+proof
+	take any a,b,c in D with c != 0
+		(a*b)/c = a*b*(1/c) by domain,div_def
+		so (a*b)/c = a*(b*(1/c)) by domain,field
+		for all x,y in D, x*y = y*x by field
+		so (a*b)/c = a*((1/c)*b) by domain
+		for all x,y,z in D, (x*y)*z = x*(y*z) by field
+		so (a*b)/c = a*(1/c)*b by domain
+		so (a*b)/c = (a/c)*b by div_def
+	end
+end
+
+mult_helper: (
+	for all a,b,c in D such that c != 0, a = b/c iff a*c = b	) and (
+	for all a,b,c in D such that c != 0, (a*b)/c = a*(b/c)   ) and (
+	for all a,b,c in D such that c != 0, (a*b)/c = (a/c)*b		) and (
+	for all a,b,c in D,	a*b = b*a and a*c = c*a and b*c = c*b )
+proof
+	for all a,b,c in D such that c != 0, a = b/c iff a*c = b by mult_denom
+	take any a,b,c in D with c != 0
+		(a*b)/c = (a*b)*(1/c) by div_def,domain
+		so (a*b)/c = a*(b/c) by div_def,domain,field
+	end
+	for all a,b,c in D such that c != 0, (a*b)/c = (a/c)*b by mult_div_commute
+	for all a,b,c in D, a*b = b*a and a*c = c*a and b*c = c*b by field
+end
+
+num_den_less: for all a,b,c,d in D such that (a != 0 or c != 0) and b != 0 and d != 0,
+	if a/b = c/d then (a < c iff b < d)
+proof
+	nd0: take any a,b,c,d in D such that (a != 0 or c != 0) and b != 0 and d != 0 and a/b = c/d
+		a = 0 implies c = 0 by nd0,mult_denom,0_mult
+		c = 0 implies a = 0 by nd0,mult_denom,0_mult
+	end
+	nd1: take any a,b,c,d in D with a != 0 and b != 0 and c != 0 and d != 0 such that a/b = c/d
+		now
+			a*d = b*c by nd1,domain,mult_helper
+			so b*(c/a) = d by domain,mult_helper
+			a < c implies c/a > 1 by fraction_vs_one
+			so a < c implies b < d by mult_greater,domain
+		end
+		now
+			a*(d/b) = c by nd1,domain,mult_helper
+			b < d implies d/b > 1 by fraction_vs_one
+			so b < d implies a < c by mult_greater,domain
+		end
+	end
+end
+
+odd_square: for all n in N, if n is odd then n*n is odd
+proof
+	take any n in N such that n is odd
+		so for some k in N, n = (2*k)+1 by odd_def
+		os1: let x = n*n
+		os2: let y = 2*k
+		os3: y is in D by os2,domain
+		os4: for all a,b,c in D, a*(b+c) = (a*b)+(a*c) by field
+		so x = (y+1)*(y+1) by os1,os2
+		so x = (y+1)*y + (y+1)*1 by domain,os3,os4
+		so x = y*(y+1) + (y+1) by domain,os3,field
+		so x = (y*y)+(y*1) + (y+1) by domain,os3,os4
+		so x = y*y + (y+(y+1)) by field,os3,domain
+		so x = y*y + 2*y + 1 by field,os3,domain,double
+		so x = y*(y+2) + 1 by field,os3,domain
+		so x = (2*k)*(y+2) + 1 by os2
+		so x = 2*(k*(y+2)) + 1 by field,os3,domain
+		so x is odd by odd_def,domain,nat_closed_mult,nat_closed_add,os2
+		so n*n is odd by os1
+	end
+end
+
+strong_induction_from_0: for all P,
+	if 	for all n in N,
+				(for all m in N such that m < n, P[m]) implies P[n]
+	then
+			for all n in N, P[n]
+proof
+	take any P
+
+		Q_defx: for some Q, for all n in N, Q[n] iff for all m in N such that m < n, P[m]
+			by comprehension_nat
+
+		ssi0: suppose for all n in N,
+					(for all m in N such that m < n, P[m]) implies P[n]
+
+			Q[0] by Q_defx,0_in_N,nonnegative
+
+			take any n in N such that Q[n]
+				ssi2: so for all m in N such that m < n, P[m] by Q_defx
+				P[n] by ssi0,ssi2
+				so for all m in N such that m < n+1, P[m] by nat_ineq_2,ssi2
+				so Q[n+1] by Q_defx,nat_closed_add,1_in_N
+			end
+
+			so for all n in N, Q[n] by induction
+			so for all n in N, P[n] by ssi0,Q_defx
+		end
+	end
+end
+
+strong_induction: for all P, for all c in N,
+	if 	for all n in N such that n >= c,
+				(for all m in N such that m >= c and m < n, P[m]) implies P[n]
+	then
+			for all n in N such that n >= c, P[n]
+proof
+	take any P
+		take any c in N
+			si1: suppose for all n in N such that n >= c,
+					(for all m in N such that m >= c and m < n, P[m]) implies P[n]
+				Q_def: for some Q, for all n in N, Q[n] iff P[n+c] by comprehension_nat
+				take any n in N such that for all m in N such that m < n, Q[m]
+					so for all m in N such that m < n, P[m+c] by Q_def
+					so si3: for all b in N such that b+c >= c and b+c < n+c, P[b+c]
+						by ineq_cancel,domain
+					take si4: any m in N such that m >= c and m < n+c
+						if m = c then c+0 = m by field,domain
+						if m != c then for some b in N, c+b = m by ineq_def,nat_closed_sub,si4
+						so for some b in N, c+b = m by domain
+						so P[m] by field,domain,si3,si4
+					end
+					now
+						n >= 0 by nat_greater_eq_0
+						so 0+c <= n+c by inequality_ops,domain
+						so n+c >= c by field,domain
+					end
+					so P[n+c] by si1,nat_closed_add
+					so Q[n] by Q_def
+				end
+				so for all n in N, Q[n] by strong_induction_from_0
+				so si5: for all b in N, P[b+c] by Q_def
+				take any n in N such that n >= c
+					so for some b in N, c+b = n by ineq_def,domain,field,nat_closed_sub
+					so P[n] by field,domain,si5
+				end
+			end
+		end
+	end
+end
+
+rational_simp: for all n in D, rational[n] implies
+	for some a,b in N such that b != 0,
+		n = a/b and simplified[a,b]
+proof
+	P_def0: for some P, for all b in N,
+		P[b] iff for all a in N, for some c,d in N, a/b = c/d and simplified[c,d]
+			by comprehension_nat
+	rs0: take any b in N such that b >= 1
+		rs1: suppose for all m in N such that m >= 1 and m < b, P[m]
+			take any a in N such that not simplified[a,b]
+				a is in D and b is in D and b != 0 by rs0,greater_eq_one_zero,domain
+				so for some c,d in N with d != 0 such that a/b = c/d, not (a <= c and b <= d)
+					by simplified_def
+				rs3: so for some c,d in N with d != 0 such that a/b = c/d, c < a or d < b
+					by total_order,domain
+				if a = 0 then d < b by nonnegative,rs3
+				if a != 0 then d < b by num_den_less,rs3,rs0,greater_eq_one_zero,domain
+				so P[d] by rs1,nat_if_not_0
+				so for some e,f in N, c/d = e/f and simplified[e,f] by P_def0
+				so e is in N and f is in N and a/b = e/f and simplified[e,f] by rs3
+			end
+			so for all a in N, for some c,d in N, a/b = c/d and simplified[c,d]
+			so P[b] by P_def0
+		end
+	end
+	t1: so for all b in N such that b >= 1, P[b] by strong_induction,1_in_N
+	take any n in D such that rational[n]
+		so for some a,b in N with b != 0, n = a/b by rational_def
+		now
+			P[b] by t1,nat_if_not_0
+			so for all a in N, for some c,d in N, a/b = c/d and simplified[c,d]
+				by P_def0
+		end
+		so for some c,d in N with d != 0, n = c/d and simplified[c,d]
+			by simplified_def,domain
+	end
+end
+
+product_inverse: for all x,y in D such that x != 0 and y != 0,
+	(1/x)*(1/y) = 1/(x*y)
+proof
+	take any x,y in D with x != 0 and y != 0
+		pi1: 1/x is in D and 1/y is in D and x*y is in D by domain
+		(1/x)*x = 1 and (1/y)*y = 1 by field,pi1
+		so (1/x)*(1/y)*(x*y) = 1 by field,pi1
+		x*y != 0 by mult_not_0
+		so (1/x)*(1/y) = 1/(x*y) by mult_denom,domain
+	end
+end
+
+frac_square: for all a,b in D such that b != 0, (a/b)^2 = (a^2)/(b^2)
+proof
+	take any a,b in D with b != 0
+		x_def: let x = (a/b)*(a/b)
+		x = a*(1/b)*(a*(1/b)) by div_def,x_def
+		so x = a*(1/b)*a*(1/b) by field,domain
+		1/b is in D by domain
+		so x = a*a*(1/b)*(1/b) by field
+		so x = a*a*((1/b)*(1/b)) by field,domain
+		so x = (a*a)/(b*b) by div_def,product_inverse,domain
+		so x = (a^2)/(b^2) by square_def
+	end
+	so thesis by x_def,square_def,domain
+end
+
+euclid_7_17: for all a,b,c in D such that b != 0 and c != 0,
+	a/b = (a*c)/(b*c)
+proof
+	take any a,b,c in D with b != 0 and c != 0
+		types: 1/b is in D and 1/c is in D by domain
+		x_def: let x = (a*c)/(b*c)
+		x = (a*c)*(1/(b*c)) by div_def,x_def,domain
+		so x = (a*c)*((1/b)*(1/c)) by product_inverse
+		so x = (a*c)*((1/c)*(1/b)) by field,types
+		so x = a*(c*(1/c))*(1/b) by field,domain,types
+		so x = a*(1/b) by field
+		so (a*c)/(b*c) = a/b by div_def,x_def
+	end
+end
+
+simp_coprime: for all a,b in D, simplified[a,b] implies coprime[a,b]
+proof
+	sc0: take any a,b in D such that simplified[a,b] and not coprime[a,b]
+		sc1: for some m in D such that m > 1, divides[m,a] and divides[m,b]
+			by coprime_divides,sc0
+		sc2a: for some c in N, m*c = a by sc1,divides_def
+		sc2b: for some d in N, m*d = b by sc1,divides_def
+		sc3: b != 0 and m != 0 by simplified_def,sc0,sc2b,0_mult,domain
+		sc4: d != 0 by sc2b,0_mult,field,domain,sc3
+		(c*m)/(d*m) = c/d by euclid_7_17,sc3,sc4,domain
+		so (m*c)/(m*d) = c/d by field,domain
+		so c/d = a/b by sc2a,sc2b
+		not(b <= d) by total_order,domain,sc2b,field,mult_greater,sc4,sc1
+		so contradiction by sc0,simplified_def,sc4
+	end
+end
+
+square_root_2: √2 is irrational
+proof
+	0: √2 is in D by square_root_exists,square_def,√_square,domain
+	suppose √2 is rational
+		1: so for some a,b in N with b != 0, √2 = a/b and simplified[a,b]
+			by rational_simp,0
+
+		2 = (a/b)^2 by 1,√_square,domain
+		so 2 = (a*a)/(b*b) by frac_square,square_def,domain
+		2: so 2*(b*b) = a*a by mult_denom,domain,mult_not_0
+
+		even[a*a] by even_def,2,nat_closed_mult
+		3: so even[a] by odd_square,even_odd,nat_closed_mult
+
+		for some c in N, 2*c = a by even_def,3
+		so (2*c)*(2*c) = a*a
+		so 2*(2*(c*c)) = 2*(b*b) by field,domain,2
+		so 2*(c*c) = b*b by mult_drop,2_not_0,domain
+		so even[b*b] by even_def,nat_closed_mult
+		so even[b] by odd_square,even_odd,nat_closed_mult
+
+		so divides[2,a] and divides[2,b] by 3,even_def,divides_def,domain
+		so not simplified[a,b] by simp_coprime,coprime_divides,1_less_2,domain
+		so contradiction by 1
+	end
+	so thesis by rational_irrational,0
+end
