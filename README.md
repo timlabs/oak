@@ -9,16 +9,27 @@ For downloads and more information, including a tutorial, go to [oakproof.org](h
   * [Ruby programming language](http://ruby-lang.org/) version ≥ 2.0
   * [E theorem prover](http://eprover.org/) version ≥ 2.0.  E is included in the prepackaged Oak downloads available at [oakproof.org](http://oakproof.org/).  If you prefer to install E yourself, be sure to add E's PROVER directory to your system's PATH variable so that Oak will detect it.
 
+## Editor support
+
+  * The [Atom](https://atom.io/) text editor has a package `language-oak` which provides syntax highlighting, automatic indentation, and comment toggling for Oak.
+
 ## Usage
 
 Oak is a command-line application which takes a proof file as input, and tells you whether or not the proof is correct.  See [oakproof.org](http://oakproof.org) for more information.
 
 ```bash
-oak [-v] [filename]
+oak [-v] [-r] [filename]
     -v  print the version number of Oak
+    -r  check for unneeded citations
 ```
 
 ## Version history
+
+### v0.3 - ????-??-??
+* add "tie-ins" for variables
+* `-r` option to check for unneeded citations
+* new examples: `kalam.oak` and `square_root_two.oak`
+* print notice when `exit` is called
 
 ### v0.2 - 2019-08-08
 * performance improvement from internal reworking of scopes/bindings
