@@ -4,7 +4,6 @@ require_relative 'schema.rb'
 
 class Proof
 	class Line < Content
-		attr_accessor :node
 		attr_reader :label, :filename, :fileline
 
 		def initialize content, reason, suppositions, id
@@ -305,12 +304,8 @@ class Proof
 	def add content, reason, id
 		line = Line.new content, reason, @active_suppositions.dup, id
 		unless line.schema?
-			if line.binding.definition?
-				line.node = @bindings.begin_block line
-			else
-				@bindings.begin_block if reason == :axiom or reason == :supposition
-				line.node = @bindings.admit line
-			end
+			@bindings.begin_block if reason == :axiom or reason == :supposition
+			@bindings.admit line
 		end
 		label = id[:label]
     if @line_numbers_by_label[label]

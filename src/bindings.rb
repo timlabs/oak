@@ -1,3 +1,27 @@
+=begin
+
+This class supports "scopes" and "blocks".
+
+Scopes are tracked automatically, while blocks are set manually.
+
+When a variable is bound, its scope begins.  Whenever it is used, its scope is
+extended through that point.  Its scope can end anywhere after its last use, as
+long as it is (1) before the block it was bound in ends, and (2) before it is
+rebound.
+
+Blocks are set with begin_block and end_block.
+
+Scopes cannot interleave blocks.  That is, a scope cannot begin outside a block
+and end inside it, or begin inside a block and end outside it.
+
+This guarantees that if you bind a variable outside a block, and extend its
+scope into the block (by using it in the block), it will "mean" the same thing
+for the whole block.
+
+Definitions are handled automatically with internal blocks.
+
+=end
+
 class Proof
 
 class Bindings
@@ -32,6 +56,7 @@ class Bindings
 		@unbound = Set[]
 		@root = Node.new nil, nil
 		@blocks = [@root]
+		@node_for_line = Hash.new {raise}
 	end
 
 	def admit line
@@ -59,13 +84,12 @@ class Bindings
 			end
 		}
 
-		node
+		@node_for_line[line] = node if line
+		@blocks << node if not line or line.binding.definition?
 	end
 
-	def begin_block line = nil
-		node = admit line
-		@blocks << node
-		node
+	def begin_block
+		admit nil
 	end
 
 	def check_admission content
@@ -87,7 +111,6 @@ class Bindings
 			begin
 				to_unbind = variables_for_unbinding @bound[variable]
 			rescue ProofException
-#					raise ProofException, "cannot bind #{variable}: previous binding would interleave active supposition"
 				raise ProofException, "binding of variable #{variable} causes scope interleaving"
 			end
 			unless (uses & to_unbind).empty?
@@ -98,7 +121,7 @@ class Bindings
 	end
 
 	def cited_tree cited_lines, uses
-		cited_nodes = cited_lines.collect {|line| line.node}
+		cited_nodes = cited_lines.collect {|line| @node_for_line[line]}
 		if uses # enable tie-ins
 			uses_nodes = uses.collect {|variable| @bound[variable]}.compact
 			ancestors = get_ancestors(cited_nodes + uses_nodes)
