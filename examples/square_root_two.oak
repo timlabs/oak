@@ -1,6 +1,15 @@
-#### INTENDED DOMAIN #####################################################
+/#
 
-# Our intended domain D is the nonnegative reals.
+A proof from first principles that √2 is irrational.
+
+We first axiomatize two domains, the naturals N and the nonnegative reals D.
+After some definitions, we build up a series of results, culminating in the √2
+theorem.
+
+Ideally, this should be split into multiple files so that other proofs can make
+better use of it.
+
+#/
 
 #### COMPREHENSION AXIOMS ################################################
 
@@ -62,7 +71,7 @@ connex: axiom for all a,b, a < b or a = b or b < a
 
 nonnegative: axiom there is no n such that n < 0
 
-#### PEANO AXIOMS ########################################################
+#### NATURAL NUMBER AXIOMS ###############################################
 
 0_in_N: axiom 0 is in N
 
@@ -74,7 +83,7 @@ induction: axiom for all P,
 	then
 			for all n in N, P[n]
 
-nat_in_D: axiom for all n in N, n is in D # TO DO: move me?
+nat_in_D: axiom for all n in N, n is in D
 
 #### DEFINITIONS #########################################################
 
