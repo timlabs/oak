@@ -5,7 +5,7 @@ def check_schema_format tree, state = :top, vars = []
 	case state
 		when :top
 			unless tree.operator  == :for_all_meta
-				raise ProofException, 'schema must begin with "for all meta"'
+				raise ParseException, 'schema must begin with "for all meta"'
 			end
 			vars << tree.subtrees[0].operator
 			check_schema_format tree.subtrees[1], :meta, vars
