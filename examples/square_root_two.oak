@@ -762,28 +762,28 @@ end
 
 square_root_2: √2 is irrational
 proof
-	0: √2 is in D by square_root_exists,square_def,√_square,domain
+	1: √2 is in D by square_root_exists,square_def,√_square,domain
 	suppose √2 is rational
-		1: so for some a,b in N with b != 0, √2 = a/b and simplified[a,b]
-			by rational_simp,0
+		2: so for some a,b in N with b != 0, √2 = a/b and simplified[a,b]
+			by rational_simp,1
 
-		2 = (a/b)^2 by 1,√_square,domain
+		2 = (a/b)^2 by 2,√_square,domain
 		so 2 = (a*a)/(b*b) by frac_square,square_def,domain
-		2: so 2*(b*b) = a*a by mult_denom,domain,mult_not_0
+		3: so 2*(b*b) = a*a by mult_denom,domain,mult_not_0
 
-		even[a*a] by even_def,2,nat_closed_mult
-		3: so even[a] by odd_square,even_odd,nat_closed_mult
+		even[a*a] by even_def,3,nat_closed_mult
+		4: so even[a] by odd_square,even_odd,nat_closed_mult
 
-		for some c in N, 2*c = a by even_def,3
+		for some c in N, 2*c = a by even_def,4
 		so (2*c)*(2*c) = a*a
-		so 2*(2*(c*c)) = 2*(b*b) by field,domain,2
+		so 2*(2*(c*c)) = 2*(b*b) by field,domain,3
 		so 2*(c*c) = b*b by mult_drop,2_not_0,domain
 		so even[b*b] by even_def,nat_closed_mult
 		so even[b] by odd_square,even_odd,nat_closed_mult
 
-		so divides[2,a] and divides[2,b] by 3,even_def,divides_def,domain
+		so divides[2,a] and divides[2,b] by 4,even_def,divides_def,domain
 		so not simplified[a,b] by simp_coprime,coprime_divides,1_less_2,domain
-		so contradiction by 1
+		so contradiction by 2
 	end
-	so thesis by rational_irrational,0
+	so thesis by rational_irrational,1
 end
