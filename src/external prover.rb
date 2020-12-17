@@ -40,7 +40,7 @@ def valid_e? tree
 		# settings << '-U 1900'
 		# settings << '--generated-limit=2400'
 
-		settings << '--tb-insert-limit=60000'
+		settings << '--tb-insert-limit=80000'
 		settings << '-m 128' # memory limit for safety
 		settings << '--detsort-rw --detsort-new' # make it deterministic
 
