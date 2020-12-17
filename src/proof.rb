@@ -56,7 +56,10 @@ class Proof
 					wrapper.print "exit at line #{line_number}: skipping remaining lines"
 					break
 				end
-				content = process_content content, proof.theses[-1] if content.is_a? Content
+				if content.is_a? Content
+					is_schema = [:assume_schema, :axiom_schema].include? action
+					content = process_content content, proof.theses[-1], is_schema
+				end
 				# puts "content for line #{fileline} is: #{content.inspect}"
 				id = {:label => label, :filename => filename, :fileline => fileline}
 				result = case action
@@ -106,8 +109,12 @@ class Proof
 		puts
 	end
 
-	def self.process_content content, thesis
-		if thesis
+	def self.process_content content, thesis, is_schema
+		if is_schema
+			# free_variables and substitute don't work for schemas, so use contains?
+			return content unless content.sentence.contains? 'thesis'
+			raise ProofException, 'cannot use thesis in schema'
+		elsif thesis
 			if content.binding?
 				return content if not content.sentence.free_variables.include? 'thesis'
 				raise ProofException, "cannot use thesis in binding"
