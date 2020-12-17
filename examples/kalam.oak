@@ -1,0 +1,3 @@
+axiom for all x, began_to_exist(x) implies has_a_cause(x)
+axiom began_to_exist(universe)
+so has_a_cause(universe)
