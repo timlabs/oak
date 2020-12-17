@@ -5,8 +5,8 @@ end
 
 require_relative 'proof.rb'
 
-name_version = 'Oak version 0.2'
-issues_url = 'https://github.com/smithtim/oak/issues'
+name_version = 'Oak version 0.2post'
+issues_url = 'https://github.com/timlabs/oak/issues'
 
 if ARGV.delete '-v'
 	puts name_version
