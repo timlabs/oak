@@ -56,7 +56,8 @@ class Proof
 					wrapper.print "exit at line #{line_number}: skipping remaining lines"
 					break
 				end
-				content = process_content content, proof.theses[-1] if content.is_a? Tree
+				content = process_content content, proof.theses[-1] if content.is_a? Content
+				# puts "content for line #{fileline} is: #{content.inspect}"
 				id = {:label => label, :filename => filename, :fileline => fileline}
 				result = case action
 					when :include then
@@ -105,17 +106,23 @@ class Proof
 		puts
 	end
 
-	def self.process_content tree, thesis
+	def self.process_content content, thesis
 		if thesis
-			begin
-				substitute tree, {'thesis' => thesis}
-			rescue SubstituteException => e
-				raise ProofException, "cannot bind variable #{e}: part of thesis"
+			if content.binding?
+				return content if not content.sentence.free_variables.include? 'thesis'
+				raise ProofException, "cannot use thesis in binding"
+			else
+				begin
+					tree = substitute content.sentence, {'thesis' => thesis.sentence}
+				rescue SubstituteException => e
+					raise ProofException, "cannot quantify variable #{e}: part of thesis"
+				end
+				Content.new tree
 			end
-		elsif tree.free_variables.include? 'thesis'
+		elsif content.sentence.free_variables.include? 'thesis'
 			raise ProofException, 'thesis used outside of proof block'
 		else
-			tree
+			content
 		end
 	end
 

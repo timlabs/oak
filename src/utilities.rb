@@ -43,7 +43,16 @@ class WordWrapper
 	end
 end
 
+def conjuncts trees
+	# seems to have no effect on the prover, and is easier to read!
+	trees.collect {|tree|
+		next [tree] unless tree.operator == :and
+		conjuncts tree.subtrees
+	}.flatten
+end
+
 def conjunction_tree trees
+	trees = conjuncts trees
 	return nil if trees.empty?
 	return trees[0] if trees.size == 1
 	Tree.new :and, trees
@@ -103,15 +112,6 @@ def new_name names, prefix = 'x'
 	available.first
 end
 
-def read_defines tree
-	defines = []
-	while tree.operator == :define
-		defines << tree.subtrees[0].operator
-		tree = tree.subtrees[1]
-	end
-	[defines, tree]
-end
-
 def replace_empty_quantifiers tree
   # we assume that the domain is not empty, and replace
   # each occurrence of "there is an x" with a tautology
@@ -128,7 +128,7 @@ end
 def substitute tree, substitution, repeatedly = false
 	# note: expects substitution keys to be strings!
   case tree.operator
-		when :for_all, :for_some, :define
+		when :for_all, :for_some
       variable = tree.subtrees[0].operator
       occurs = false
       occurs = true if substitution.keys.include? variable
@@ -194,4 +194,15 @@ def tree_for_true
 		Tree.new('true', []),
 		Tree.new(:not, [Tree.new('true', [])])
 	]
+end
+
+def bind_variables variables, body, quantifier
+	(variables.reverse & body.free_variables).each {|variable|
+		body = Tree.new quantifier, [Tree.new(variable, []), body]
+	}
+	body
+end
+
+def contains_quantifiers? tree
+	tree.contains?(:for_all) or tree.contains?(:for_some)
 end

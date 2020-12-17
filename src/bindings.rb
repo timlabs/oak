@@ -2,56 +2,75 @@ class Proof
 
 class Bindings
 	class Node
-		attr_reader :variables, :branches, :line
+		attr_reader :line, :branches
 		attr_accessor :parent, :active
 
-		def initialize variables, branches, parent, line
-			@variables, @branches, @parent, @line = variables, branches, parent, line
+		def initialize line, parent
+			@line, @parent = line, parent
+			@branches = []
 			@active = true
+		end
+
+		def to_s prefix = ''
+			type = case
+				when not(@line) then 'block'
+				when @line.binding.definition? then "define block (line #{@line.fileline})"
+				else "line #{@line.fileline}"
+			end
+			variables = @line ? @line.binding.variables : []
+			me = "#{prefix}#{type}, variables #{variables}, active #{@active}"
+			them = branches.collect {|node| node.to_s prefix + '  '}
+			[me, *them].join "\n"
 		end
 	end
 end
 
 class Bindings
-	def initialize lines
+	def initialize
 		@constants = Set[]
 		@bound = {}
 		@unbound = Set[]
-		@root = Node.new [], [], nil, nil
+		@root = Node.new nil, nil
 		@blocks = [@root]
-		@lines = lines
 	end
 
-	def admit sentence, line
+	def admit line
 		# assumes check_admission has already been called!
 
-		defines, sentence = read_defines sentence
-		begin_block defines unless defines.empty?
+		binds = line ? line.binding.variables : []
+		uses = line ? line.sentence.free_variables : []
 
-		binds, body = read_binding sentence
-		uses = sentence.free_variables
-		admit_internal binds, uses, line
+		# unbind any of the variables to be bound which were already bound
+		binds.each {|variable| deactivate_node @bound[variable] if @bound[variable]}
+
+		# add the new bindings
+		node = Node.new line, @blocks.last
+		@blocks.last.branches << node
+		binds.each {|variable| @bound[variable] = node}
+		@unbound.subtract binds
+
+		uses.each {|variable|
+			if @bound[variable]
+				# shift so that this appearance of variable will be in the binding scope
+				shift_under_variable variable
+			else
+				# variable was never bound, so register it as a constant
+				@constants << variable
+			end
+		}
+
+		node
 	end
 
-	def begin_block defines = []
-		node = admit_internal defines, []
+	def begin_block line = nil
+		node = admit line
 		@blocks << node
 		node
 	end
 
-	def check_admission sentence
-		defines, sentence = read_defines sentence
-		binds, body = read_binding sentence
-		uses = sentence.free_variables
-
-		unless (binds & defines).empty?
-			variable = (binds & defines).first
-			raise ProofException, "cannot bind #{variable} inside its own definition"
-		end
-
-		# having checked defines, merge it into binds
-		binds = defines + binds
-		uses = uses - defines
+	def check_admission content
+		binds = content.binding.variables
+		uses = content.sentence.free_variables
 
 		unless (@constants & binds).empty?
 			variable = (@constants & binds).first
@@ -78,131 +97,115 @@ class Bindings
 		}
 	end
 
-	def cited_tree cited_lines
-		cited_tree_internal @root, cited_lines, get_cited_ancestors(cited_lines)
+	def cited_tree cited_lines, uses
+		cited_nodes = cited_lines.collect {|line| line.node}
+		if uses # enable tie-ins
+			uses_nodes = uses.collect {|variable| @bound[variable]}.compact
+			ancestors = get_ancestors(cited_nodes + uses_nodes)
+		else # disable tie-ins
+			uses_nodes = nil
+			ancestors = get_ancestors cited_nodes
+		end
+		# puts "bindings:\n#{to_s}"
+		tree, vars = cited_tree_internal @root, cited_nodes, uses_nodes, ancestors
+		raise "missed tie-ins for #{vars}" unless vars.empty?
+		tree
+	end
+
+	def cited_tree_without_tie_ins cited_lines
+		cited_tree cited_lines, nil
 	end
 
 	def end_block
-		@blocks.pop until @blocks.last.variables.empty? # pop define blocks
+		@blocks.pop while @blocks.last.line # pop define blocks
 		node = @blocks.pop
 		deactivate_node node
 	end
 
-	private ###################################################################
-
-	def admit_internal binds, uses, line = nil
-		# unbind any of the variables to be bound which were already bound
-		binds.each {|variable| deactivate_node @bound[variable] if @bound[variable]}
-
-		# add the new bindings
-		node = Node.new binds, [], @blocks.last, line
-		@blocks.last.branches << node
-		binds.each {|variable| @bound[variable] = node}
-		@unbound.subtract binds
-
-		uses.each {|variable|
-			if @bound[variable]
-				# shift so that this appearance of variable will be in the binding scope
-				shift_under_variable variable
-			else
-				# variable was never bound, so register it as a constant
-				@constants << variable
-			end
-		}
-
-		node
+	def to_s
+		@root.to_s
 	end
 
-  def bind_variables variables, body, quantifier
-		(variables.reverse & body.free_variables).each {|variable|
-			body = Tree.new quantifier, [Tree.new(variable, []), body]
-		}
-		body
-  end
+	private ###################################################################
 
-  def cited_tree_internal scope_tree, cited_lines, cited_ancestors
-		# nothing under it was cited, so there will be nothing to return
-		return nil unless cited_ancestors.include? scope_tree
+  def cited_tree_internal scope_tree, cited_nodes, uses_nodes, ancestors
+		# if nothing under it was cited or used, there will be nothing to return
+		return nil, Set[] unless ancestors.include? scope_tree
 
 		# make trees recursively
-		trees = scope_tree.branches.collect {|branch|
-			cited_tree_internal branch, cited_lines, cited_ancestors
-		}.compact
+		trees, need_tie_ins = [], Set[]
+		scope_tree.branches.reverse_each {|branch| # most recent first, for readability
+			tree, vars = cited_tree_internal branch, cited_nodes, uses_nodes, ancestors
+			trees << tree if tree
+			need_tie_ins.merge vars
+		}
 
-		# top scope
-    return conjunction_tree trees if not scope_tree.parent
-
-		# supposition start block (determined by checking if first branch is the supposition itself)
+		# supposition start block (first branch is the supposition itself)
+		# handled "one level up" because supposition may be wider than its binding
 		if scope_tree.branches[0] and scope_tree.branches[0].line
-			line = @lines[scope_tree.branches[0].line]
+			line = scope_tree.branches[0].line
 			if line.supposition?
-				# if supposition is active, nothing further to do
-				return conjunction_tree trees if scope_tree.active
-
+				raise if scope_tree.line # should be a supposition block
 				tree = conjunction_tree trees
-				return nil if not tree
-				if line.binding?
-			    variables, body = read_binding line.sentence
-					tree = Tree.new :implies, [body, tree] if body
+				if tree and not scope_tree.active # otherwise, handled already
+					variables = line.binding.variables
+					body = line.binding.body_with_tie_in
+					if body
+						tree = Tree.new :implies, [body, tree]
+						need_tie_ins.merge body.free_variables.to_set - @constants
+					end
 					# generalize the binding
 					tree = bind_variables variables, tree, :for_all
-				else
-					tree = Tree.new :implies, [line.sentence, tree]
+					need_tie_ins.subtract variables
 				end
-				return tree
+				return tree, need_tie_ins
 			end
 		end
 
-		# start of proof block (nothing to do)
-		return conjunction_tree trees if not scope_tree.line and scope_tree.variables.empty?
-
-		# start of define block (contains defined variables, without a body)
-		if not scope_tree.line
-			tree = conjunction_tree trees
-			if tree and not scope_tree.active
-				tree = bind_variables scope_tree.variables, tree, :for_some
-			end
-			return tree
-		end
-
-		# normal line
-    line = @lines[scope_tree.line]
-    cited = cited_lines.include? scope_tree.line
-    if line.binding?
-      variables, body = read_binding line.sentence
-      if scope_tree.active
-				trees.unshift body if body and cited # add to start
-				tree = conjunction_tree trees
+		# rest
+		active = scope_tree.active
+		if scope_tree.line
+			line = scope_tree.line
+			if line.supposition? and not active
+				variables = [] # will be handled next level up
 			else
-				tree = conjunction_tree trees
-				return tree if line.supposition? # will be handled next level up
-				if not tree
-					return nil unless body and not line.supposition? and cited
-					tree = bind_variables variables, body, :for_some
-				else
-					tree = Tree.new :and, [body, tree] if body and cited
-					tree = bind_variables variables, tree, :for_some
+		    cited = cited_nodes.include? scope_tree
+				variables = line.binding.variables
+				if cited
+					addition = line.binding.body_with_tie_in
+				elsif uses_nodes # nil (as opposed to empty) means disable tie-ins
+					if (variables.to_set & need_tie_ins).any? or uses_nodes.include? scope_tree
+						addition = line.binding.tie_in
+					end
+				end
+				if addition
+					trees << addition # most recent first, for readability
+					need_tie_ins.merge addition.free_variables.to_set - @constants
 				end
 			end
 		else
-			raise unless trees.empty?
-			tree = line.sentence if cited
-    end
-    tree
+			# one of: proof/axiom/supposition/root block (nothing to do)
+			variables = []
+		end
+		tree = conjunction_tree trees
+		tree = bind_variables variables, tree, :for_some if tree and not active
+		need_tie_ins.subtract variables
+    [tree, need_tie_ins]
 	end
 
 	def deactivate_node n
 		return if not n.active
 		n.branches.each {|branch| deactivate_node branch}
-		n.variables.each {|v| @bound.delete v}
-		@unbound.merge n.variables
+		if n.line
+			n.line.binding.variables.each {|v| @bound.delete v}
+			@unbound.merge n.line.binding.variables
+		end
 		n.active = false
 	end
 
-	def get_cited_ancestors cited_lines
+	def get_ancestors nodes
 		result = Set[]
-		cited_lines.each {|line|
-			node = @lines[line].node
+		nodes.each {|node|
 			while node
 				result << node
 				node = node.parent
@@ -210,16 +213,6 @@ class Bindings
 		}
 		result
 	end
-
-  def read_binding tree
-    variables = []
-		body = tree
-    while body and body.operator == :for_some
-      variables << body.subtrees[0].operator
-      body = body.subtrees[1]
-    end
-    [variables, body]
-  end
 
 	def shift_under_variable v
 		# shift everything after the binding of v to be in v's scope
@@ -238,7 +231,7 @@ class Bindings
 	def variables_for_unbinding n
 		return [] if not n.active
 		raise ProofException if @blocks.include? n # can't unbind a block
-		result = n.variables.dup
+		result = n.line.binding.variables.dup
 		n.branches.each {|branch| result.concat variables_for_unbinding(branch)}
 		result
 	end

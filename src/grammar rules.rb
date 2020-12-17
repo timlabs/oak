@@ -54,11 +54,11 @@ def grammar_rules
 	[:suppose2, :label_same_line, :suppose3],
 	[:suppose2, :else, :suppose3],
 	[:suppose3, :exp, :end],
-	
-	[:take, :take_label, :existential8],
+
+	[:take, :take_label, :post_quantifier],
 	[:take_label, /\s*take any\b/i, :end],
 	[:take_label, [/\s*take\b/i, :label_same_line, /\s*any\b/i], :end],
-	
+
 	[:so, /\s*so\b/i, :so2],
 	[:so2, :assume, :end],
 	[:so2, :label_same_line, :so3],
@@ -220,42 +220,37 @@ def grammar_rules
   [:atom_list_base4, :else, :end],
 	[:atom_list_base5, :condition, :end],
 	[:atom_list_base5, :else, :end],
-	
-	[:universal, /\s*for (all|any|each|every)\b/i, :universal2],
-	[:universal2, :atom_list, :universal4],
-	[:universal4, [:such_that, :exp, /,/, :exp], :end],
-	[:universal4, [/,/, :exp], :end],
 
-	[:universal_meta, /\s*for (all|any|each|every) meta\b/i, :universal2],
+	[:universal, /\s*for (all|any|each|every)\b/i, :post_quantifier_exp],
 
-	[:existential, /\s*for (at least one|some)\b/i, :existential2],
-	[:existential, /\s*there (exist|exists|is|are)( (a|an|at least one|some))?\b/i, :existential5],
-	[:no_existential, /\s*for no\b/i, :existential2],
-	[:no_existential, /\s*there (exist|exists|is|are) no\b/i, :existential5],
-	
-	[:existential2, :atom_list, :existential4],
-	[:existential4, [:such_that, :exp, /,/, :exp], :end],
-	[:existential4, [/,/, :exp], :end],
+	[:universal_meta, /\s*for (all|any|each|every) meta\b/i, :post_quantifier_exp],
 
-	[:existential5, :atom_list, :existential7],
-	[:existential7, [:such_that, :exp], :end],
-	[:existential7, :else, :end],
+	[:existential, /\s*for (at least one|some)\b/i, :post_quantifier_exp],
+	[:existential, /\s*there (exist|exists|is|are)( (a|an|at least one|some))?\b/i, :post_quantifier],
+	[:no_existential, /\s*for no\b/i, :post_quantifier_exp],
+	[:no_existential, /\s*there (exist|exists|is|are) no\b/i, :post_quantifier],
 
-#	[:take, /\s*take any\b/i, :existential8],
-	[:existential8, :atom_list, :existential10],
-	[:existential10, [:such_that, :exp], :end],
-	[:existential10, :else, :end],
+	[:post_quantifier_exp, :list_with_such, :post_quantifier_exp2],
+	[:post_quantifier_exp2, [/,/, :exp], :end],
 
-	[:such_that, /\s*(such that|with)\b/i, :end],
+	[:post_quantifier, :list_with_such, :end],
+
+	[:list_with_such, :atom_list, :list_with_such2],
+	[:list_with_such2, [:with, :exp], :list_with_such3],
+	[:list_with_such2, :else, :list_with_such3],
+	[:list_with_such3, [:such_that, :exp], :end],
+	[:list_with_such3, :else, :end],
+
+	[:with, /\s*with\b/i, :end],
+
+	[:such_that, /\s*(such that|where)\b/i, :end],
 
 	[:let, /\s*let\b/i, :let2],
 	[:let2, :definable, :let3],
 	[:let3, /\s*=/i, :let4],
 	[:let4, :exp, :end],
 
-	[:define, /\s*define\b/i, :existential8],
-#	[:define, /\s*define\b/i, :define2],
-#	[:define2, :exp, :end],
+	[:define, /\s*define\b/i, :post_quantifier],
 
   [:condition, [/\s*in\b/i, :operand], :end],
   [:condition, [:inequality, :operand], :end],
@@ -413,7 +408,7 @@ def grammar_rules
 	[:atom, /(true|false|contradiction|thesis)\b/i, :null],
 	[:atom, /(not|and|or|implies|iff|then)\b/i, :null],
 	[:atom, /(for (at least one|some)|for (all|any|each|every)|for no)\b/i, :null],
-	[:atom, /(such that|with|in|there (is|are|exist|exists))\b/i, :null],
+	[:atom, /(such that|where|with|in|there (is|are|exist|exists))\b/i, :null],
 	[:atom, /(assume|suppose|by|from|exit|take|define|axiom|schema)\b/i, :null],
 	[:atom, /(every|some|no)\b/i, :null],
 	[:atom, /((?!

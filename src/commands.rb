@@ -3,14 +3,14 @@ require_relative 'external prover.rb'
 require_relative 'schema.rb'
 
 class Proof
-	class Line
-		attr_reader :sentence, :reason, :suppositions, :label, :filename, :fileline,
-		 						:node
-								
-		def initialize sentence, reason, suppositions, id, node
-			@sentence, @reason, @suppositions = sentence, reason, suppositions
+	class Line < Content
+		attr_accessor :node
+		attr_reader :label, :filename, :fileline
+
+		def initialize content, reason, suppositions, id
+			super content.binding # carries all information about content
+			@reason, @suppositions = reason, suppositions
 			@label, @filename, @fileline = id[:label], id[:filename], id[:fileline]
-			@node = node
 			sentence_string = @sentence.to_s.rstrip
 			reason_string = @reason.to_s.rstrip
 			if sentence_string.empty?
@@ -26,10 +26,6 @@ class Proof
 			end
 		end
 
-    def binding?
-      not schema? and @sentence.operator == :for_some
-    end
-    
 		def rows supposition_space = nil, sentence_space = nil, reason_space = nil
 			rows = []
 			suppositions, sentence, reason = supposition_string, @sentence.to_s.dup, @reason.to_s.dup
@@ -77,7 +73,6 @@ class Proof
 	def initialize options = {}
 		@options = options
 		@lines = []
-		#@definitions = []
 		@assumptions = []
 		@assume_blocks = []
 		@axioms = []
@@ -88,13 +83,13 @@ class Proof
 		@label_stack = [[]]
     @line_numbers_by_label = {}
 		@inactive_labels = Set[]
-		@bindings = Bindings.new @lines
+		@bindings = Bindings.new
 	end
 
-	def assume sentence, id = nil
-		check_admission sentence
+	def assume content, id = nil
+		check_admission content
 		@assumptions << @lines.size unless @scopes.include? :assume
-		add sentence, :assumption, id
+		add content, :assumption, id
 	end
 
 	def assume_schema schema, id = nil
@@ -116,16 +111,16 @@ class Proof
 		add schema, :'axiom schema', id
 	end
 
-	def axiom sentence, id = nil
+	def axiom content, id = nil
 		message = case @scopes.last
 			when :suppose then 'axiom not allowed in supposition'
 			when :now then 'axiom not allowed in "now" block'
 			when Array then 'axiom not allowed in "proof" block'
 		end
 		raise ProofException, message if message
-		check_admission sentence
+		check_admission content
 		@axioms << @lines.size
-		add sentence, :axiom, id
+		add content, :axiom, id
 	end
 
 	def begin_assume id
@@ -133,8 +128,8 @@ class Proof
 		@assume_blocks << id
 	end
 
-	def check_admission sentence
-		@bindings.check_admission sentence
+	def check_admission content
+		@bindings.check_admission content
 		return
 
 =begin
@@ -149,10 +144,10 @@ class Proof
 =end
 	end
 
-	def derive sentence, reasons = [], id = nil
-    return assume sentence, id if @scopes.include? :assume # assume block
+	def derive content, reasons = [], id = nil
+    return assume content, id if @scopes.include? :assume # assume block
 		line_numbers = process_reasons reasons
-		derive_internal sentence, line_numbers, id
+		derive_internal content, line_numbers, id
 	end
 
 	def end_assume
@@ -256,32 +251,32 @@ class Proof
 		@bindings.begin_block
 	end
 
-	def so sentence, reasons = [], id = nil
-    return so_assume sentence, id if @scopes.include? :assume # assume block
+	def so content, reasons = [], id = nil
+    return so_assume content, id if @scopes.include? :assume # assume block
 		if @active_reason_sets[-1].empty?
 			raise ProofException, 'nothing for "so" to use'
 		end
 		line_numbers = process_reasons reasons
 		line_numbers.concat @active_reason_sets[-1]
 		@active_reason_sets[-1] = []
-		derive_internal sentence, line_numbers, id
+		derive_internal content, line_numbers, id
 	end
 
-	def so_assume sentence, id = nil
+	def so_assume content, id = nil
 		if @active_reason_sets[-1].empty?
 			raise ProofException, 'nothing for "so" to use'
 		end
 		@active_reason_sets[-1] = []
-		assume sentence, id
+		assume content, id
 	end
-	
-	def suppose sentence, id = nil
+
+	def suppose content, id = nil
 		@scopes << :suppose
 		@active_reason_sets << []
 		@theses << @theses[-1] # inherit thesis if it exists
-		check_admission sentence
+		check_admission content
 		@active_suppositions << @lines.size
-		add sentence, :supposition, id
+		add content, :supposition, id
 	end
 
 	def to_s # handle newlines and tabs?
@@ -307,32 +302,21 @@ class Proof
 
 	private #####################################################################
 
-	def add sentence, reason, id
-		unless reason == :'assumption schema' or reason == :'axiom schema'
-
-			# think about moving check_admission in here?  (will have to move derive_internal as well,
-			#	not sure if that works)
-
-			@bindings.begin_block if reason == :axiom or reason == :supposition
-			node = @bindings.admit sentence, @lines.size
-
-			defines, sentence = read_defines sentence
-=begin
-			# replace defines with for somes
-			defines, replaced = read_defines sentence
-			defines.reverse.each {|v|
-				replaced = Tree.new :for_some, [Tree.new(v, []), replaced]
-			}
-			sentence = replaced
-=end
+	def add content, reason, id
+		line = Line.new content, reason, @active_suppositions.dup, id
+		unless line.schema?
+			if line.binding.definition?
+				line.node = @bindings.begin_block line
+			else
+				@bindings.begin_block if reason == :axiom or reason == :supposition
+				line.node = @bindings.admit line
+			end
 		end
 		label = id[:label]
     if @line_numbers_by_label[label]
       raise ProofException, "label #{label} already in scope"
     end
-		@lines << Line.new(
-			sentence, reason, @active_suppositions.dup, id, node
-		)
+		@lines << line
     n = @lines.size - 1
 		if label
 			@label_stack[-1] << label
@@ -355,8 +339,12 @@ class Proof
 		schema_line_number = schema_line_numbers[0]
     line_numbers -= [schema_line_number] if schema_line_number
 
-    antecedent = @bindings.cited_tree line_numbers
-
+		lines = @lines.values_at *line_numbers
+		antecedent = if schema_line_number
+			@bindings.cited_tree_without_tie_ins lines
+		else
+			@bindings.cited_tree lines, tree.free_variables
+		end
 		tree = Tree.new :implies, [antecedent, tree] if antecedent
 
 		if schema_line_number
@@ -369,8 +357,8 @@ class Proof
 			end
 		end
 
-#		puts 'checking tree:'
-#		p tree
+		# puts 'checking tree:'
+		# puts tree
 
 #		result = ExternalProver.valid_cvc4? tree
 		result = ExternalProver.valid_e? tree
@@ -403,20 +391,14 @@ class Proof
 		}.join ', '
 	end
 
-	def derive_internal sentence, line_numbers, id
-		check_admission sentence
+	def derive_internal content, line_numbers, id
+		check_admission content
 
-		# replace defines with for somes
-		defines, replaced = read_defines sentence
-		defines.reverse.each {|v|
-			replaced = Tree.new :for_some, [Tree.new(v, []), replaced]
-		}
-
-		result = check replaced, line_numbers
+		result = check content.sentence, line_numbers
 		if result == :invalid
-			raise DeriveException.new 'invalid derivation', replaced
+			raise DeriveException.new 'invalid derivation', content.sentence
 		elsif result == :unknown
-			raise DeriveException.new 'could not determine validity of derivation', replaced
+			raise DeriveException.new 'could not determine validity of derivation', content.sentence
 		elsif result != :valid
 			raise
 		end
@@ -426,7 +408,7 @@ class Proof
 			unlabeled = line_numbers - labeled
 			minimal = find_minimal_subsets(labeled) {|subset|
 				begin
-					result = check replaced, unlabeled + subset
+					result = check content.sentence, unlabeled + subset
 					{:valid => true, :invalid => false}[result]
 				rescue ProofException # e.g. "could not instantiate schema"
 					false
@@ -440,7 +422,7 @@ class Proof
 			end
 		end
 
-		add sentence, :derivation, id
+		add content, :derivation, id
 		info
 	end
 
