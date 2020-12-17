@@ -17,7 +17,7 @@ For downloads and more information, including a tutorial, go to [oakproof.org](h
 
 Oak is a command-line application which takes a proof file as input, and tells you whether or not the proof is correct.  See [oakproof.org](http://oakproof.org) for more information.
 
-```bash
+```
 oak [-v] [-c] [filename]
     -v  print the version number of Oak
     -c  check for unneeded citations
