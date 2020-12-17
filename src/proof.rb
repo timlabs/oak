@@ -49,9 +49,13 @@ class Proof
 			wrapper.print "#{filename}: processing line "
 			Parser.new.parse_each(input) {|sentence, action, content, reasons, label, fileline|
 				next if action == :empty
-				break if action == :exit
 				line_number = fileline
 				wrapper.print "#{line_number} "
+				if action == :exit
+					wrapper.puts
+					wrapper.print "exit at line #{line_number}: skipping remaining lines"
+					break
+				end
 				content = process_content content, proof.theses[-1] if content.is_a? Tree
 				id = {:label => label, :filename => filename, :fileline => fileline}
 				result = case action
