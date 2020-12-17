@@ -188,7 +188,7 @@ def rename_for_tptp_internal tree, used, replace = {}
 			Tree.new tree.operator, [tree.subtrees[0], *subtrees]
 		when String
 			if not replace[tree.operator]
-				replace[tree.operator] = new_name used, 'x'
+				replace[tree.operator] = new_name used, 'c'
 				used << replace[tree.operator]
 			end
 			Tree.new replace[tree.operator], []
