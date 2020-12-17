@@ -49,6 +49,39 @@ def conjunction_tree trees
 	Tree.new :and, trees
 end
 
+def find_minimal_subsets_from_results array, results = {}
+	# find the minimal subsets of array which are true in results, assuming that
+	# if a given set is false, all of its subsets are false
+	set = array.to_set
+	raise unless results.has_key? set
+	result = results[set]
+	return [] if result == false
+	subarrays = array.combination array.size-1
+	minimal = subarrays.collect {|subarray|
+		find_minimal_subsets_from_results subarray, results
+	}.flatten(1).uniq
+	(minimal.empty? and result == true) ? [array] : minimal
+end
+
+def find_minimal_subsets input_array
+	# find the minimal subsets for which yield returns true, assuming that if it
+	# returns false for a given set, it will return false for all of its subsets
+	pending, results = [input_array], {}
+	until pending.empty?
+		array = pending.shift
+		set = array.to_set
+		next if results.has_key? set
+		if results.any? {|key, result| result == false and set.subset? key}
+			results[set] = false
+		else
+			results[set] = yield array
+		end
+		next if results[set] == false
+		array.combination(array.size-1).each {|subarray| pending << subarray}
+	end
+	find_minimal_subsets_from_results input_array, results
+end
+
 def first_orderize tree, by_arity = false
 	subtrees = tree.subtrees.collect {|subtree| first_orderize subtree, by_arity}
 	if tree.operator == :predicate

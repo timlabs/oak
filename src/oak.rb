@@ -8,18 +8,24 @@ require_relative 'proof.rb'
 name_version = 'Oak version 0.2post'
 issues_url = 'https://github.com/timlabs/oak/issues'
 
+options = {}
+
 if ARGV.delete '-v'
 	puts name_version
 	exit if ARGV.size == 0
 end
 
+if ARGV.delete '-r'
+	options[:reduce] = true
+end
+
 if ARGV.size != 1 or ARGV[0].start_with? '-'
-	puts "usage: oak [-v] [filename]"
+	puts "usage: oak [-v] [-r] [filename]"
 	exit
 end
 
 begin
-	Proof.process ARGV[0], :is_filename
+	Proof.process ARGV[0], :is_filename, options
 rescue => e
 	exit if e.is_a? ProofException # already printed
 	puts "\n\n#{e.message} (#{e.class}) [#{name_version}]"

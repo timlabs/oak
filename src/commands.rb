@@ -74,7 +74,8 @@ end
 class Proof
 	attr_reader :scopes, :theses
 
-	def initialize
+	def initialize options = {}
+		@options = options
 		@lines = []
 		#@definitions = []
 		@assumptions = []
@@ -396,6 +397,12 @@ class Proof
 	  result
 	end
 
+	def citation_string line_numbers
+		line_numbers.collect {|i|
+			@lines[i].label or "line #{@lines[i].fileline}"
+		}.join ', '
+	end
+
 	def derive_internal sentence, line_numbers, id
 		check_admission sentence
 
@@ -406,15 +413,35 @@ class Proof
 		}
 
 		result = check replaced, line_numbers
-		if result == :valid
-			add sentence, :derivation, id
-		elsif result == :invalid
+		if result == :invalid
 			raise DeriveException.new 'invalid derivation', replaced
 		elsif result == :unknown
 			raise DeriveException.new 'could not determine validity of derivation', replaced
-		else
+		elsif result != :valid
 			raise
 		end
+
+		if @options[:reduce]
+			labeled = line_numbers.select {|i| @lines[i].label}
+			unlabeled = line_numbers - labeled
+			minimal = find_minimal_subsets(labeled) {|subset|
+				begin
+					result = check replaced, unlabeled + subset
+					{:valid => true, :invalid => false}[result]
+				rescue ProofException # e.g. "could not instantiate schema"
+					false
+				end
+			}
+			if minimal != [labeled]
+				from = citation_string labeled
+				to = minimal.collect {|set| citation_string set}.join "\n  "
+				message = "citation can be reduced from:\n  #{from}\nto:\n  #{to}"
+				info = InfoException.new message
+			end
+		end
+
+		add sentence, :derivation, id
+		info
 	end
 
 	def process_reasons reasons
@@ -462,3 +489,5 @@ class ParseException < ProofException
 end
 
 class SubstituteException < ProofException; end
+
+class InfoException < ProofException; end

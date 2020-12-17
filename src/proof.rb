@@ -3,8 +3,8 @@ require_relative 'commands.rb'
 require_relative 'utilities.rb'
 
 class Proof
-	def self.process input, is_filename = false
-		proof = Proof.new
+	def self.process input, is_filename = false, options = {}
+		proof = Proof.new options
 		include proof, input, is_filename
 
 		message = case proof.scopes.last
@@ -54,7 +54,7 @@ class Proof
 				wrapper.print "#{line_number} "
 				content = process_content content, proof.theses[-1] if content.is_a? Tree
 				id = {:label => label, :filename => filename, :fileline => fileline}
-				case action
+				result = case action
 					when :include then
 						# include relative to path of current proof file
 						content = File.expand_path content, dirname if is_path
@@ -77,6 +77,12 @@ class Proof
 					when :begin_assume then proof.begin_assume id
 					when :end_assume then proof.end_assume
 					else raise "unrecognized action #{action}"
+				end
+				if result.is_a? InfoException
+					wrapper.puts; wrapper.puts
+					wrapper.puts "line #{line_number}: #{result}"
+					wrapper.puts
+					wrapper.print "#{filename}: processing line "
 				end
 			}
 		rescue ProofException => e
