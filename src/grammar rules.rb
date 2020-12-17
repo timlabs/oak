@@ -6,19 +6,14 @@ def grammar_rules
 	[:start, :include, :start5],
 	[:start, :now, :start5],
 	[:start, :end, :start5],
-#	[:start, [:now, :ending], :end, :catch],
 	[:start, :exit, :start5],
 	[:start, :label, :start2],
 	[:start, :else, :start2],
-#	[:start2, :assume_schema, :start5],
-#	[:start2, :axiom_schema, :start5],
 	[:start2, :assume, :start4],
 	[:start2, :axiom, :start5],
 	[:start2, :suppose, :start5],
 	[:start2, :take, :start5],
 	[:start2, :so, :start3],
-#	[:start2, :now_exp, :start3],
-#	[:start2, :then, :start3],
 	[:start2, :derive, :start3],
 	[:start3, :by, :start5],
 	[:start3, :proof, :start5],
@@ -69,12 +64,11 @@ def grammar_rules
 	[:now, /\s*now\b/i, :end],
 
 	[:end, /\s*end\b/i, :end],
-	
+
 	[:derive, :exp, :end],
-#	[:derive, :take, :end],
 	[:derive, :let, :end],
 	[:derive, :define, :end],
-	
+
 	[:exit, /\s*exit\b/i, :end],
 
 	[:by, /\s*(by|from)\b/i, :by2],
@@ -89,8 +83,6 @@ def grammar_rules
   [:ending, /\s*;/, :end],
   [:ending, /\s*\n/, :end],
 	[:ending, /\s*\z/, :end],
-	
-#	[:start, [:exp, :eof], :end],
 
 	[:exp, :prefix, :end],
 	[:exp, :exp1, :end],
@@ -371,32 +363,18 @@ def grammar_rules
 	[:map2, [:word, /\s*:/, :exp], :map3],
 	[:map3, /\s*,/, :map2],
 	[:map3, /\s*}/, :end],
-	
+
 	[:subst, /{/, :map2],
-	
-#	[:atom, [/\s+/, :atom], :end, :catch],
-#	[:atom, :atom, :end, :catch],
 
 	[:word, [/\s*/, :atom], :end, :catch],
 
 	[:word_same_line, [/[ \t]*/, :atom], :end, :catch],
-	
-#	[:atom, [/\s+/, :atom_word], :atom2, :catch],
-#	[:atom, :atom_word, :atom2, :catch],
-#	[:atom2, [/[ \t]*/, :atom_word], :atom2, :catch],
-#	[:atom2, :else, :end],
 
-#	[:atom_word, :meta, :end],
-#	[:atom_word, :atom, :end],
-	
 	[:label_name, [/\s*/, :atom], :label_name2],
 	[:label_name2, [/ ?/, :atom], :label_name2, :catch],
 	[:label_name2, :else, :end],
 
 	[:label_name_same_line, [/[ \t]*/, :atom], :label_name2, :catch],
-	
-#  [:definable, /\+|\-|\*|\÷|\/|\^/, :end],
-#  [:definable, :atom, :end],
 
 	[:definable, [/\s*/, :definable_raw], :end, :catch],
 

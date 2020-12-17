@@ -131,33 +131,6 @@ class Parser
 		end
 	end
 
-=begin
-	def parse_definition tree, top = true
-		# ideally this should accept only eliminable definitions
-		case tree.operator
-			when :for_all
-				parse_definition tree.subtrees[1], false
-			when :implies
-				return nil if top
-				parse_definition tree.subtrees[1], false
-			when :iff, :equals
-				if tree.operator == :iff and tree.subtrees[0].operator == :equals
-					parse_definition tree.subtrees[0], false
-				else
-					if tree.subtrees[0].operator == :predicate
-						tree.subtrees[0].subtrees[0]
-					elsif tree.subtrees[0].subtrees.empty?
-						tree.subtrees[0]
-					else
-						nil
-					end
-				end
-			else
-				nil
-		end
-	end
-=end
-
 	def parse_each input
 		text, line_numbers = strip_comments input
 		last_end = 0
@@ -302,14 +275,10 @@ class Parser
 				update_label.call action_branch.branches[1]
 				action = :assume_schema if action_branch.branches[-2].text == 'schema'
 				action_branch.branches[-1]
-#			when :assume_schema
-#				tree_from_grammar action_branch.branches[1]
 			when :axiom
 				update_label.call action_branch.branches[1]
 				action = :axiom_schema if action_branch.branches[-2].text == 'schema'
 				action_branch.branches[-1]
-#			when :axiom_schema
-#				tree_from_grammar action_branch.branches[1]
 			when :suppose
 				update_label.call action_branch.branches[1]
 				action_branch.branches[-1]
@@ -594,7 +563,7 @@ class Parser
 					]
 				}
 				subtrees.unshift Tree.new('map', [])
-=begin				
+=begin
 			when :predicate
 				return tree_from_grammar(node.branches[0]) if node.branches.size == 1
 				operator = :predicate
@@ -606,15 +575,6 @@ class Parser
 					subtrees = node.branches.select.each_with_index {|branch, i| i.even?}
 					subtrees.collect! {|subtree| tree_from_grammar subtree}
 				end
-=end		        
-=begin
-      when :word, :word_same_line
-        branch = node.branches.find {|branch| branch.value == :name_word}
-  		  raise unless branch
-        return tree_from_grammar branch
-#      when :atom_word
-#        raise unless node.branches.size == 1
-#        return tree_from_grammar node.branches[0]
 =end
 			when :word, :word_same_line, :definable, :definable_raw, :atom
 				operator = standardize_operator node.text
@@ -818,15 +778,10 @@ class Tree
 				if infixes.include? @subtrees[0].operator
 					operand = '(' + operand + ')'
 				end
-		  	'not ' + operand
+				'not ' + operand
 			when :for_all, :for_some, :for_all_meta
 				return "there is a #{@subtrees[0]}" if @subtrees.size == 1
-				operator = case @operator
-					when :for_all then 'for all'
-					when :for_some then 'for some'
-					when :for_all_meta then 'for all meta'
-				end
-#				operator = {:for_all => 'for all', :for_some => 'for some'}[@operator]
+				operator = @operator.to_s.gsub '_', ' '
 				variable = @subtrees[0].to_s
 				expression = @subtrees[1].to_s
 				if infixes.include? @subtrees[1].operator

@@ -43,6 +43,13 @@ class WordWrapper
 	end
 end
 
+def bind_variables variables, body, quantifier
+	(variables.reverse & body.free_variables).each {|variable|
+		body = Tree.new quantifier, [Tree.new(variable, []), body]
+	}
+	body
+end
+
 def conjuncts trees
 	# seems to have no effect on the prover, and is easier to read!
 	trees.collect {|tree|
@@ -56,6 +63,10 @@ def conjunction_tree trees
 	return nil if trees.empty?
 	return trees[0] if trees.size == 1
 	Tree.new :and, trees
+end
+
+def contains_quantifiers? tree
+	tree.contains?(:for_all) or tree.contains?(:for_some)
 end
 
 def find_minimal_subsets_from_results array, results = {}
@@ -194,15 +205,4 @@ def tree_for_true
 		Tree.new('true', []),
 		Tree.new(:not, [Tree.new('true', [])])
 	]
-end
-
-def bind_variables variables, body, quantifier
-	(variables.reverse & body.free_variables).each {|variable|
-		body = Tree.new quantifier, [Tree.new(variable, []), body]
-	}
-	body
-end
-
-def contains_quantifiers? tree
-	tree.contains?(:for_all) or tree.contains?(:for_some)
 end

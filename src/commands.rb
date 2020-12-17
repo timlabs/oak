@@ -178,27 +178,16 @@ class Proof
 				@inactive_labels << label
 			}
 			@label_stack.pop
-			content, id, lines_size_before = last_scope
-			# delete any bindings made in the proof block
-#			@active_bindings.delete_if {|variable, line_number|
-#				line_number >= lines_size_before
-#			}
 
 			@bindings.end_block
 
+			content, id = last_scope
       if @scopes.include? :assume then assume content, id # assume block
       else derive_internal content, last_reason_set, id end
 		else
 			if last_scope == :suppose
-				# delete any bindings made while this supposition was active
-				supposition = @active_suppositions.last
-#				@active_bindings.delete_if {|variable, line_number|
-#					@lines[line_number].suppositions.include? supposition
-#				}
 				@active_suppositions.pop
-
 				@bindings.end_block
-
 			end
 			@active_reason_sets.last.concat last_reason_set
 		end
@@ -242,7 +231,7 @@ class Proof
 	end
 
 	def proof content, id = nil
-		@scopes << [content, id, @lines.size]
+		@scopes << [content, id]
 		@active_reason_sets << []
 		@theses << content
 		@label_stack << []
@@ -323,12 +312,6 @@ class Proof
   end
 
 	def check tree, line_numbers
-#		puts "tree:"
-#		p tree
-#   puts "\nline numbers are #{line_numbers.inspect}"
-#   puts "active suppositions are #{@active_suppositions}"
-#   puts "active bindings are #{@active_bindings}"
-
 		schema_line_numbers = line_numbers.select {|i| @lines[i].schema?}
 		raise ProofException, 'cannot cite multiple schemas' if schema_line_numbers.size > 1
 		schema_line_number = schema_line_numbers[0]
@@ -360,18 +343,6 @@ class Proof
 #		result = ExternalProver.valid_iprover? tree
 #		result = ExternalProver.valid_prover9? tree
 #		result = ExternalProver.valid_spass? tree
-#	  result = EnglishChecker.valid? tree
-#   puts
-#   if result == :valid
-#     puts 'tree is valid:'
-#   elsif result == :invalid
-#			puts 'tree is not valid:'
-#   elsif result == :unknown
-#			puts 'could not tell whether tree is valid'
-#		end
-#		$stdin.gets
-#		p tree
-#   puts
 
 		if schema_line_number and result != :valid
 			raise ProofException, 'could not instantiate schema'
@@ -449,10 +420,9 @@ class DeriveException < ProofException
 	def initialize type, sentence
 		@type, @sentence = type, sentence
 	end
-	
+
 	def message line_number
 		"line #{line_number}: #{@type} \"#{@sentence}\""
-#		"#{@type} at line #{line_number}: \"#{@sentence}\""
 	end
 end
 
