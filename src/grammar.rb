@@ -71,14 +71,12 @@ class GrammarParser
 		end
 	end
 
-=begin
 	def parse program
 		@scanner = StringScanner.new program
 		@tree = GrammarTree.new
 		parse_from @grammar.start_symbol, true
 		@tree
 	end
-=end
 
 	def parse_each program
 		@scanner = StringScanner.new program
