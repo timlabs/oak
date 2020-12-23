@@ -328,6 +328,7 @@ class Proof
 		if schema_line_number
 			schema = @lines[schema_line_number].sentence
 			begin
+				# puts "\n\ninstantiating schema with tree:\n#{tree}"
 				tree = Schema.instantiate_schema schema, tree
 			rescue ProofException => e
 				raise unless e.message == 'ProofException' # re-raise with original message

@@ -157,7 +157,7 @@ class Bindings
 
 		# make trees recursively
 		trees, need_tie_ins = [], Set[]
-		scope_tree.branches.reverse_each {|branch| # most recent first, for readability
+		scope_tree.branches.each {|branch|
 			tree, vars = cited_tree_internal branch, cited_nodes, uses_nodes, ancestors
 			trees << tree if tree
 			need_tie_ins.merge vars
@@ -202,7 +202,7 @@ class Bindings
 					end
 				end
 				if addition
-					trees << addition # most recent first, for readability
+					trees.unshift addition # add to start
 					need_tie_ins.merge addition.free_variables.to_set - @constants
 				end
 			end

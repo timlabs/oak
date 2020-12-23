@@ -473,7 +473,7 @@ fraction_vs_one: for all a,b in D such that b != 0,
 	(if a > b then a/b > 1)
 proof
 	take any a,b in D with b != 0
-		1/b != 0 by total_order,field,domain,mult_not_0
+		1/b != 0 by field,domain,0_mult
 		fv1: so 1/b > 0 by nonnegative,total_order,domain
 		suppose a < b
 			so a*(1/b) < b*(1/b) by inequality_ops,fv1,domain
