@@ -25,7 +25,7 @@ oak [-v] [-c] [filename]
 
 ## Version history
 
-### v0.3 - ????-??-??
+### v0.3 - 2020-12-22
 * add "tie-ins" for variables
 * `-c` option to check for unneeded citations
 * new examples: `kalam.oak` and `square_root_two.oak`
