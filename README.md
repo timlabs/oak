@@ -19,12 +19,24 @@ Oak is a command-line application which takes a proof file as input, and tells y
 
 ```
 oak [-v] [-c] [-w] [filename]
-    -v  print the version number of Oak
-    -c  check for unneeded citations
-    -w  wait for validity if unknown (does not change proof outcome)
+  -v  print the version number of Oak
+  -c  check for unneeded citations
+  -w  wait for validity if unknown (does not change proof outcome)
 ```
 
 ## Version history
+
+### v0.4 - ????-??-??
+* new examples: `infinite_primes.oak` and `set.oak`
+* merged `peano.oak` into `naturals.oak` and expanded
+* `-w` option to wait for validity if unknown
+* extra check to ensure `A implies A` always succeeds
+* added `not in` condition
+* added `for at most one` quantifier
+* improved assumption printing
+* simplified quantifier variable list syntax
+* `exit` now skips rest of proof, not just current file
+* proofs with `exit` are now marked incomplete
 
 ### v0.3 - 2020-12-22
 * add "tie-ins" for variables

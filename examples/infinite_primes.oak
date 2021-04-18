@@ -17,8 +17,8 @@ prime_def: define prime such that for all n in N,
 	prime[n] iff (n > 1 and for all d in N where divides[d,n], d = 1 or d = n)
 		by comprehension_nat
 
-primes_def: define primes in Set such that for all x,
-	x is in primes iff (x is in N and prime[x])
+primes_def: define Primes in Set such that for all x,
+	x is in Primes iff (x is in N and prime[x])
 		by set_comprehension
 
 product_def: define product in Function such that for all S in Set,
@@ -152,21 +152,21 @@ proof
 	end
 end
 
-infinite_primes: infinite[primes]
+infinite_primes: Primes is infinite
 proof
-	suppose 1: finite[primes]
-	  2: for some p in N, p = product[primes] by 1,product_set_in_N
+	suppose 1: Primes is finite # to obtain a contradiction
+	  2: for some p in N, p = product[Primes] by 1,product_set_in_N
 	  3: for some q in N, q = p+1 by nat_closed_add
-		q > 1 proof
-			for all n in primes, n > 0
-				by primes_def,prime_def,nonnegative,total_order
+		4: for some d in N, d divides q and d is prime
+		proof
+			for all n in Primes, n > 0 by primes_def,prime_def,nonnegative,total_order
 			so p > 0 by product_set_positive,1,2
-			so thesis by 3,ineq_def,add_commute,total_order
+			so q > 1 by 3,ineq_def,add_commute,total_order
+			so thesis by prime_factor
 		end
-	  4: so for some d in N, divides[d,q] and prime[d] by prime_factor
-	  divides[d,p] by divides_product,4,2,1,primes_def
-	  so divides[d,1] by divides_diff,3,4
-	  so not prime[d] by prime_def,divides_one,total_order
+		d divides p by divides_product,primes_def,1,2,4
+	  so d divides 1 by divides_diff,3,4
+	  so d is not prime by prime_def,divides_one,total_order
 	  so contradiction by 4
 	end
 	so thesis by infinite_def
