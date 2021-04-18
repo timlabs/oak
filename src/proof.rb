@@ -6,7 +6,9 @@ class Proof
 	def self.process input, is_filename = false, options = {}
 		instance_options = options.select {|k,v| k != :wait}
 		proof = Proof.new instance_options
-		include proof, input, is_filename, options[:wait]
+		tracker = Tracker.new
+		my_options = {:tracker => tracker, :wait_on_unknown => options[:wait]}
+		include proof, input, is_filename, my_options
 
 		message = case proof.scopes.last
 			when :suppose then 'error at end of input: active supposition'
@@ -21,16 +23,21 @@ class Proof
 
 		puts "all lines accepted"
 
-		if proof.makes_assumptions?
-			proof.print_assumptions
+		if not tracker.assumptions.empty?
+			print_assumptions tracker
 			puts 'proof incomplete due to assumptions'
 		else
-			proof.print_axioms
+			print_axioms tracker
 			puts 'proof successful!'
 		end
 	end
 
-	def self.include proof, input, is_path = false, wait_on_unknown = false
+	def self.include proof, input, is_path = false, options = {}
+		include_internal proof, input, is_path, options, nil
+	end
+
+	def self.include_internal proof, input, is_path, options, include_line
+		tracker = options[:tracker]
 		if is_path
 			dirname = File.dirname input
 			filename = File.basename input
@@ -44,6 +51,7 @@ class Proof
 			filename = ''
 		end
 		begin
+			tracker.begin_file filename, include_line if tracker
 			wrapper = WordWrapper.new ' ', 2
 			line_number = nil # external scope, for error reporting
 			from_include = false
@@ -70,22 +78,36 @@ class Proof
 						content = File.expand_path content, dirname if is_path
 						wrapper.puts
 						from_include = true
-						include proof, content, :is_filename, wait_on_unknown
+						include_internal proof, content, :is_filename, options, fileline
 						from_include = false
 						wrapper.print "#{filename}: processing line "
 					when :suppose then proof.suppose content, id
 					when :now then proof.now
 					when :end then proof.end_block
-					when :assume then proof.assume content, id
-					when :assume_schema then proof.assume_schema content, id
-					when :axiom then proof.axiom content, id
-					when :axiom_schema then proof.axiom_schema content, id
+					when :assume
+						proof.assume content, id
+						tracker.assume filename, fileline if tracker
+					when :assume_schema
+						proof.assume_schema content, id
+						tracker.assume filename, fileline if tracker
+					when :axiom
+						proof.axiom content, id
+						tracker.axiom filename if tracker
+					when :axiom_schema
+						proof.axiom_schema content, id
+						tracker.axiom filename if tracker
 					when :derive then proof.derive content, reasons, id
 					when :so then proof.so content, reasons, id
-					when :so_assume then proof.so_assume content, id
+					when :so_assume
+						proof.so_assume content, id
+						tracker.assume filename, fileline if tracker
 					when :proof then proof.proof content, id
-					when :begin_assume then proof.begin_assume id
-					when :end_assume then proof.end_assume
+					when :begin_assume
+						proof.begin_assume
+						tracker.begin_assume fileline if tracker
+					when :end_assume
+						proof.end_assume
+						tracker.end_assume fileline if tracker
 					else raise "unrecognized action #{action}"
 				end
 				if result.is_a? InfoException
@@ -95,6 +117,7 @@ class Proof
 					wrapper.print "#{filename}: processing line "
 				end
 			}
+			tracker.end_file if tracker
 		rescue ProofException => e
 			message = case e # update the message (but don't print it)
 				when ParseException then e.message
@@ -105,7 +128,8 @@ class Proof
 				wrapper.puts e.line_number if e.is_a? ParseException
 				wrapper.puts if not e.is_a? ParseException
 				wrapper.puts message
-				if e.is_a? DeriveException and e.result == :unknown and wait_on_unknown
+				if e.is_a? DeriveException and e.result == :unknown and
+					 options[:wait_on_unknown]
 					wrapper.puts "line #{line_number}: -w option: checking validity " \
 											 "without work limit (may take forever, press ctrl-c " \
 											 "to abort)"
@@ -123,6 +147,26 @@ class Proof
 			raise e, message # preserve exception class
 		end
 		puts
+	end
+
+	def self.print_assumptions tracker
+		wrapper = WordWrapper.new ',', 2
+		tracker.assumptions.each {|filename, assumptions|
+			if assumptions.size == 1 and assumptions.is_a? Numeric
+				wrapper.print "#{filename}: assumption on line "
+			else
+				wrapper.print "#{filename}: assumptions on lines "
+			end
+			values = assumptions.collect {|x| x.is_a?(Numeric) ? x : x.join('-')}
+			wrapper.puts values.join ', '
+		}
+	end
+
+	def self.print_axioms tracker
+		tracker.axioms.each {|filename, axiom_count|
+			s = (axiom_count == 1 ? 'axiom' : 'axioms')
+			puts "#{axiom_count} #{s} in #{filename}"
+		}
 	end
 
 	def self.process_content content, thesis, is_schema
@@ -155,5 +199,70 @@ class Proof
 		end
 	end
 
-	private_class_method :process_content
+	private_class_method :include_internal, :process_content
+end
+
+class Tracker
+	attr_reader :assumptions, :axioms
+
+	def initialize
+		@assumptions = Hash.new {|hash, key| hash[key] = []}
+		@axioms = Hash.new 0
+
+		@file_stack = []
+		@assume_stack = []
+	end
+
+	def assume filename, fileline
+		@assumptions[filename] << fileline if @assume_stack.empty?
+	end
+
+	def axiom filename
+		@axioms[filename] += 1
+	end
+
+	def begin_assume fileline
+		if @assume_stack.empty?
+			@assume_stack << [@file_stack.last[0], fileline]
+		else
+			@assume_stack << :nested
+		end
+	end
+
+	def begin_file filename, include_line
+		@file_stack << [filename, include_line]
+	end
+
+	def end_file
+		raise if @file_stack.empty? # nothing to end
+		filename, line = @file_stack.pop
+		return if @assume_stack.empty?
+		if @assume_stack[0][0] == filename # assume began in or under this file
+			@assumptions[filename] << [@assume_stack[0][1], :end]
+			# make the assume begin at the include line in the file above
+			@assume_stack[0] = [@file_stack.last[0], line] unless @file_stack.empty?
+		else # assume began before this file
+			@assumptions[filename] << [:start, :end]
+		end
+	end
+
+	def end_assume fileline
+		raise if @assume_stack.empty? # nothing to end
+		if @assume_stack.last == :nested
+			@assume_stack.pop
+		else
+			assume_filename, assume_line = @assume_stack.pop
+			@file_stack.each_index.reverse_each {|i|
+				stack_filename = @file_stack[i][0]
+				# include line in this file
+				include_line = (@file_stack[i+1] ? @file_stack[i+1][1] : fileline)
+				if stack_filename != assume_filename # assume began before here
+					@assumptions[stack_filename] << [:start, include_line]
+				else # assume began here
+					@assumptions[stack_filename] << [assume_line, include_line]
+					break
+				end
+			}
+		end
+	end
 end

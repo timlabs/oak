@@ -8,18 +8,17 @@ class Proof
 
 		def initialize content, type, suppositions, id
 			super content.binding # carries all information about content
+			types = [:assumption, :axiom, :derivation, :supposition,
+							 :'assumption schema', :'axiom schema']
+			raise "unknown type #{type.inspect}" unless types.include? type
 			@type, @suppositions = type, suppositions
 			@label, @filename, @fileline = id[:label], id[:filename], id[:fileline]
 			sentence_string = @sentence.to_s.rstrip
-			type_string = @type.to_s.rstrip
 			if sentence_string.empty?
 				raise ProofException, 'cannot add line with empty sentence'
 			end
-			raise ProofException, 'cannot add line with empty type' if type_string.empty?
 			illegal = ['%%', "\t", "\n"]
-			found = illegal.find {|string|
-				sentence_string.include?(string) or type_string.include?(string)
-			}
+			found = illegal.find {|string| sentence_string.include? string}
 			if found
 			  raise ProofException, "cannot add line containing illegal substring #{found.inspect}"
 			end
@@ -72,9 +71,6 @@ class Proof
 	def initialize options = {}
 		@options = options
 		@lines = []
-		@assumptions = []
-		@assume_blocks = []
-		@axioms = []
 		@active_suppositions = []
 		@active_contexts = [[]]
 		@scopes = []
@@ -87,7 +83,6 @@ class Proof
 
 	def assume content, id = nil
 		check_admission content
-		@assumptions << @lines.size unless @scopes.include? :assume
 		add content, :assumption, id
 	end
 
@@ -95,7 +90,6 @@ class Proof
 		if not @active_suppositions.empty?
 			raise ProofException, '"assume schema" not allowed in supposition'
 		end
-		@assumptions << @lines.size unless @scopes.include? :assume
 		add schema, :'assumption schema', id
 	end
 
@@ -106,7 +100,6 @@ class Proof
 			when Array then 'axiom schema not allowed in "proof" block'
 		end
 		raise ProofException, message if message
-		@axioms << @lines.size
 		add schema, :'axiom schema', id
 	end
 
@@ -118,13 +111,11 @@ class Proof
 		end
 		raise ProofException, message if message
 		check_admission content
-		@axioms << @lines.size
 		add content, :axiom, id
 	end
 
-	def begin_assume id
+	def begin_assume
 		@scopes << :assume
-		@assume_blocks << id
 	end
 
 	def check_admission content
@@ -193,41 +184,10 @@ class Proof
 		end
 	end
 
-	def makes_assumptions?
-		not (@assumptions.empty? and @assume_blocks.empty?)
-	end
-
 	def now
 		@scopes << :now
 		@active_contexts << []
 		@theses << @theses[-1] # inherit thesis if it exists
-	end
-
-	def print_axioms
-		groups = @axioms.group_by {|i| @lines[i].filename}
-		groups.each {|filename, axioms|
-			s = (axioms.size == 1 ? 'axiom' : 'axioms')
-			puts "#{axioms.size} #{s} in #{filename}"
-		}
-	end
-
-	def print_assumptions
-		ids = @assumptions.collect {|i| [@lines[i].filename, @lines[i].fileline]}
-		ids.concat @assume_blocks.collect {|id| [id[:filename], id[:fileline]]}
-		groups = {}
-		ids.each {|filename, fileline|
-			groups[filename] = [] if not groups.has_key? filename
-			groups[filename] << fileline
-		}
-		wrapper = WordWrapper.new ',', 2
-		groups.each {|filename, filelines|
-			if filelines.size == 1
-				wrapper.print "#{filename}: assumption on line "
-			else
-				wrapper.print "#{filename}: assumptions on lines "
-			end
-			wrapper.puts filelines.sort.join ', '
-		}
 	end
 
 	def proof content, id = nil
