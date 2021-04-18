@@ -336,6 +336,10 @@ class Proof
 			end
 		end
 
+		if tree.operator == :implies and equal_up_to_variable_names? *tree.subtrees
+			tree = tree_for_true # make things easy for external prover
+		end
+
 		# puts 'checking tree:'
 		# puts tree
 

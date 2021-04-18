@@ -69,6 +69,43 @@ def contains_quantifiers? tree
 	tree.contains?(:for_all) or tree.contains?(:for_some)
 end
 
+def equal_up_to_variable_names? tree1, tree2, refs1 = {}, refs2 = {}, level = 0
+	# check whether tree1 and tree2 are equal up to variable renaming.  we use
+	# level rather than refs size because the two refs could have different
+	# sizes, if the same variable is bound twice in one but not the other.
+	return false unless tree1.operator.class == tree2.operator.class
+	if tree1.operator.is_a? Symbol
+		return false unless tree1.operator == tree2.operator
+		return false unless tree1.subtrees.size == tree2.subtrees.size
+		pairs = [tree1.subtrees, tree2.subtrees].transpose
+		case tree1.operator
+			when :for_all, :for_some
+	      var1, var2 = tree1.subtrees[0].operator, tree2.subtrees[0].operator
+				refs1[var1], last1 = level, refs1[var1]
+				refs2[var2], last2 = level, refs2[var2]
+				result = pairs[1..-1].all? {|subtree1, subtree2|
+					equal_up_to_variable_names? subtree1, subtree2, refs1, refs2, level+1
+				}
+				last1 ? (refs1[var1] = last1) : (refs1.delete var1)
+				last2 ? (refs2[var2] = last2) : (refs2.delete var2)
+				result
+			when :not, :and, :or, :implies, :iff, :equals, :predicate
+				pairs.all? {|subtree1, subtree2|
+					equal_up_to_variable_names? subtree1, subtree2, refs1, refs2, level+1
+				}
+			else raise
+		end
+	else
+		if refs1[tree1.operator] and refs2[tree2.operator]
+			refs1[tree1.operator] == refs2[tree2.operator] # both variables
+		elsif refs1[tree1.operator] or refs2[tree2.operator]
+			false # one is a constant, the other is a variable
+		else
+			tree1.operator == tree2.operator # both constants
+		end
+	end
+end
+
 def find_minimal_subsets_from_results array, results = {}
 	# find the minimal subsets of array which are true in results, assuming that
 	# if a given set is false, all of its subsets are false
