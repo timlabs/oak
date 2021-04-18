@@ -1,3 +1,12 @@
+/#
+
+Axioms and results for natural numbers.  We include comprehension schemas for
+definitions.  This also allows induction to be a statement rather than a schema.
+
+#/
+
+###############################################################################
+
 # domain axioms
 0_in_N: axiom define 0 in N
 1_in_N: axiom define 1 in N

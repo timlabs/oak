@@ -1,3 +1,12 @@
+/#
+
+Axioms and results for sets.  Should look into reducing the number of
+comprehension axioms.
+
+#/
+
+###############################################################################
+
 include "naturals.oak"
 
 ###############################################################################
