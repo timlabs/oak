@@ -113,7 +113,7 @@ setdiff_element: for all S in Set, for all d in S, S-{d} ⊂ S
 subset_diff: for all A,B,C in Set, if A ⊆ B, then A-C ⊆ B-C
 proof
 	take 1: any A,B,C in Set where A ⊆ B
-		take any x in (A-C)
+		take any x in A-C
 			so x is in A and x is not in C by setdiff_def
 			so x is in B and x is not in C by 1,subset_def
 			so x is in B-C by setdiff_def
@@ -147,14 +147,14 @@ biject_empty: for all f in Function, for all S in Set,
 biject_reflexive: for all A in Set, for some f in Function, bijection[f,A,A]
 proof
   for all x in N, for at most one y in N, x = y
-	so for some f in Function, for all x in N and y in N, f[x] = y iff x = y
+	so for some f in Function, for all x,y in N, f[x] = y iff x = y
     by func_comprehension
 	so thesis by set_domain,biject_def,one_to_one
 end
 
 biject_symmetric: for all A,B in Set,
 	if for some f in Function, bijection[f,A,B], then
-		for some g in Function, bijection[g,B,A]
+    for some g in Function, bijection[g,B,A]
 proof
 	take any A,B in Set
 		suppose 1: for some f in Function, bijection[f,A,B]
@@ -225,7 +225,7 @@ proof
 		types: n+1 is in N and {n} is in Set and first[n] is in Set and
 					 first[n+1] is in Set and first[n+1]-{n} is in Set
 			by nat_closed_add,first_def,singleton,setdiff_def
-		take any x in (first[n+1]-{n})
+		take any x in first[n+1]-{n}
 			x < n+1 by first_def,types,setdiff_def
 			x != n by singleton,types,setdiff_def
 			so x is in first[n] by first_def,nat_ineq_2,types,setdiff_def
@@ -233,7 +233,7 @@ proof
 		take any x in first[n]
 			x is in first[n+1] by first_sub,subset_def
 			x is not in {n} by singleton,total_order,first_def
-			so x is in (first[n+1]-{n}) by setdiff_def,types,first_def
+			so x is in first[n+1]-{n} by setdiff_def,types,first_def
 		end
 	end
 	so thesis by set_equality,types
@@ -242,25 +242,25 @@ end
 # from Tao - Analysis I
 lemma_3.6.8: for all S in Set and n in N,
 	if for some f in Function, bijection[f, S, first[n+1]], then
- 		for all x in S, for some f in Function, bijection[f, S-{x}, first[n]]
+    for all x in S, for some f in Function, bijection[f, S-{x}, first[n]]
 proof
-	take any S,n with S is in Set and n is in N
+	take any S in Set and n in N
 		suppose 1: for some f in Function, bijection[f, S, first[n+1]]
 			take any z in S
 				types: S-{z} is in Set and first[n] is in Set and first[n+1] is in Set
 							 and n+1 is in N
-				 	by setdiff_def,singleton,first_def,set_domain,nat_closed_add
+          by setdiff_def,singleton,first_def,set_domain,nat_closed_add
 				now
-					S-{z} is in Set and for all x in (S-{z}), not (f[x] = n and f[x] != n)
+					S-{z} is in Set and for all x in S-{z}, not (f[x] = n and f[x] != n)
 						by types
-					2: so for some g in Function, for all x in (S-{z}),
+					2: so for some g in Function, for all x in S-{z},
 						(if f[x] = n then g[x] = f[z]) and
 						(if f[x] != n then g[x] = f[x])
 							by func_comprehension_nat_case
 				end
 
-				for all x in (S-{z}), g[x] is in first[n] proof
-					take any x in (S-{z})
+				for all x in S-{z}, g[x] is in first[n] proof
+					take any x in S-{z}
 						3: x is in S and x != z by setdiff_def,singleton,set_domain
 						types2: f[x] is in N by first_def,biject_def,1,3,types
 						if f[x] = n then g[x] is in first[n]
@@ -269,14 +269,14 @@ proof
 							by 2,3,1,biject_def,types,types2,singleton,first_drop,setdiff_def
 					end
 				end
-				
+
 				one_to_one[g, S-{z}] proof
-					for all x,y in (S-{z}) where x != y, g[x] != g[y]
+					for all x,y in S-{z} where x != y, g[x] != g[y]
 						by 2,types,1,biject_def,one_to_one,setdiff_def,singleton,set_domain
 					so thesis by one_to_one,types
 				end
 
-				for all y in first[n], for some x in (S-{z}), g[x] = y proof
+				for all y in first[n], for some x in S-{z}, g[x] = y proof
 					take any y in first[n]
 						y is in first[n+1] by first_sub,subset_def
 						so 4: for some x in S, f[x] = y by 1,biject_def,types
@@ -432,8 +432,9 @@ proof
 		so P[0] by P_def,card_empty,finite_def
 	end
 	take hyp: any k in N where P[k]
-		take 0: any A in Set where A ⊆ first[k+1]
-			A-{k} ⊆ first[k+1]-{k} by 0,subset_diff,nat_closed_add,singleton,first_def
+		take any A in Set where A ⊆ first[k+1]
+			so A-{k} ⊆ first[k+1]-{k}
+        by subset_diff,nat_closed_add,singleton,first_def
 			so A-{k} ⊆ first[k] by first_drop
 			B_def: for some B in Set, B = A-{k} by singleton,setdiff_def
 			so 1: finite[B] and |B| <= k by hyp,P_def,B_def
@@ -456,7 +457,7 @@ end
 subset_finite: for all S in Set where finite[S], for all A ⊆ S,
 	finite[A] and |A| <= |S|
 proof
-	take 0: any S,A with S is in Set where finite[S] and A ⊆ S
+	take 0: any S in Set and A where finite[S] and A ⊆ S
 		1: for some k in N, |S| = k by finite_def,0
 		2: for some f in Function, bijection[f,S,first[k]] by card_def,1
 		types: A is in Set and image[f,A] is in Set and first[k] is in Set
@@ -516,13 +517,13 @@ proof
 	end
 end
 
-set_induction: for all P,S where S is in Set and finite[S],
+set_induction: for all P and S in Set where finite[S],
 	if for all A ⊆ S,
 		   (for all B ⊂ A, P[B]) implies P[A],
 	then
 		 P[S]
 proof
-	take 0: any P,S with S is in Set where finite[S]
+	take 0: any P and S in Set where finite[S]
 		suppose 1: for all A ⊆ S, (for all B ⊂ A, P[B]) implies P[A]
 			Q_def: for some Q, for all n in N,
 						   Q[n] iff for all A ⊆ S where |A| <= n, P[A]

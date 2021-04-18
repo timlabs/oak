@@ -6,9 +6,7 @@ proof that the set of primes is infinite.
 #/
 
 ###############################################################################
-
 include "set.oak"
-
 ###############################################################################
 
 divides_def: define divides such that for all a,b in N,
@@ -145,7 +143,7 @@ end
 divides_product: for all S in Set where finite[S],
 	for all d in S, divides[d, product[S]]
 proof
-	take any S,d with S is in Set and finite[S] and d is in S
+	take any S in Set and d in S with finite[S]
 		1: let A = S - {d}
 		product[S] = d * product[A] by product_def,1
 		types: A is in Set by 1,setdiff_def,singleton,set_domain

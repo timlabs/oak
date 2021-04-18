@@ -307,8 +307,9 @@ strong_induction_from_0: for all P,
 proof
 	take any P
 
-		Q_defx: for some Q, for all n in N, Q[n] iff for all m in N such that m < n, P[m]
-			by comprehension_nat
+		Q_defx: for some Q, for all n in N,
+			Q[n] iff for all m in N such that m < n, P[m]
+				by comprehension_nat
 
 		ssi0: suppose for all n in N,
 					(for all m in N such that m < n, P[m]) implies P[n]
@@ -328,41 +329,39 @@ proof
 	end
 end
 
-strong_induction: for all P, for all c in N,
+strong_induction: for all P and c in N,
 	if 	for all n in N where n >= c,
 				(for all m in N where m >= c and m < n, P[m]) implies P[n]
 	then
 			for all n in N where n >= c, P[n]
 proof
-	take any P
-		take any c in N
-			si1: suppose for all n in N such that n >= c,
-					(for all m in N such that m >= c and m < n, P[m]) implies P[n]
-				Q_def: for some Q, for all n in N, Q[n] iff P[n+c] by comprehension_nat
-				take any n in N such that for all m in N such that m < n, Q[m]
-					so for all m in N such that m < n, P[m+c] by Q_def
-					so si3: for all b in N such that b+c >= c and b+c < n+c, P[b+c]
-						by ineq_cancel
-					take si4: any m in N such that m >= c and m < n+c
-						if m = c then c+0 = m by plus_0
-						if m != c then for some b in N, c+b = m by ineq_def,si4
-						so for some b in N, c+b = m
-						so P[m] by si3,si4,add_commute
-					end
-					now
-						n >= 0 by nat_greater_eq_0
-						so 0+c <= n+c by inequal_add
-						so n+c >= c by plus_0,add_commute
-					end
-					so P[n+c] by si1,nat_closed_add
-					so Q[n] by Q_def
+	take any P and c in N
+		si1: suppose for all n in N such that n >= c,
+				(for all m in N such that m >= c and m < n, P[m]) implies P[n]
+			Q_def: for some Q, for all n in N, Q[n] iff P[n+c] by comprehension_nat
+			take any n in N such that for all m in N such that m < n, Q[m]
+				so for all m in N such that m < n, P[m+c] by Q_def
+				so si3: for all b in N such that b+c >= c and b+c < n+c, P[b+c]
+					by ineq_cancel
+				take si4: any m in N such that m >= c and m < n+c
+					if m = c then c+0 = m by plus_0
+					if m != c then for some b in N, c+b = m by ineq_def,si4
+					so for some b in N, c+b = m
+					so P[m] by si3,si4,add_commute
 				end
-				so for all n in N, Q[n] by strong_induction_from_0
-				so si5: for all b in N, P[b+c] by Q_def
-				take any n in N such that n >= c
-					so for some b in N, c+b = n by ineq_def,plus_0
-					so P[n] by si5,add_commute
+				now
+					n >= 0 by nat_greater_eq_0
+					so 0+c <= n+c by inequal_add
+					so n+c >= c by plus_0,add_commute
 				end
+				so P[n+c] by si1,nat_closed_add
+				so Q[n] by Q_def
+			end
+			so for all n in N, Q[n] by strong_induction_from_0
+			so si5: for all b in N, P[b+c] by Q_def
+			take any n in N such that n >= c
+				so for some b in N, c+b = n by ineq_def,plus_0
+				so P[n] by si5,add_commute
 			end
 		end
 	end
