@@ -397,7 +397,7 @@ def grammar_rules
 
 	[:definable, [/\s*/, :definable_raw], :end, :catch],
 
-  [:definable_raw, /\+|\-|\*|\÷|\/|\^|⊆|⊊|⊂|∪|∩/, :end],
+  [:definable_raw, /\+|\-|\*|\÷|\/|\^|⊆|⊊|⊂|\|\||{}|∪|∩|</, :end],
   [:definable_raw, :atom, :end],
 
 	[:atom, /(so|now|then|proof|end proof)\b/i, :null],

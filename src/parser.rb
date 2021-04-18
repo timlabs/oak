@@ -555,7 +555,7 @@ class Parser
 					operator = :predicate
 					branches = node.branches.select.each_with_index {|branch, i| i.odd?}
 					subtrees = branches.collect {|branch| tree_from_grammar branch}
-					subtrees.unshift Tree.new('set', [])
+					subtrees.unshift Tree.new('{}', [])
 				end
 			when :map, :subst
 				operator = :predicate
