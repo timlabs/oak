@@ -1,30 +1,382 @@
-/#
-	Results about natural numbers.  Needs expansion!
-#/
+# domain axioms
+0_in_N: axiom define 0 in N
+1_in_N: axiom define 1 in N
+nat_closed_add: axiom for all a,b in N, a+b is in N
+nat_closed_mult: axiom for all a,b in N, a*b is in N
 
-include "peano.oak"
+# commutative semiring axioms
+add_assoc: axiom for all a,b,c in N, a+(b+c) = (a+b)+c
+mult_assoc: axiom for all a,b,c in N, a*(b*c) = (a*b)*c
+add_commute: axiom for all a,b in N, a+b = b+a
+mult_commute: axiom for all a,b in N, a*b = b*a
+mult_dist: axiom for all a,b,c in N, a*(b+c) = (a*b)+(a*c)
+plus_0: axiom for all a in N, a+0 = a
+mult_1: axiom for all a in N, a*1 = a
 
-# natural numbers are closed under addition
-nat_closed_addition: for all a,b in N, a+b is in N
+# cancellation axiom (apparently necessary in the absence of inverses)
+add_cancel: axiom for all a,b,c in N, if a+c = b+c then a=b
+
+# zero is not a successor
+not_plus_one_equal_zero: axiom there is no x in N where x+1 = 0
+
+# induction axiom
+induction: axiom for all P,
+	if 	P[0] and
+			for all n in N, P[n] implies P[n+1]
+	then
+			for all n in N, P[n]
+
+# comprehension axioms
+
+comprehension_nat: axiom schema
+	for all meta P,n,φ such that not free[P,φ],
+		`for some P, for all n in N, P[n] iff φ`
+
+comprehension_nat2: axiom schema
+	for all meta P,m,n,φ such that not free[P,φ],
+		`for some P, for all m,n in N, P[m,n] iff φ`
+
+###############################################################################
+
+nat_reduce: for all n in N such that n != 0, for some m in N, n = m+1
 proof
-  # define a property to be used for induction
-  P_def: for some P, for all a in N,
-    P(a) iff for all b in N, a+b is in N
-      by comprehension
+	p_def: for some P, for all n in N,
+		P[n] iff (n = 0 or for some m in N, n = m+1)
+			by comprehension_nat
+	P[0] by p_def
+	for all n in N, P[n+1] by p_def,nat_closed_add
+	so for all n in N, P[n] by induction
+	so thesis by p_def
+end
 
-  P(0) by P_def, peano  # base case
+0_not_1: 0 != 1
+	by not_plus_one_equal_zero,plus_0
 
-  take any a in N
-    suppose hyp: P(a)  # induction hypothesis
-      take any b in N
-        a+b is in N by hyp, P_def
-        so (a+b)+1 is in N by peano
-        so (a+1)+b is in N by peano
-      end
-      so P(a+1) by P_def, peano
-    end
-  end
+0_mult: for all a in N, 0*a = 0
+proof
+	take any a in N
+		(0+0)*a = 0*a by plus_0
+		so 0*a+0*a = 0*a by mult_dist,mult_commute,nat_closed_add
+		0*a = 0+0*a by plus_0,add_commute,nat_closed_mult
+		so 0*a = 0 by add_cancel,nat_closed_mult
+	end
+end
 
-  so for all a in N, P(a) by induction
-  so thesis by P_def
+mult_not_0: for all a,b in N where a != 0 and b != 0, a*b != 0
+proof
+	take any a,b in N with a != 0 and b != 0
+		1: for some d,e in N, a = d+1 and b = e+1 by nat_reduce
+		types: d+1 is in N and e+1 is in N by nat_closed_add
+		2: let x = (d+1) * (e+1)
+		x = (d+1)*e + (d+1)*1 by mult_dist,types,2
+		so x = (d+1)*e+d + 1 by add_assoc,types,nat_closed_mult,mult_1
+		so x != 0 by not_plus_one_equal_zero,nat_closed_add,nat_closed_mult
+		so a*b != 0 by 1,2
+	end
+end
+
+cancel_zero: for all a,b,c in N, a+b = b implies a = 0
+	by add_cancel,plus_0,add_commute
+
+cancellation_left: for all a,b,c in N, if a+b = a+c then b=c
+	by add_cancel,add_commute
+
+ineq_def: define < such that for all m,n in N,
+	m < n iff for some d in N where d != 0, m+d = n
+		by comprehension_nat2
+
+ineq_less_equal: for all m,n in N, m <= n iff for some d in N, m+d = n
+	by ineq_def,plus_0
+
+nonnegative: there is no n in N where n < 0
+proof
+	take any n in N where n < 0
+		so for some d in N with d != 0, n+d = 0 by ineq_def
+		for some e in N, d = e+1 by nat_reduce
+		so (n+e)+1 = 0 by add_assoc
+		so contradiction by not_plus_one_equal_zero,nat_closed_add
+	end
+end
+
+add_not_zero: for all a,b in N, a+b = 0 iff (a = 0 and b = 0)
+	by nonnegative,ineq_def,plus_0
+
+0_less_1: 0 < 1
+	by ineq_def,0_not_1,plus_0,add_commute
+
+less_add_1: for all n in N, n < n+1
+	by ineq_def,0_not_1,nat_closed_add
+
+inequal_add_right: for all a,b,c in N, if a < b then a < b+c
+proof
+	take any a,b,c in N where a < b
+		so for some d in N with d != 0, a+d = b by ineq_def
+		so a+(d+c) = b+c by add_assoc
+		d+c != 0 by add_not_zero
+		so a < b+c by ineq_def,nat_closed_add
+	end
+end
+
+inequal_add: for all a,b,c in N, if a < b, then a+c < b+c
+proof
+	take any a,b,c in N where a < b
+		so for some d in N with d != 0, a+d = b by ineq_def
+		so a+c+d = b+c by add_commute,add_assoc
+		so a+c < b+c by ineq_def,nat_closed_add
+	end
+end
+
+ineq_cancel: for all a,b,c in N, if a+c < b+c then a < b
+proof
+	take any a,b,c in N where a+c < b+c
+		types: a+c is in N and b+c is in N by nat_closed_add
+		so for some d in N with d != 0, a+c+d = b+c by ineq_def,types
+		types2: a+d is in N by nat_closed_add
+		so (a+d)+c = b+c by add_assoc,add_commute
+		so a+d = b by add_cancel,types2
+		so a < b by ineq_def
+	end
+end
+
+nat_ineq_2: for all m,n in N, (m < n+1) iff m <= n
+proof
+	take any m,n in N
+		suppose m < n+1
+			so for some d in N with d != 0, m+d = n+1 by ineq_def,nat_closed_add
+			for some c in N, d = c+1 by nat_reduce
+			so m+c+1 = n+1 by add_assoc
+			so m+c = n by add_cancel,nat_closed_add
+			so m <= n by ineq_def,plus_0
+		end
+		if m = n, then m < n+1 by less_add_1
+		suppose m < n
+			so for some d in N with d != 0, m+d = n by ineq_def
+			so m+(d+1) = n+1 by add_assoc
+			d+1 != 0 by not_plus_one_equal_zero
+			so m < n+1 by ineq_def,nat_closed_add
+		end
+	end
+end
+
+connex: for all a,b in N, a < b or a = b or b < a
+proof
+	p_def: for some p, for all b in N,
+		p[b] iff for all a in N where not a >= b, a < b
+			by comprehension_nat
+	p[0] by p_def,ineq_def,plus_0,add_commute
+	take 1: any b in N where p[b]
+		types: b+1 is in N by nat_closed_add
+		take any a in N where not a >= b+1
+			so not a+1 > b+1 by nat_ineq_2,types
+			so 2: not a > b by inequal_add
+			suppose not a < b+1
+				so if a = b then contradiction by less_add_1
+				so not a >= b by 2
+				so a < b by p_def,1
+				so a < b+1 by inequal_add_right
+			end
+		end
+		so p[b+1] by p_def,types
+	end
+	so for all b in N, p[b] by induction
+	so thesis by p_def
+end
+
+irreflexive: for all a in N, not (a < a)
+	by ineq_def,add_cancel,add_commute,plus_0
+
+transitive: for all a,b,c in N,
+	if a < b and b < c then a < c
+proof
+	tr0: take any a,b,c in N such that a < b and b < c
+		tr1: for some d in N such that d != 0, a+d = b by ineq_def,tr0
+		tr2: for some e in N such that e != 0, b+e = c by ineq_def,tr0
+		a+(d+e) = c by add_assoc,tr1,tr2
+		d+e != 0 by tr2,nonnegative,ineq_def
+		so a < c by ineq_def,nat_closed_add
+	end
+end
+
+total_order: for all a,b,c in N,
+	(not (a < a)) 									and		# irreflexive
+	(if a < b and b < c then a < c) and 	# transitive
+	(a < b or a = b or b < a)							# connex
+		by irreflexive,transitive,connex
+
+nat_greater_eq_0: for all n in N, n >= 0
+	by nonnegative,total_order
+
+nat_if_not_0: for all n in N, if n != 0 then n >= 1
+proof
+	take any n in N such that n != 0
+		so n > 0 by nat_greater_eq_0
+		so n+1 > 0+1 by inequal_add
+		so n+1 > 1 by plus_0,add_commute
+		so n >= 1 by nat_ineq_2
+	end
+end
+
+pair_less: for all a,b in N, for some c in N, a < c and b < c
+	by nat_ineq_2,nat_closed_add,total_order
+
+mult_cancel: for all a,b,c in N where c != 0, if a*c = b*c then a=b
+proof
+	p_def: for some p, for all n in N,
+		p[n] iff for all a,b,c in N where a < n and b < n and c != 0,
+			if a*c = b*c then a=b
+				by comprehension_nat
+	p[0] by nonnegative,p_def
+	take hyp: any n in N where p[n]
+		take 1: any a,b,c in N with c != 0 where a < n+1 and b < n+1 and a*c = b*c
+			if a = 0 or b = 0 then a = b by mult_not_0,1,0_mult
+			suppose a != 0 and b != 0
+				so 2: for some d,e in N, a = d+1 and b = e+1 by nat_reduce
+				types: d+1 is in N and e+1 is in N by nat_closed_add
+				(d+1)*c = (e+1)*c by 1,2
+				so d*c+c = e*c+c by mult_commute,mult_dist,mult_1,types
+				so d*c = e*c by add_cancel,nat_closed_mult
+				d < n and e < n by 1,2,ineq_cancel
+				so d=e by hyp,p_def
+				so a=b by 2
+			end
+		end
+		n+1 is in N by nat_closed_add
+		so p[n+1] by p_def
+	end
+	so for all n in N, p[n] by induction
+	so thesis by p_def,pair_less
+end
+
+ineq_mult_cancel: for all a,b,c in N where c != 0, if c*a <= c*b then a <= b
+proof
+	take any a,b,c in N with c != 0 where c*a <= c*b
+		so 1: for some d in N, c*a+d = c*b by ineq_less_equal,nat_closed_mult
+		suppose a > b
+			so for some e in N with e != 0, a = b+e by ineq_def
+			so c*(b+e)+d = c*b by 1
+			so c*b+c*e+d = c*b by mult_dist
+			so c*e+d+c*b = c*b by add_commute,add_assoc,nat_closed_mult
+			so c*e+d = 0 by cancel_zero,nat_closed_mult,nat_closed_add
+			c*e != 0 by mult_not_0
+			so contradiction by add_not_zero,nat_closed_mult
+		end
+		so a <= b by total_order
+	end
+end
+
+inequal_mult: for all a,b,c in N, if a < b and c > 0, then a*c < b*c
+proof
+	take any a,b,c in N with c > 0 where a < b
+		2: so for some d in N with d != 0, b = a+d by ineq_def
+		d*c != 0 by mult_not_0,total_order
+		types: a*c is in N and d*c is in N by nat_closed_mult
+		so a*c < (a*c)+(d*c) by ineq_def,nat_closed_add,types
+		so a*c < (a+d)*c by 2,mult_dist,mult_commute
+		so a*c < b*c by 2
+	end
+end
+
+mult_positive: for all a,b in N where a > 0 and b > 0, a*b > 0
+	by mult_not_0,nonnegative,total_order,nat_closed_mult
+
+mult_greater: for all a,b in N where a != 0 and b > 1, a*b > a
+proof
+	mg0: take any a,b in N where a != 0 and b > 1
+		suppose a > 0
+			so b*a > 1*a by inequal_mult,mg0
+			so a*b > a by mult_commute,mult_1
+		end
+	end
+	so thesis by total_order,nonnegative
+end
+
+strong_induction_from_0: for all P,
+	if 	for all n in N,
+				(for all m in N such that m < n, P[m]) implies P[n]
+	then
+			for all n in N, P[n]
+proof
+	take any P
+
+		Q_defx: for some Q, for all n in N, Q[n] iff for all m in N such that m < n, P[m]
+			by comprehension_nat
+
+		ssi0: suppose for all n in N,
+					(for all m in N such that m < n, P[m]) implies P[n]
+
+			Q[0] by Q_defx,nonnegative
+
+			take any n in N such that Q[n]
+				ssi2: so for all m in N such that m < n, P[m] by Q_defx
+				P[n] by ssi0,ssi2
+				so for all m in N such that m < n+1, P[m] by nat_ineq_2,ssi2
+				so Q[n+1] by Q_defx,nat_closed_add
+			end
+
+			so for all n in N, Q[n] by induction
+			so for all n in N, P[n] by ssi0,Q_defx
+		end
+	end
+end
+
+strong_induction: for all P, for all c in N,
+	if 	for all n in N where n >= c,
+				(for all m in N where m >= c and m < n, P[m]) implies P[n]
+	then
+			for all n in N where n >= c, P[n]
+proof
+	take any P
+		take any c in N
+			si1: suppose for all n in N such that n >= c,
+					(for all m in N such that m >= c and m < n, P[m]) implies P[n]
+				Q_def: for some Q, for all n in N, Q[n] iff P[n+c] by comprehension_nat
+				take any n in N such that for all m in N such that m < n, Q[m]
+					so for all m in N such that m < n, P[m+c] by Q_def
+					so si3: for all b in N such that b+c >= c and b+c < n+c, P[b+c]
+						by ineq_cancel
+					take si4: any m in N such that m >= c and m < n+c
+						if m = c then c+0 = m by plus_0
+						if m != c then for some b in N, c+b = m by ineq_def,si4
+						so for some b in N, c+b = m
+						so P[m] by si3,si4,add_commute
+					end
+					now
+						n >= 0 by nat_greater_eq_0
+						so 0+c <= n+c by inequal_add
+						so n+c >= c by plus_0,add_commute
+					end
+					so P[n+c] by si1,nat_closed_add
+					so Q[n] by Q_def
+				end
+				so for all n in N, Q[n] by strong_induction_from_0
+				so si5: for all b in N, P[b+c] by Q_def
+				take any n in N such that n >= c
+					so for some b in N, c+b = n by ineq_def,plus_0
+					so P[n] by si5,add_commute
+				end
+			end
+		end
+	end
+end
+
+strong_induction_strict: for all P, for all c in N,
+	if 	for all n in N where n > c,
+				(for all m in N where m > c and m < n, P[m]) implies P[n]
+	then
+			for all n in N where n > c, P[n]
+proof
+	take any P,c with c is in N
+		suppose 1: for all n in N where n > c,
+						     (for all m in N where m > c and m < n, P[m]) implies P[n]
+		  types: c+1 is in N by nat_closed_add
+			take any n in N where n >= c+1
+				so (for all m in N where m > c and m < n, P[m]) implies P[n]
+					by 1,nat_ineq_2,total_order,types
+				so (for all m in N where m >= c+1 and m < n, P[m]) implies P[n]
+					by nat_ineq_2,total_order,types
+			end
+			so for all n in N where n >= c+1, P[n] by strong_induction,types
+			so for all n in N where n > c, P[n] by nat_ineq_2,total_order,types
+		end
+	end
 end

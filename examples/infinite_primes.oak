@@ -1,0 +1,166 @@
+include "set.oak"
+
+###############################################################################
+
+divides_def: define divides such that for all a,b in N,
+	divides[a,b] iff (for some c in N, a*c = b)
+		by comprehension_nat2
+
+prime_def: define prime such that for all n in N,
+	prime[n] iff (n > 1 and for all d in N where divides[d,n], d = 1 or d = n)
+		by comprehension_nat
+
+primes_def: define primes in Set such that for all x,
+	x is in primes iff (x is in N and prime[x])
+		by set_comprehension
+
+product_def: define product in Function such that for all S in Set,
+	product[∅] = 1 and for all x in S,
+	product[S] = x * product[S - {x}]
+proof
+	for all a,b,c in N, a*b = b*a and a*(b*c) = (a*b)*c by mult_commute,mult_assoc
+	so thesis by func_comprehension_set
+end
+
+zero_divides: for all n in N where n != 0, not divides[0,n]
+	by divides_def,0_mult
+
+divides_less: for all a,n in N where n != 0, divides[a,n] implies a <= n
+proof
+	take 1: any a,n in N where n != 0 and divides[a,n]
+		for some c in N, a*c = n by divides_def,1
+		so a <= n by mult_greater,nat_if_not_0,0_mult,mult_1,mult_commute,1
+	end
+end
+
+divides_one: for all n in N, divides[n,1] implies n = 1
+proof
+  take 1: any n in N where divides[n,1]
+    n <= 1 by divides_less,1,0_not_1
+    n != 0 by 0_mult,1,divides_def,0_not_1
+    so n <= 1 and n >= 1 by nat_if_not_0
+    so n = 1 by total_order
+  end
+end
+
+divides_diff: for all a,b,d in N,
+  if divides[d,a] and divides[d,a+b] then divides[d,b]
+proof
+	for all a,b in N, if divides[0,a] and divides[0,a+b] then divides[0,b]
+		by divides_def,0_mult,total_order,ineq_def,nat_closed_add
+	take 1: any a,b,d in N with d != 0 where divides[d,a] and divides[d,a+b]
+		2: for some m1 in N, d*m1 = a by 1,divides_def
+		3: for some m2 in N, d*m2 = a+b by 1,divides_def,nat_closed_add
+		d*m1 <= d*m2 by 2,3,ineq_def,plus_0,nat_closed_mult
+		so m1 <= m2 by ineq_mult_cancel
+		so for some m3 in N, m2=m1+m3 by ineq_def,plus_0
+		d*m2 = d*m1+b by 2,3
+		so d*m1 + b = d*(m1+m3)
+		so d*m1 + b = d*m1 + d*m3 by mult_dist
+		so b = d*m3 by cancellation_left,nat_closed_mult
+		so divides[d,b] by divides_def
+	end
+end
+
+prime_factor: for all n in N where n > 1,
+  for some d in N, divides[d,n] and prime[d]
+proof
+	P_def: for some P, for all n in N,
+				   P[n] iff for some d in N, divides[d,n] and prime[d]
+		by comprehension_nat
+	take any n in N with n > 1
+		suppose hyp: for all m in N where m > 1 and m < n, P[m]
+			divides[n,n] by divides_def,mult_1 # handles prime[n]
+			suppose not prime[n]
+				so 1: for some e in N, divides[e,n] and e != 1 and e != n by prime_def
+				e > 1 and e < n by divides_less,nonnegative,zero_divides,nat_if_not_0,1
+				so 2: for some f in N, divides[f,e] and prime[f] by hyp,P_def
+				divides[f,n] by divides_def,1,2,mult_assoc,nat_closed_mult
+				so P[n] by P_def,2
+			end
+			so P[n] by P_def
+		end
+	end
+	so thesis by strong_induction_strict,P_def
+end
+
+product_set_in_N: for all S in Set where finite[S], product[S] is in N
+proof
+	P_def: for some P, for all S in Set, P[S] iff product[S] is in N
+		by comprehension_set
+	take any S in Set with finite[S]
+		P[∅] by product_def,P_def
+		take any A != ∅ with A ⊆ S where for all B ⊂ A, P[B]
+			types: A is in Set by subset_def
+			there is a d in A by empty_def,set_equality,types
+			1: let B = A - {d}
+			B is in Set by subset_def,setdiff_def,singleton,set_domain,1
+			B ⊂ A by setdiff_element,1,types
+			so product[B] is in N by P_def
+			so d * product[B] is in N by nat_closed_mult,set_domain,types
+			so product[A] is in N by product_def,1,types
+			so P[A] by P_def,types
+		end
+		so product[S] is in N by set_induction,P_def
+	end
+end
+
+product_set_positive: for all S in Set where finite[S],
+  if for all d in S, d > 0, then product[S] > 0
+proof
+	take 1: any S in Set with finite[S] where for all d in S, d > 0
+		P_def: for some P, for all S in Set, P[S] iff product[S] > 0
+			by comprehension_set
+		# base case
+		P[∅] by P_def,product_def,0_less_1
+		# induction
+		take any A != ∅ with A ⊆ S
+			suppose for all B ⊂ A, P[B] # induction hypothesis
+				types: A is in Set by subset_def
+				there is a d in A by empty_def,set_equality,types
+				2: let B = A - {d}
+				types2: B is in Set by 2,setdiff_def,singleton,set_domain,subset_def
+				so finite[B] and product[B] > 0
+					by setdiff_element,proper_subset_def,subset_finite,P_def,2,types
+				d > 0 by 1,subset_def
+				so d * product[B] > 0
+					by mult_positive,set_domain,product_set_in_N,types,types2
+				so product[A] > 0 by product_def,2,types
+				so P[A] by P_def,types
+			end
+		end
+		so product[S] > 0 by set_induction,P_def
+	end
+end
+
+divides_product: for all S in Set where finite[S],
+	for all d in S, divides[d, product[S]]
+proof
+	take any S,d with S is in Set and finite[S] and d is in S
+		1: let A = S - {d}
+		product[S] = d * product[A] by product_def,1
+		types: A is in Set by 1,setdiff_def,singleton,set_domain
+		finite[A] by setdiff_element,proper_subset_def,subset_finite,1
+		so divides[d, product[S]] by divides_def,set_domain,product_set_in_N,types
+	end
+end
+
+infinite_primes: infinite[primes]
+proof
+	suppose 1: finite[primes]
+	  2: for some p in N, p = product[primes] by 1,product_set_in_N
+	  3: for some q in N, q = p+1 by nat_closed_add
+		q > 1 proof
+			for all n in primes, n > 0
+				by primes_def,prime_def,nonnegative,total_order
+			so p > 0 by product_set_positive,1,2
+			so thesis by 3,ineq_def,add_commute,total_order
+		end
+	  4: so for some d in N, divides[d,q] and prime[d] by prime_factor
+	  divides[d,p] by divides_product,4,2,1,primes_def
+	  so divides[d,1] by divides_diff,3,4
+	  so not prime[d] by prime_def,divides_one,total_order
+	  so contradiction by 4
+	end
+	so thesis by infinite_def
+end

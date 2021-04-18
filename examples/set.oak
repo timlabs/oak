@@ -1,0 +1,552 @@
+include "naturals.oak"
+
+###############################################################################
+
+# set axioms
+
+set_equality: axiom for all A,B in Set,
+  A = B iff for all x, x is in A iff x is in B
+
+set_domain: axiom for all S in Set, for all x in S, x is in N
+
+# comprehension axioms
+
+comprehension_set: axiom schema
+	for all meta P,S,φ such that not free[P,φ],
+		`for some P, for all S in Set, P[S] iff φ`
+
+comprehension_set2: axiom schema
+	for all meta P,x,y,φ such that not free[P,φ],
+		`for some P, for all x,y,
+			P[x,y] iff (x is in Set and (y is in Set) and φ)`
+
+comprehension_set_nat: axiom schema
+	for all meta P,S,n,φ such that not free[P,φ],
+		`for some P, for all S in Set, for all n in N,
+			 P[S,n] iff φ`
+
+comprehension_func_set: axiom schema
+	for all meta P,f,S,φ such that not free[P,φ],
+		`for some P, for all f in Function, for all S in Set,
+			 P[f,S] iff φ`
+
+comprehension_func_set2: axiom schema
+	for all meta P,f,A,B,φ such that not free[P,φ],
+		`for some P, for all f in Function, for all A,B in Set,
+			 P[f,A,B] iff φ`
+
+set_comprehension: axiom schema
+	for all meta S,x,φ such that not free[S,φ],
+		`for some S in Set, for all x, x is in S iff ((x is in N) and φ)`
+
+set_nat_comprehension: axiom schema
+	for all meta S,n,x,φ such that not free[S,φ],
+		`for some S, for all n in N, S[n] is in Set and for all x,
+			 x is in S[n] iff ((x is in N) and φ)`
+
+set_set2_comprehension: axiom schema
+	for all meta S,A,B,x,φ such that not free[S,φ],
+		`for some S, for all A,B in Set, S[A,B] is in Set and for all x,
+			 x is in S[A,B] iff ((x is in N) and φ)`
+
+set_func_set_comprehension: axiom schema
+	for all meta S,f,A,x,φ such that not free[S,φ],
+		`for some S, for all f in Function, for all A in Set,
+			 S[f,A] is in Set and for all x,
+			 	 x is in S[f,A] iff ((x is in N) and φ)`
+
+func_comprehension: axiom schema
+	for all meta f,x,X,w,y,z,Y,φ such that not free[f,φ],
+		`(for all x in X, for all w,z in Y, (φ{y:w} and φ{y:z}) implies w = z)
+			 implies
+		 (for some f in Function, for all x in X and y in Y, f[x] = y iff φ)`
+
+func_comprehension_nat_case: axiom schema
+	for all meta case1,case2,f,x,φ,θ,S where (not free[f,φ]) and not free[f,θ],
+		`if S is in Set and for all x in S, not (case1 and case2), then
+			for some f in Function, for all x in S,
+				(if case1 then f[x] = φ) and
+				(if case2 then f[x] = θ)`
+
+func_comprehension_set: axiom schema
+	for all meta a,b,c,g,f,S,θ,x,φ where (not free[f,θ]) and not free[f,φ],
+		`if for all a,b,c in N, g[a,b] = g[b,a] and g[a,g[b,c]] = g[g[a,b],c], then
+			for some f in Function, for all S in Set,
+				f[∅] = θ and for all x in S, f[S] = g[φ, f[S - {x}]]`
+
+###############################################################################
+
+empty_def: define ∅ in Set such that for all x,
+	x is in ∅ iff (x is in N and false)
+		by set_comprehension
+
+subset_def: define ⊆ such that for all A,B,
+	A ⊆ B iff (A is in Set and B is in Set and
+		for all x in A, x is in B)
+			by comprehension_set2
+
+proper_subset_def: define ⊂ such that for all A,B,
+	A ⊂ B iff	(A is in Set and B is in Set and
+		(A ⊆ B and for some x in B, x is not in A))
+			by comprehension_set2
+
+singleton: define {} such that for all n in N,
+	{n} is in Set and for all x,
+		x is in {n} iff (x is in N and x = n)
+			by set_nat_comprehension
+
+setdiff_def: define - such that for all A,B in Set,
+	A - B is in Set and for all x,
+		x is in A - B iff (x is in N and (x is in A and x is not in B))
+			by set_set2_comprehension
+
+setdiff_element: for all S in Set, for all d in S, S-{d} ⊂ S
+	by setdiff_def,subset_def,singleton,proper_subset_def,set_domain
+
+subset_diff: for all A,B,C in Set, if A ⊆ B, then A-C ⊆ B-C
+proof
+	take 1: any A,B,C in Set where A ⊆ B
+		take any x in (A-C)
+			so x is in A and x is not in C by setdiff_def
+			so x is in B and x is not in C by 1,subset_def
+			so x is in B-C by setdiff_def
+		end
+		A-C is in Set and B-C is in Set by setdiff_def
+		so A-C ⊆ B-C by subset_def
+	end
+end
+
+image_def: define image such that for all f in Function, for all S in Set,
+	image[f,S] is in Set and for all y,
+		y is in image[f,S] iff (y is in N and for some x in S, f[x] = y)
+			by set_func_set_comprehension
+
+one_to_one: define one_to_one such that for all f in Function, for all S in Set,
+	one_to_one[f,S] iff for all x,y in S where x != y, f[x] != f[y]
+		by comprehension_func_set
+
+biject_def: define bijection such that
+	for all f in Function, for all A,B in Set,
+		bijection[f,A,B] iff (
+			(for all x in A, f[x] is in B) and # subset
+			one_to_one[f,A] and # one-to-one
+			(for all y in B, for some x in A, f[x] = y)) # onto
+				by comprehension_func_set2
+
+biject_empty: for all f in Function, for all S in Set,
+	if bijection[f,S,∅] or bijection[f,∅,S], then S = ∅
+		by empty_def,biject_def,set_equality
+
+biject_reflexive: for all A in Set, for some f in Function, bijection[f,A,A]
+proof
+  for all x in N, for all y1,y2 in N, (x = y1 and x = y2) implies y1 = y2
+	so for some f in Function, for all x in N and y in N, f[x] = y iff x = y
+    by func_comprehension
+	so thesis by set_domain,biject_def,one_to_one
+end
+
+biject_symmetric: for all A,B in Set,
+	if for some f in Function, bijection[f,A,B], then
+		for some g in Function, bijection[g,B,A]
+proof
+	take any A,B in Set
+		suppose 1: for some f in Function, bijection[f,A,B]
+			2: for some p, for all b,a in N, p[b,a] iff f[a] = b
+				by comprehension_nat2
+			for all b in B, for all a1,a2 in A, if p[b,a1] and p[b,a2] then a1 = a2
+				by biject_def,1,one_to_one,2,set_domain
+			so 3: for some g in Function, for all b in B and a in A,
+				g[b] = a iff p[b,a] by func_comprehension
+			for all b in B, g[b] is in A by biject_def,1,2,set_domain,3
+			one_to_one[g,B] by one_to_one,biject_def,1,2,set_domain,3
+			for all a in A, for some b in B, g[b] = a by biject_def,1,2,set_domain,3
+			so bijection[g,B,A] by biject_def
+		end
+	end
+end
+
+biject_transitive: for all A,B,C in Set,
+	if for some f,g in Function, bijection[f,A,B] and bijection[g,B,C], then
+		for some h in Function, bijection[h,A,C]
+proof
+	take any A,B,C in Set
+		suppose 1: for some f,g in Function, bijection[f,A,B] and bijection[g,B,C]
+			2: for some p, for all a,c in N, p[a,c] iff g[f[a]] = c
+				by comprehension_nat2
+			for all a in A, for all c1,c2 in C, if p[a,c1] and p[a,c2] then c1 = c2
+				by 2,set_domain
+			so 3: for some h in Function, for all a in A and c in C,
+				h[a] = c iff p[a,c] by func_comprehension
+			for all a in A, h[a] is in C by biject_def,1,2,set_domain,3
+			now
+				take any a1,a2 in A where a1 != a2
+					so f[a1] != f[a2] by biject_def,1,one_to_one
+					so g[f[a1]] != g[f[a2]] by biject_def,1,one_to_one
+					so h[a1] != h[a2] by biject_def,1,2,set_domain,3
+				end
+				so one_to_one[h,A] by one_to_one
+			end
+			for all c in C, for some a in A, h[a] = c by biject_def,1,2,set_domain,3
+			so bijection[h,A,C] by biject_def
+		end
+	end
+end
+
+first_def: define first such that for all n in N,
+	first[n] is in Set and for all x,
+		x is in first[n] iff (x is in N and x < n)
+			by set_nat_comprehension
+
+first_sub: for all n in N, first[n] ⊆ first[n+1]
+	by nat_closed_add,first_def,inequal_add_right,subset_def
+
+first_incl: for all n in N, n is in first[n+1]
+	by nat_closed_add,nat_ineq_2,first_def
+
+first_excl: for all n in N, n is not in first[n]
+	by first_def,total_order
+
+first_empty: for all n in N, first[n] = ∅ iff n = 0
+proof
+	first[0] = ∅ by first_def,empty_def,nonnegative,set_equality
+	for all n in N, if first[n] = ∅ then n = 0
+		by ineq_def,nat_if_not_0,nat_reduce,first_def,empty_def
+end
+
+first_drop: for all n in N, first[n+1]-{n} = first[n]
+proof
+	take any n in N
+		types: n+1 is in N and {n} is in Set and first[n] is in Set and
+					 first[n+1] is in Set and first[n+1]-{n} is in Set
+			by nat_closed_add,first_def,singleton,setdiff_def
+		take any x in (first[n+1]-{n})
+			x < n+1 by first_def,types,setdiff_def
+			x != n by singleton,types,setdiff_def
+			so x is in first[n] by first_def,nat_ineq_2,types,setdiff_def
+		end
+		take any x in first[n]
+			x is in first[n+1] by first_sub,subset_def
+			x is not in {n} by singleton,total_order,first_def
+			so x is in (first[n+1]-{n}) by setdiff_def,types,first_def
+		end
+	end
+	so thesis by set_equality,types
+end
+
+# from Tao - Analysis I
+lemma_3.6.8: for all S in Set and n in N,
+	if for some f in Function, bijection[f, S, first[n+1]], then
+ 		for all x in S, for some f in Function, bijection[f, S-{x}, first[n]]
+proof
+	take any S,n with S is in Set and n is in N
+		suppose 1: for some f in Function, bijection[f, S, first[n+1]]
+			take any z in S
+				types: S-{z} is in Set and first[n] is in Set and first[n+1] is in Set
+							 and n+1 is in N
+				 	by setdiff_def,singleton,first_def,set_domain,nat_closed_add
+				now
+					S-{z} is in Set and for all x in (S-{z}), not (f[x] = n and f[x] != n)
+						by types
+					2: so for some g in Function, for all x in (S-{z}),
+						(if f[x] = n then g[x] = f[z]) and
+						(if f[x] != n then g[x] = f[x])
+							by func_comprehension_nat_case
+				end
+
+				for all x in (S-{z}), g[x] is in first[n] proof
+					take any x in (S-{z})
+						3: x is in S and x != z by setdiff_def,singleton,set_domain
+						types2: f[x] is in N by first_def,biject_def,1,3,types
+						if f[x] = n then g[x] is in first[n]
+							by 2,types,1,biject_def,one_to_one,3,nat_ineq_2,first_def
+						if f[x] != n then g[x] is in first[n]
+							by 2,3,1,biject_def,types,types2,singleton,first_drop,setdiff_def
+					end
+				end
+				
+				one_to_one[g, S-{z}] proof
+					for all x,y in (S-{z}) where x != y, g[x] != g[y]
+						by 2,types,1,biject_def,one_to_one,setdiff_def,singleton,set_domain
+					so thesis by one_to_one,types
+				end
+
+				for all y in first[n], for some x in (S-{z}), g[x] = y proof
+					take any y in first[n]
+						y is in first[n+1] by first_sub,subset_def
+						so 4: for some x in S, f[x] = y by 1,biject_def,types
+						if x != z then (x is in S-{z} and g[x] = y)
+							by singleton,setdiff_def,set_domain,first_excl,2,4
+						suppose 5: x = z
+							6: for some xf in S, f[xf] = n
+								by 1,biject_def,nat_ineq_2,first_def,types
+							f[z] != n by 4,5,first_excl
+							so 7: xf is in S-{z} by 6,setdiff_def,singleton,set_domain
+							g[xf] = f[z] by 7,6,2
+							so xf is in S-{z} and g[xf] = y by 7,4,5
+						end
+					end
+				end
+				
+				so bijection[g, S-{z}, first[n]] by biject_def,types
+			end
+		end
+	end
+end
+
+card_def: define || such that for all S in Set and n in N,
+	|S| = n iff for some f in Function, bijection[f,S,first[n]]
+proof
+	1: for some q, for all S in Set, for all n in N,
+		q[S,n] iff for some f in Function, bijection[f,S,first[n]]
+			by comprehension_set_nat
+	P_def: for some P, for all n in N,
+		P[n] iff for all S in Set, if q[S,n] then
+			for all m in N, q[S,m] implies m = n
+				by comprehension_nat
+	P[0] by P_def,first_empty,biject_empty,first_def,1
+	take hyp: any n in N where P[n]
+		take 2: any S in Set where q[S,n+1]
+			suppose 3: for some m in N, q[S,m]
+				types: n+1 is in N by nat_closed_add
+				if S = ∅, then n+1 = 0 by 1,2,types,biject_empty,first_def,first_empty
+				so there is an x in S by not_plus_one_equal_zero,empty_def,set_equality
+				so m != 0 by 3,1,first_empty,biject_empty,empty_def
+				so 4: for some l in N, l+1 = m by nat_reduce
+				for some f in Function, bijection[f, S-{x}, first[n]]
+					by lemma_3.6.8,1,2,types
+				for some f in Function, bijection[f, S-{x}, first[l]]
+					by lemma_3.6.8,1,3,4
+				so n = l by hyp,P_def,1,setdiff_def,singleton,set_domain
+				so m = n+1 by 4
+			end
+		end
+		so P[n+1] by P_def,nat_closed_add
+	end
+	so for all n in N, P[n] by induction
+  so for all S in Set, for all n1,n2 in N, if q[S,n1] and q[S,n2] then n1 = n2
+    by P_def
+  so for some g in Function, for all S in Set and n in N,
+     g[S] = n iff q[S,n] by func_comprehension
+	so thesis by 1
+end
+
+finite_def: define finite such that for all S in Set,
+	finite[S] iff for some n in N, |S| = n
+		by comprehension_set
+
+infinite_def: define infinite such that for all S in Set,
+  infinite[S] iff not finite[S]
+		by comprehension_set
+
+card_empty: |∅| = 0
+	by first_empty,biject_reflexive,card_def
+
+finite_biject: for all A,B in Set,
+  if finite[A] and for some f in Function, bijection[f,A,B], then
+    (finite[B] and |B| = |A|)
+proof
+	take 1: any A,B in Set where finite[A] and
+						for some f in Function, bijection[f,A,B]
+		2: for some k in N, for some g in Function, bijection[g,A,first[k]]
+			by card_def,finite_def,1
+		types: first[k] is in Set by first_def
+		for some h in Function, bijection[h,B,A] by biject_symmetric,1
+		so for some f in Function, bijection[f,B,first[k]]
+      by biject_transitive,types,2
+		so finite[B] and |B| = |A| by card_def,finite_def,2
+	end
+end
+
+card_add: for all S in Set, for all w in S where finite[S-{w}],
+	finite[S] and |S| = |S-{w}| + 1
+proof
+	take any S in Set and w in S where finite[S-{w}]
+		A_def: let A = S-{w}
+		A is in Set by A_def,singleton,set_domain,setdiff_def
+
+		1: so for some k in N and f in Function with k = |A|,
+			bijection[f,A,first[k]] by card_def,finite_def,A_def
+
+		types: A is in Set and k+1 is in N and {w} is in Set and
+           first[k] is in Set and first[k+1] is in Set
+			by A_def,setdiff_def,nat_closed_add,singleton,first_def,set_domain
+
+		2: for all x in S, x = w or x is in A
+			by singleton,set_domain,A_def,setdiff_def
+		3: for all x in A, x is in S
+			by types,A_def,setdiff_def
+
+		S is in Set and for all t in S, not (t = w and t is in A)
+			by types,A_def,singleton,setdiff_def
+		g_def: so for some g in Function, for all t in S,
+			(if t = w then g[t] = k) and
+			if t is in A then g[t] = f[t]
+				by func_comprehension_nat_case
+
+		take any x in S
+			if x is in A then f[x] is in first[k] by biject_def,1,types
+			so if x is in A then g[x] is in first[k+1] by g_def,first_sub,subset_def
+			if x = w then g[x] is in first[k+1] by g_def,first_incl
+			so g[x] is in first[k+1] by 2
+		end
+		now
+			take any x,y in S with x != y
+				if x is in A and y is in A, then g[x] != g[y]
+					by one_to_one,types,biject_def,g_def,1
+				if x = w or y = w, then g[x] != g[y]
+					by g_def,biject_def,types,1,first_excl,2
+			end
+			so one_to_one[g,S] by one_to_one,2
+		end
+		take any y in first[k+1]
+			if y = k, then g[w] = y by g_def
+			suppose y != k
+				so y is in first[k] by types,setdiff_def,set_domain,first_drop,singleton
+				so for some x in A, f[x] = y by 1,types,biject_def
+				so g[x] = y by g_def,3
+			end
+			so for some x in S, g[x] = y by 3
+		end
+		so bijection[g, S, first[k+1]] by biject_def,types
+		
+		so |S| = k+1 by card_def,types
+		so finite[S] and |S| = |S-{w}|+1 by finite_def,types,A_def
+	end
+end
+
+# from Sundstrom - Mathematical Reasoning
+lemma_9.5: for all m in N, for all A in Set,
+ 	if A ⊆ first[m] then (finite[A] and |A| <= m)
+proof
+	P_def: for some P, for all m in N,
+  	P[m] iff for all A in Set where A ⊆ first[m], finite[A] and |A| <= m
+	 		by comprehension_nat
+	P[0] proof
+		first[0] = ∅ by first_def,empty_def,nonnegative,set_equality
+		for all A in Set where A ⊆ ∅, A = ∅ by empty_def,subset_def,set_equality
+		so P[0] by P_def,card_empty,finite_def
+	end
+	take hyp: any k in N where P[k]
+		take 0: any A in Set where A ⊆ first[k+1]
+			A-{k} ⊆ first[k+1]-{k} by 0,subset_diff,nat_closed_add,singleton,first_def
+			so A-{k} ⊆ first[k] by first_drop
+			B_def: for some B in Set, B = A-{k} by singleton,setdiff_def
+			so 1: finite[B] and |B| <= k by hyp,P_def,B_def
+			suppose k is not in A
+				so A = B by B_def,setdiff_def,singleton,set_equality,set_domain
+				so finite[A] and |A| <= k by 1
+				so finite[A] and |A| <= k+1
+					by total_order,finite_def,nat_closed_add,ineq_def,0_not_1
+			end
+			suppose k is in A
+				so finite[A] and |A| = |B|+1 by 1,card_add,B_def
+				so finite[A] and |A| <= k+1 by 1,finite_def,inequal_add
+			end
+		end
+		so P[k+1] by P_def,nat_closed_add
+	end
+	so thesis by induction,P_def
+end
+
+subset_finite: for all S in Set where finite[S], for all A ⊆ S,
+	finite[A] and |A| <= |S|
+proof
+	take 0: any S,A with S is in Set where finite[S] and A ⊆ S
+		1: for some k in N, |S| = k by finite_def,0
+		2: for some f in Function, bijection[f,S,first[k]] by card_def,1
+		types: A is in Set and image[f,A] is in Set and first[k] is in Set
+			by image_def,first_def,subset_def,0
+		bijection[f,A,image[f,A]] proof
+			for all x in A, f[x] is in N by 0,subset_def,2,biject_def,types,set_domain
+			so for all x in A, f[x] is in image[f,A] by image_def,types
+			one_to_one[f,A] by 2,0,subset_def,types,biject_def,one_to_one
+			for all y in image[f,A], for some x in A, f[x] = y by image_def,types
+			so thesis by biject_def,types
+		end
+		now
+			image[f,A] ⊆ first[k] by subset_def,types,image_def,0,biject_def,2
+			so finite[image[f,A]] and |image[f,A]| <= k by lemma_9.5,types
+		end
+		so finite[A] and |A| <= |S| by finite_biject,1,types,biject_symmetric
+	end
+end
+
+card_drop: for all S in Set where finite[S], for all x in S,
+	finite[S-{x}] and |S| = |S-{x}| + 1
+proof
+	take any S in Set and x in S where finite[S]
+		types: S-{x} is in Set and x is in N by singleton,setdiff_def,set_domain
+		S-{x} ⊆ S by setdiff_def,subset_def,singleton,types
+		so 1: finite[S-{x}] by subset_finite
+		|S| = |S-{x}| + 1 by card_add,1
+	end
+	so thesis by 1	
+end
+
+card_zero: for all S in Set, |S| = 0 iff S = ∅
+proof
+	take 1: any S in Set where |S| = 0
+		suppose there is some x in S
+			types: S-{x} is in Set and x is in N by singleton,setdiff_def,set_domain
+			finite[S] by finite_def,1
+			so finite[S-{x}] and |S| = |S-{x}| + 1 by card_drop
+			so contradiction by 1,not_plus_one_equal_zero,finite_def,types
+		end
+	end
+	so thesis by card_empty,set_equality
+end
+
+proper_card: for all A,B in Set where finite[A] and B ⊂ A, |B| < |A|
+proof
+	take 1: any A,B in Set where finite[A] and B ⊂ A
+		for all x in B, x is in A by subset_def,proper_subset_def,1
+		for some x in A, x is not in B by proper_subset_def,1
+		C_def: let C = A - {x}
+		types: C is in Set by singleton,setdiff_def,set_domain,C_def
+		2: finite[C] and |A| = |C|+1 by card_drop,C_def,1
+		so B ⊆ C by C_def,subset_def,setdiff_def,singleton,set_domain,types
+		so finite[B] and |B| <= |C| by subset_finite,2,types
+		|C| < |A| by 2,finite_def,types,less_add_1
+		so |B| < |A| by total_order,finite_def,types,1,2
+	end
+end
+
+set_induction: for all P,S where S is in Set and finite[S],
+	if for all A ⊆ S,
+		   (for all B ⊂ A, P[B]) implies P[A],
+	then
+		 P[S]
+proof
+	take 0: any P,S with S is in Set where finite[S]
+		suppose 1: for all A ⊆ S, (for all B ⊂ A, P[B]) implies P[A]
+			Q_def: for some Q, for all n in N,
+						   Q[n] iff for all A ⊆ S where |A| <= n, P[A]
+			  by comprehension_nat
+			Q[0] proof
+				P[∅] by 1,proper_subset_def,subset_def,empty_def
+				for all A ⊆ S where |A| <= 0, A = ∅
+					by card_zero,nonnegative,0,subset_finite,finite_def,subset_def
+				so thesis by Q_def
+			end
+			take 2: any n in N where Q[n]
+				take 3: any A ⊆ S where |A| <= n+1
+					take any B ⊂ A
+						types: A is in Set and B is in Set by proper_subset_def
+						|A| is in N and |B| is in N
+							by subset_finite,finite_def,0,proper_subset_def
+						so |B| <= n
+							by proper_card,3,nat_ineq_2,total_order,0,subset_finite,types
+						so P[B] by Q_def,2,proper_subset_def,subset_def
+					end
+					so for all B ⊂ A, P[B]
+					so P[A] by 1
+				end
+				so Q[n+1] by Q_def,nat_closed_add
+			end
+			so for all n in N, Q[n] by induction
+			|S| is in N by 0,finite_def
+			so for all A ⊆ S where |A| <= |S|, P[A] by Q_def
+			so P[S] by subset_def
+		end
+	end	
+end
