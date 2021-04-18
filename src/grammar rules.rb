@@ -114,6 +114,7 @@ def grammar_rules
 	[:exp2, :every, :end],
 	[:exp2, :some, :end],
 	[:exp2, :no, :end],
+	[:exp2, :at_most_one, :end],
 
 	[:exp2, :exp3, :exp2a],
 	[:exp2a, /\s*=/i, :exp2b],
@@ -178,6 +179,7 @@ def grammar_rules
 	[:prefix, :if, :end],
 	[:prefix, :universal_meta, :end],
 	[:prefix, :universal, :end],
+	[:prefix, :for_at_most_one, :end],
 	[:prefix, :no_existential, :end],
 	[:prefix, :existential, :end],
 
@@ -204,6 +206,8 @@ def grammar_rules
 
 	[:existential, /\s*for (at least one|some)\b/i, :post_quantifier_exp],
 	[:existential, /\s*there (exist|exists|is|are)( (a|an|at least one|some))?\b/i, :post_quantifier],
+	[:for_at_most_one, /\s*for at most one\b/i, :post_quantifier_exp],
+	[:for_at_most_one, /\s*there (exist|exists|is|are) at most one\b/i, :post_quantifier],
 	[:no_existential, /\s*for no\b/i, :post_quantifier_exp],
 	[:no_existential, /\s*there (exist|exists|is|are) no\b/i, :post_quantifier],
 
@@ -274,22 +278,23 @@ def grammar_rules
 	[:is_predicate, :quantified, :end],
 	[:is_predicate, :word, :end],
 
-	[:every, /\s*every\b/i, :every2],
-	[:every2, :category, :every3],
-	[:every3, :is_in, :exp2b], 
-	[:every3, :is, :is_predicate],
-	
-	[:some, /\s*some\b/i, :some2],
-	[:some2, :category, :some3],
-	[:some3, :is_in, :exp2b],
-	[:some3, :is_not_in, :exp2b],
-	[:some3, :is_not, :is_predicate],
-	[:some3, :is, :is_predicate],
+	[:every, /\s*every\b/i, :category_is],
 
-	[:no, /\s*no\b/i, :no2],
-	[:no2, :category, :no3],
-	[:no3, :is_in, :exp2b],
-	[:no3, :is, :is_predicate],
+	[:no, /\s*no\b/i, :category_is],
+
+	[:some, /\s*(some|at least one)\b/i, :category_is_with_not],
+
+	[:at_most_one, /\s*at most one\b/i, :category_is_with_not],
+
+	[:category_is, :category, :category_is2],
+	[:category_is2, :is_in, :exp2b],
+	[:category_is2, :is, :is_predicate],
+
+	[:category_is_with_not, :category, :category_is_with_not2],
+	[:category_is_with_not2, :is_in, :exp2b],
+	[:category_is_with_not2, :is_not_in, :exp2b],
+	[:category_is_with_not2, :is_not, :is_predicate],
+	[:category_is_with_not2, :is, :is_predicate],
 
 	[:boolean, /\s*(true|false|contradiction)\b/i, :end],
 
@@ -380,10 +385,11 @@ def grammar_rules
 	[:atom, /(if|is|let)\b/i, :null],
 	[:atom, /(true|false|contradiction|thesis)\b/i, :null],
 	[:atom, /(not|and|or|implies|iff|then)\b/i, :null],
-	[:atom, /(for (at least one|some)|for (all|any|each|every)|for no)\b/i, :null],
+	[:atom, /for (all|any|each|every)\b/i, :null],
+	[:atom, /(for (at least one|some)|for at most one|for no)\b/i, :null],
 	[:atom, /(such that|where|with|in|there (is|are|exist|exists))\b/i, :null],
 	[:atom, /(assume|suppose|by|from|exit|take|define|axiom|schema)\b/i, :null],
-	[:atom, /(every|some|no)\b/i, :null],
+	[:atom, /(every|some|no|at most one|at least one)\b/i, :null],
 	[:atom, /((?!
 			\(|\)|\[|\]|,|;|\.\s|\.\z|=|!=|≠|\+|\-|\*|÷|\^
 			|<=|≤|<|>=|≥|>|:|"|`|{|}|\$|\||⊆|⊇|⊊|⊋|⊂|⊃|\/

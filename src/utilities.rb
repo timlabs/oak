@@ -44,10 +44,10 @@ class WordWrapper
 end
 
 def bind_variables variables, body, quantifier
-	(variables.reverse & body.free_variables).each {|variable|
-		body = Tree.new quantifier, [Tree.new(variable, []), body]
-	}
-	body
+	to_bind = variables & body.free_variables # only bind those that need it
+	return body if to_bind.empty?
+	variables_tree = Tree.new to_bind, []
+	Tree.new quantifier, [variables_tree, body]
 end
 
 def conjuncts trees
@@ -70,24 +70,27 @@ def contains_quantifiers? tree
 end
 
 def equal_up_to_variable_names? tree1, tree2, refs1 = {}, refs2 = {}, level = 0
-	# check whether tree1 and tree2 are equal up to variable renaming.  we use
-	# level rather than refs size because the two refs could have different
-	# sizes, if the same variable is bound twice in one but not the other.
+	# check whether tree1 and tree2 are equal up to variable renaming
 	return false unless tree1.operator.class == tree2.operator.class
 	if tree1.operator.is_a? Symbol
 		return false unless tree1.operator == tree2.operator
 		return false unless tree1.subtrees.size == tree2.subtrees.size
 		pairs = [tree1.subtrees, tree2.subtrees].transpose
 		case tree1.operator
-			when :for_all, :for_some
-	      var1, var2 = tree1.subtrees[0].operator, tree2.subtrees[0].operator
-				refs1[var1], last1 = level, refs1[var1]
-				refs2[var2], last2 = level, refs2[var2]
+			when :for_all, :for_some, :for_at_most_one
+				last1, last2 = {}, {}
+				zipped = tree1.subtrees[0].operator.zip tree2.subtrees[0].operator
+				zipped.each_with_index {|(var1, var2), i|
+					refs1[var1], last1[var1] = [level,i], refs1[var1]
+					refs2[var2], last2[var2] = [level,i], refs2[var2]
+				}
 				result = pairs[1..-1].all? {|subtree1, subtree2|
 					equal_up_to_variable_names? subtree1, subtree2, refs1, refs2, level+1
 				}
-				last1 ? (refs1[var1] = last1) : (refs1.delete var1)
-				last2 ? (refs2[var2] = last2) : (refs2.delete var2)
+				zipped.each_with_index {|(var1, var2), i|
+					last1[var1] ? (refs1[var1] = last1[var1]) : (refs1.delete var1)
+					last2[var2] ? (refs2[var2] = last2[var2]) : (refs2.delete var2)
+				}
 				result
 			when :not, :and, :or, :implies, :iff, :equals, :predicate
 				pairs.all? {|subtree1, subtree2|
@@ -95,7 +98,7 @@ def equal_up_to_variable_names? tree1, tree2, refs1 = {}, refs2 = {}, level = 0
 				}
 			else raise
 		end
-	else
+	elsif tree1.operator.is_a? String
 		if refs1[tree1.operator] and refs2[tree2.operator]
 			refs1[tree1.operator] == refs2[tree2.operator] # both variables
 		elsif refs1[tree1.operator] or refs2[tree2.operator]
@@ -103,6 +106,8 @@ def equal_up_to_variable_names? tree1, tree2, refs1 = {}, refs2 = {}, level = 0
 		else
 			tree1.operator == tree2.operator # both constants
 		end
+	else
+		raise
 	end
 end
 
@@ -162,6 +167,15 @@ def new_name names, prefix = 'x'
 	available.first
 end
 
+def new_names used, count, prefix = 'x'
+	used = used.dup
+	count.times.collect {
+		name = new_name used, prefix
+		used << name
+		name
+	}
+end
+
 def replace_empty_quantifiers tree
   # we assume that the domain is not empty, and replace
   # each occurrence of "there is an x" with a tautology
@@ -175,43 +189,50 @@ def replace_empty_quantifiers tree
   end
 end
 
-def substitute tree, substitution, repeatedly = false
-	# note: expects substitution keys to be strings!
+def replace_for_at_most_one tree
+	# for at most one a,b,c, p[a,b,c]
+	#   becomes
+	# for some a',b',c',
+	# 	for all a,b,c,
+	#     p[a,b,c] implies (a=a' and b=b' and c=c')
+  subtrees = tree.subtrees.collect {|subtree| replace_for_at_most_one subtree}
+	if tree.operator == :for_at_most_one
+		variables, body = tree.subtrees[0].operator, tree.subtrees[1]
+		used = tree.free_variables + variables
+		primes = new_names used, variables.size, 'at_most_one'
+		equalities = conjunction_tree variables.each_index.collect {|i|
+			Tree.new :equals, [Tree.new(variables[i],[]), Tree.new(primes[i],[])]
+		}
+		tree = body ? Tree.new(:implies, [body, equalities]) : equalities
+		tree = Tree.new :for_all, [Tree.new(variables,[]), tree]
+		Tree.new :for_some, [Tree.new(primes,[]), tree]
+	else
+    Tree.new tree.operator, subtrees
+	end
+end
+
+def substitute tree, substitution, bound = Set[]
+	# performs substitution on tree, where substitution keys are strings and
+	# values are trees.  does not substitute again within the values.
   case tree.operator
-		when :for_all, :for_some
-      variable = tree.subtrees[0].operator
-      occurs = false
-      occurs = true if substitution.keys.include? variable
-      occurs = true if substitution.values.find {|replacement|
-        next (replacement == variable) if replacement.is_a? String
-        replacement.free_variables.include? variable
-      }
-			if occurs
-#	      raise "substitution contains quantified variable #{variable}"
-				raise SubstituteException, variable
-			end
-			return tree if tree.subtrees.size == 1 # empty :for_some
-    	subtree = substitute tree.subtrees[1], substitution, repeatedly
+		when :for_all, :for_some, :for_at_most_one
+			return tree if tree.subtrees.size == 1 # empty quantifier body
+      variables = tree.subtrees[0].operator
+			subtree = substitute tree.subtrees[1], substitution, (bound + variables)
       Tree.new tree.operator, [tree.subtrees[0], subtree]
-		when :and, :or, :not, :implies, :iff, :equals, :quote
+		when :and, :or, :not, :implies, :iff, :equals, :predicate
 			subtrees = tree.subtrees.collect {|subtree|
-				substitute subtree, substitution, repeatedly
+				substitute subtree, substitution
 			}
 			Tree.new tree.operator, subtrees
-    when :predicate
-      subtrees = tree.subtrees.collect {|subtree|
-				substitute subtree, substitution, repeatedly
-			}
-      Tree.new :predicate, subtrees
     when String
 			return tree if not substitution.has_key? tree.operator
-      replacement = substitution[tree.operator]
-      replacement = Tree.new replacement, [] if replacement.is_a? String
-      if repeatedly
-        substitute replacement, substitution, repeatedly
-      else
-        replacement
-      end
+			return tree if bound.include? tree.operator
+			replacement = substitution[tree.operator]
+			conflict = (bound & replacement.free_variables).first
+      # error if substitution contains quantified variable
+			raise SubstituteException, conflict if conflict
+			replacement
 		else
 			raise "unexpected operator #{tree.operator.inspect}"
   end

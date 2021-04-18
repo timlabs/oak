@@ -7,11 +7,11 @@ def check_schema_format tree, state = :top, vars = []
 			unless tree.operator  == :for_all_meta
 				raise ParseException, 'schema must begin with "for all meta"'
 			end
-			vars << tree.subtrees[0].operator
+			vars.concat tree.subtrees[0].operator
 			check_schema_format tree.subtrees[1], :meta, vars
 		when :meta
 			if tree.operator == :for_all_meta
-				vars << tree.subtrees[0].operator
+				vars.concat tree.subtrees[0].operator
 				check_schema_format tree.subtrees[1], :meta, vars
 			elsif tree.operator == :implies
 				return false if not check_schema_format tree.subtrees[0], :with, vars
@@ -50,24 +50,24 @@ def check_schema_format tree, state = :top, vars = []
 end
 
 def instantiate_schema schema, instance
-#	puts "schema: #{schema}"
+	# puts "schema: #{schema}"
 
 	variables, pattern, requirements = parse_schema schema
-#	puts "variables: #{variables}"
-#	puts "pattern: #{pattern}"
-#	puts "requirements: #{requirements}"
-#	puts "instance: #{instance}"
+	# puts "variables: #{variables}"
+	# puts "pattern: #{pattern}"
+	# puts "requirements: #{requirements}"
+	# puts "instance: #{instance}"
 
 	constraints = find_constraints pattern, instance, variables
 	raise ProofException if not constraints
-#	puts "constraints are:"
-#	constraints.each {|constraint| puts "#{constraint[0]} = #{constraint[1]}"}
-#	puts
+	# puts "constraints are:"
+	# constraints.each {|constraint| puts "#{constraint[0]} = #{constraint[1]}"}
+	# puts
 
 	resolved = resolve_constraints constraints
 	raise ProofException if not resolved
-#	puts "resolved:"
-#	p resolved
+	# puts "resolved:"
+	# p resolved
 
 	# every variable must have an assignment
 	raise ProofException unless (variables - resolved.keys).empty?
@@ -102,7 +102,20 @@ def apply_resolved requirement, resolved
 end
 
 def find_constraints pattern, instance, variables
-	if variables.include? pattern.operator
+	# find constraints for meta variables, and make sure everything else matches
+	if pattern.operator.is_a? Array # list of quantified variables
+		return nil unless instance.operator.is_a? Array
+		return nil unless pattern.operator.size == instance.operator.size
+		constraints = []
+		pattern.operator.zip(instance.operator) {|v1, v2|
+			if variables.include? v1 # meta variable generates a constraint
+				constraints << [v1, Tree.new(v2, [])]
+			else
+				return nil unless v1 == v2 # others must match exactly
+			end
+		}
+		constraints
+	elsif variables.include? pattern.operator
 		[[pattern.operator, instance]]
 	elsif pattern.operator == :substitution
 		[[pattern, instance]]
@@ -123,7 +136,7 @@ def parse_schema schema
 	case schema.operator
 		when :for_all_meta
 			variables, pattern, requirements = parse_schema schema.subtrees[1]
-			variables << schema.subtrees[0].operator
+			variables.concat schema.subtrees[0].operator
 			[variables, pattern, requirements]
 		when :implies
 			variables, pattern, requirements = parse_schema schema.subtrees[1]

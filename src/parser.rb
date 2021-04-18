@@ -186,12 +186,12 @@ class Parser
 
 	def process_atom_list_adjacent node
 		raise unless node.value == :atom_list_adjacent
-		variables, condition_trees = [], []
+		variable_trees, condition_trees = [], []
 		condition = nil # for scope
 		node.branches.each {|branch|
 			next if branch.value == ','
 			if branch.value == :definable or branch.value == :definable_raw
-				variables << tree_from_grammar(branch)
+				variable_trees << tree_from_grammar(branch)
 			elsif branch.value == :condition
 				raise if condition
 				condition = branch
@@ -201,27 +201,28 @@ class Parser
 		}
 		if condition
 			right_side = tree_from_grammar condition.branches[1]
-			condition_trees = variables.collect {|variable|
+			condition_trees = variable_trees.collect {|variable_tree|
 				if condition.branches[0].value == :inequality
 					relation = condition.branches[0].branches[0].value
-					convert_inequality relation, [variable, right_side]
+					convert_inequality relation, [variable_tree, right_side]
 				elsif condition.branches[0].value == :not_equal
-					subtrees = [Tree.new(:equals, [variable, right_side])]
+					subtrees = [Tree.new(:equals, [variable_tree, right_side])]
 					Tree.new :not, subtrees
 				elsif condition.branches[0].value.downcase == 'in'
-					subtrees = [Tree.new('in', []), variable, right_side]
+					subtrees = [Tree.new('in', []), variable_tree, right_side]
 					Tree.new :predicate, subtrees
 				elsif condition.branches[0].value.downcase == 'not in'
-					subtrees = [Tree.new('in', []), variable, right_side]
+					subtrees = [Tree.new('in', []), variable_tree, right_side]
 					Tree.new :not, [Tree.new(:predicate, subtrees)]
 				elsif condition.branches[0].value == :set_relation
 					relation = condition.branches[0].branches[0].value
-					convert_set relation, [variable, right_side]
+					convert_set relation, [variable_tree, right_side]
 				else
 					raise "unknown condition #{condition.branches[0].value.inspect}"
 				end
 			}
 		end
+		variables = variable_trees.collect {|tree| tree.operator}
 		[variables, condition_trees]
 	end
 
@@ -412,10 +413,11 @@ class Parser
 						next unless subtree.subtrees.empty? and i > 0 # atom
 						prev = node.branches[(i-1)*2]
 						is = false
-						is = true if [:every, :some, :no].include? prev.branches[0].value
-						if prev.branches.size >= 2 and
-								[:is, :is_not, :is_in, :is_not_in].include? prev.branches[1].value
-							is = true 
+						tags = [:every, :some, :no, :at_most_one]
+						is = true if tags.include? prev.branches[0].value
+						tags = [:is, :is_not, :is_in, :is_not_in]
+						if prev.branches.size >= 2 and tags.include? prev.branches[1].value
+							is = true
 						end
 						raise ParseException, 'ambiguous expression' if is
 					}
@@ -467,7 +469,7 @@ class Parser
 						subtrees = [custom, *subtrees]
           end
         end
-			when :every, :some, :no
+			when :every, :some, :no, :at_most_one
 				subject = Tree.new ':x', [] # can never appear in a proof
 				t1 = tree_for_subject subject, node.branches[1]
 				case node.branches[2].value
@@ -479,14 +481,17 @@ class Parser
 						t2 = Tree.new :predicate, [Tree.new('in', []), subject, t2]
 						t2 = Tree.new :not, [t2] if node.branches[2].value == :is_not_in
 				end
+				variables_tree = Tree.new [subject.operator], []
 				return case node.value
 					when :every
-						Tree.new :for_all, [subject, Tree.new(:implies, [t1, t2])]
+						Tree.new :for_all, [variables_tree, Tree.new(:implies, [t1, t2])]
 					when :some
-						Tree.new :for_some, [subject, Tree.new(:and, [t1, t2])]
+						Tree.new :for_some, [variables_tree, Tree.new(:and, [t1, t2])]
 					when :no
 						t2 = Tree.new :not, [t2]
-						Tree.new :for_all, [subject, Tree.new(:implies, [t1, t2])]
+						Tree.new :for_all, [variables_tree, Tree.new(:implies, [t1, t2])]
+					when :at_most_one
+						Tree.new :for_at_most_one, [variables_tree, Tree.new(:and, [t1, t2])]
 				end
 			when :operand
 				tree = tree_from_grammar node.branches[0]
@@ -630,8 +635,10 @@ class Parser
 				subtrees = [
 					tree_from_grammar(node.branches[1]), tree_from_grammar(node.branches[3])
 				]
-			when :universal, :existential, :take, :no_existential, :define, :universal_meta
+			when :universal, :existential, :take, :for_at_most_one, :no_existential,
+					 :define, :universal_meta
 				variables, condition, with, such_that = process_list_with_such node.branches[1]
+				variables_tree = Tree.new variables, []
 				if node.branches.size > 2
 					raise unless node.branches[2].value == ','
 					raise if node.branches.size > 4 # multiple expressions after comma
@@ -644,35 +651,29 @@ class Parser
 						tree = antecedent ? Tree.new(:implies, [antecedent, body]) : body
 						operator = :for_all if node.value == :universal
 						operator = :for_all_meta if node.value == :universal_meta
-		        variables.reverse.each {|variable|
-							tree = Tree.new operator, [variable, tree]
-						}
-						tree
+						Tree.new operator, [variables_tree, tree]
+					when :for_at_most_one
+						raise ParseException, '"with" not allowed in "at most one" quantifier' if with
+						tree = conjunction_tree [condition, such_that, body].compact
+						Tree.new :for_at_most_one, [variables_tree, tree].compact
 					when :no_existential
 						raise ParseException, '"with" not allowed in negative quantifier' if with
 						tree = conjunction_tree [condition, such_that, body].compact
-		        variables.reverse.each {|variable|
-							tree = Tree.new :for_some, [variable, tree].compact
-						}
-						Tree.new :not, [tree]
+						tree = Tree.new :for_some, [variables_tree, tree].compact
+						tree = Tree.new :not, [tree]
 					when :define, :take
 						raise unless open_to_bind and not body
 						tie_in = conjunction_tree [condition, with].compact
-						variables = variables.collect {|tree| tree.operator}
 						Bind.new variables, such_that, tie_in, (node.value == :define)
 					when :existential
 						if open_to_bind
 							tie_in = conjunction_tree [condition, with].compact
 							without_tie_in = conjunction_tree [such_that, body].compact
-							variables = variables.collect {|tree| tree.operator}
 							Bind.new variables, without_tie_in, tie_in, false
 						else
 							raise ParseException, '"with" not allowed in nested quantifier' if with
 							tree = conjunction_tree [condition, such_that, body].compact
-			        variables.reverse.each {|variable|
-								tree = Tree.new :for_some, [variable, tree].compact
-							}
-							tree
+							Tree.new :for_some, [variables_tree, tree].compact
 						end
 				end
 			when :let
@@ -701,10 +702,11 @@ class Tree
 			when :not
 				raise unless subtrees.size == 1
 			when :for_all, :for_all_meta
-				raise unless subtrees.size == 2 and not subtrees[0].operator.is_a? Symbol
-			when :for_some
+				raise unless subtrees.size == 2
+				raise unless subtrees[0].operator.is_a? Array
+			when :for_some, :for_at_most_one
 				raise unless [1, 2].include? subtrees.size
-				raise if subtrees[0].operator.is_a? Symbol
+				raise unless subtrees[0].operator.is_a? Array
 			when :and, :or
 				raise unless subtrees.size >= 2
 			when :implies, :iff
@@ -715,7 +717,7 @@ class Tree
 					raise ParseException, 'boolean operator used as a term'
 				end
 			when :predicate
-				raise unless subtrees.size >= 2 # and not subtrees[0].operator.is_a? Symbol
+				raise unless subtrees.size >= 2
 				if subtrees.any? {|subtree| subtree.boolean?}
 					raise ParseException, 'boolean operator used as a term'
 				end
@@ -725,18 +727,28 @@ class Tree
 				raise unless subtrees.size >= 2
 				raise unless subtrees[1].operator == :predicate
 				raise unless subtrees[1].subtrees[0].operator == 'map'
-			else
-				raise "unknown operator #{operator.inspect}" if operator.is_a? Symbol
-				raise "leaf #{operator} initialized with subtrees" unless subtrees.empty?
+			when String, Array
+				if not subtrees.empty?
+					raise "leaf #{operator} initialized with subtrees"
+				end
 				raise "unexpected '=' instead of :equals" if operator == '='
+			else
+				raise "unknown operator #{operator.inspect}"
 		end
 	  @operator = operator
 		@subtrees = subtrees
 	end
 
 	def boolean?
-		booleans = [:not, :for_all, :for_some, :and, :or, :implies, :iff, :equals]
-		booleans.include? @operator
+		case @operator
+			when :not, :and, :or, :implies, :iff, :equals, :for_all, :for_some,
+					 :for_at_most_one
+				true
+			when :predicate, String
+				false
+			else
+				raise "unexpected operator #{@operator.inspect}"
+		end
 	end
 
   # def bound_variables
@@ -756,11 +768,11 @@ class Tree
   end
 
 	def free_variables
-		return [@operator] unless @operator.is_a? Symbol
-#		subtrees = (@operator == :predicate ? @subtrees[1..-1] : @subtrees)
-#		result = subtrees.collect {|subtree| subtree.free_variables}.flatten.uniq	
+		return @operator if @operator.is_a? Array
+		return [@operator] if @operator.is_a? String
 		result = @subtrees.collect {|subtree| subtree.free_variables}.flatten.uniq
-		result.delete @subtrees[0].operator if [:for_all, :for_some].include? @operator
+		quantifiers = [:for_all, :for_some, :for_at_most_one]
+		result -= @subtrees[0].operator if quantifiers.include? @operator
 		result
 	end
 
@@ -775,18 +787,6 @@ class Tree
 		result
 	end
 
-=begin
-	def predicates
-		return [] unless @operator.is_a? Symbol
-		result = []
-		if @operator == :predicate
-			result = [[@subtrees[0].operator, @subtrees.size-1]]
-		end
-		result.concat(@subtrees.collect {|subtree| subtree.predicates}.flatten(1))
-		result.uniq
-	end
-=end
-
   def to_s
 		infixes = [:and, :or, :implies, :iff, :equals]
 		case @operator
@@ -796,15 +796,15 @@ class Tree
 					operand = '(' + operand + ')'
 				end
 				'not ' + operand
-			when :for_all, :for_some, :for_all_meta
+			when :for_all, :for_some, :for_at_most_one, :for_all_meta
 				return "there is a #{@subtrees[0]}" if @subtrees.size == 1
 				operator = @operator.to_s.gsub '_', ' '
-				variable = @subtrees[0].to_s
+				variables = @subtrees[0].to_s
 				expression = @subtrees[1].to_s
 				if infixes.include? @subtrees[1].operator
 					expression = '(' + expression + ')'
 				end
-				"#{operator} #{variable}, #{expression}"
+				"#{operator} #{variables}, #{expression}"
 			when :predicate
 				if @subtrees[0].operator == 'map'
 					arguments = @subtrees[1..-1].collect {|subtree|
@@ -851,9 +851,12 @@ class Tree
 			  '`' + @subtrees[0].to_s + '`'
 			when :substitution
 				@subtrees[0].to_s + @subtrees[1].to_s
-			else
-				raise "unknown operator #{@operator.inspect}" if @operator.is_a? Symbol
+			when Array
+				@operator.join ','
+			when String
 				@operator
+			else
+				raise "unexpected operator #{@operator.inspect}"
 		end
   end
 end

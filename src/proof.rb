@@ -117,6 +117,7 @@ class Proof
 						else raise
 					end
 					wrapper.puts "line #{line_number}: -w option: #{message}"
+					wrapper.puts 'proof unsuccessful'
 				end
 			end
 			raise e, message # preserve exception class
@@ -131,13 +132,19 @@ class Proof
 			raise ProofException, 'cannot use thesis in schema'
 		elsif thesis
 			if content.binding?
-				return content if not content.sentence.free_variables.include? 'thesis'
-				raise ProofException, "cannot use thesis in binding"
+				if content.sentence.free_variables.include? 'thesis'
+					raise ProofException, "cannot use thesis in binding"
+				end
+				intersect = content.binding.variables & thesis.sentence.free_variables
+				conflict = intersect.first
+				return content unless conflict
+				raise ProofException, "cannot bind variable #{conflict}: part of thesis"
 			else
 				begin
 					tree = substitute content.sentence, {'thesis' => thesis.sentence}
 				rescue SubstituteException => e
-					raise ProofException, "cannot quantify variable #{e}: part of thesis"
+					message = "cannot quantify variable #{e}: conflicts with thesis"
+					raise ProofException, message
 				end
 				Content.new tree
 			end

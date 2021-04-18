@@ -72,15 +72,15 @@ end
 def rename_for_tptp_internal tree, used, replace = {}
 	case tree.operator
 		when :for_all, :for_some
-			variable_name = tree.subtrees[0].operator
-			old_replacement = replace[variable_name]
-			new_replacement = new_name used, 'V'
-			replace[variable_name] = new_replacement
-			used << new_replacement
-			variable = Tree.new new_replacement, []
+			variables = tree.subtrees[0].operator
+			old_replacements = variables.collect {|variable| replace[variable]}
+			new_replacements = new_names used, variables.size, 'V'
+			variables.zip(new_replacements) {|v, r| replace[v] = r}
+			used.concat new_replacements
+			variables_tree = Tree.new new_replacements, []
 			body = rename_for_tptp_internal tree.subtrees[1], used, replace
-			replace[variable_name] = old_replacement
-			tree = Tree.new tree.operator, [variable, body]
+			variables.zip(old_replacements) {|v, r| replace[v] = r}
+			tree = Tree.new tree.operator, [variables_tree, body]
 		when :not, :and, :or, :implies, :iff, :equals
 			subtrees = tree.subtrees.collect {|subtree|
 				rename_for_tptp_internal subtree, used, replace
@@ -112,6 +112,8 @@ end
 def strings_from tree
 	if tree.operator.is_a? String
 		[tree.operator]
+	elsif tree.operator.is_a? Array
+		tree.operator
 	else
 		tree.subtrees.collect {|subtree| strings_from subtree}.flatten.uniq
 	end
@@ -140,28 +142,29 @@ def tptp_from_internal tree
 			"#{subtrees[0]}(#{subtrees[1..-1].join ','})"
 		when String
 			tree.operator
+		when Array
+			tree.operator.join ','
 		else
 			raise "unexpected operator #{tree.operator.inspect}"
 	end
 end
 
 def tptp_from tree
+	tree = replace_for_at_most_one tree
 	tree = replace_empty_quantifiers tree
 	tree = first_orderize tree, true
 	tree = rename_for_tptp tree
 	tree = make_booleans_explicit tree
-#	puts "tree for tptp_from_internal:"
-#	p tree
+	# puts "tree for tptp_from_internal:"
+	# p tree
 	tptp_from_internal tree
 end
 
 def valid_tptp? tree
 	input = tptp_from tree
 	input = "fof(query,conjecture,#{input})."
-=begin
-	puts "\ntptp:"
-	puts input
-=end
+	# puts "\ntptp:"
+	# puts input
 	file = Tempfile.new ''
 	file.write input
 	file.close # ensures that input is written
