@@ -173,43 +173,53 @@ class Parser
 
 	def process_atom_list node
 		raise unless node.value == :atom_list
-		variables, pending, condition_trees = [], [], []
-		node.branches[0].branches.each {|branch|
-			next if branch.value == ',' or branch.value.downcase == 'and'
+		variables, condition_trees = [], []
+		node.branches.each {|branch|
+			next if branch.value.downcase == 'and'
+			new_variables, new_condition_trees = process_atom_list_adjacent branch
+			variables.concat new_variables
+			condition_trees.concat new_condition_trees
+		}
+		condition_tree = conjunction_tree condition_trees
+		[variables, condition_tree]
+	end
+
+	def process_atom_list_adjacent node
+		raise unless node.value == :atom_list_adjacent
+		variables, condition_trees = [], []
+		condition = nil # for scope
+		node.branches.each {|branch|
+			next if branch.value == ','
 			if branch.value == :definable or branch.value == :definable_raw
-				pending << tree_from_grammar(branch)
+				variables << tree_from_grammar(branch)
 			elsif branch.value == :condition
-				right_side = tree_from_grammar branch.branches[1]
-				condition_trees.concat pending.collect {|variable|
-					if branch.branches[0].value == :inequality
-						relation = branch.branches[0].branches[0].value
-						convert_inequality relation, [variable, right_side]
-					elsif branch.branches[0].value == :not_equal
-						subtrees = [Tree.new(:equals, [variable, right_side])]
-						Tree.new :not, subtrees
-					elsif branch.branches[0].value.downcase == 'in'
-						condition_subtrees = [Tree.new('in', []), variable, right_side]
-						Tree.new :predicate, condition_subtrees
-					elsif branch.branches[0].value == :set_relation
-						relation = branch.branches[0].branches[0].value
-						convert_set relation, [variable, right_side]
-					else
-						raise "unknown condition #{branch.branches[0].value.inspect}"
-					end
-				}
-				variables.concat pending
-				pending = []
+				raise if condition
+				condition = branch
 			else
 				raise "unknown branch value #{branch.value.inspect}"
 			end
 		}
-		variables.concat pending
-		if condition_trees.size >= 2
-			condition_tree = Tree.new :and, condition_trees
-		elsif condition_trees.size == 1
-			condition_tree = condition_trees[0]
+		if condition
+			right_side = tree_from_grammar condition.branches[1]
+			condition_trees = variables.collect {|variable|
+				if condition.branches[0].value == :inequality
+					relation = condition.branches[0].branches[0].value
+					convert_inequality relation, [variable, right_side]
+				elsif condition.branches[0].value == :not_equal
+					subtrees = [Tree.new(:equals, [variable, right_side])]
+					Tree.new :not, subtrees
+				elsif condition.branches[0].value.downcase == 'in'
+					condition_subtrees = [Tree.new('in', []), variable, right_side]
+					Tree.new :predicate, condition_subtrees
+				elsif condition.branches[0].value == :set_relation
+					relation = condition.branches[0].branches[0].value
+					convert_set relation, [variable, right_side]
+				else
+					raise "unknown condition #{condition.branches[0].value.inspect}"
+				end
+			}
 		end
-		[variables, condition_tree]
+		[variables, condition_trees]
 	end
 
 	def process_list_with_such node

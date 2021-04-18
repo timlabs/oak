@@ -189,39 +189,15 @@ def grammar_rules
 	[:if, [/\s*if\b/i, :exp, /\s*,?\s*then\b/i], :if2],
 	[:if2, :prefix, :end],
 	[:if2, :exp2, :end],
-	
-	[:atom_list, :atom_list_commas, :end, :catch],
-	[:atom_list, :atom_list_adjacent, :end, :catch],
-	[:atom_list, :atom_list_base, :end],
 
-	[:atom_list_commas, :definable, :atom_list_commas2],
-	[:atom_list_commas2, :condition, :atom_list_commas3],
-	[:atom_list_commas2, :else, :atom_list_commas5],
-	
-	[:atom_list_commas3, [/\s*,/, :definable, :condition, /\s*,/], :atom_list_commas4],
-	[:atom_list_commas4, [:definable, :condition, /\s*,/], :atom_list_commas4],
-	[:atom_list_commas4, [/\s*and\b/i, :definable, :condition], :end],
-	
-	[:atom_list_commas5, [/\s*,/, :definable, /\s*,/], :atom_list_commas6],
-	[:atom_list_commas6, [:definable, /\s*,/], :atom_list_commas6],
-	[:atom_list_commas6, [/\s*and\b/i, :definable], :atom_list_commas7],
-	[:atom_list_commas7, :condition, :end],
-	[:atom_list_commas7, :else, :end],
+	[:atom_list, :atom_list_adjacent, :atom_list2],
+	[:atom_list2, [/\s*and\b/i, :atom_list_adjacent], :atom_list2],
+	[:atom_list2, :else, :end],
 
-	[:atom_list_adjacent, [:definable, /,/, :definable_raw], :atom_list_adjacent2],
+	[:atom_list_adjacent, :definable, :atom_list_adjacent2],
 	[:atom_list_adjacent2, [/,/, :definable_raw,], :atom_list_adjacent2, :catch],
 	[:atom_list_adjacent2, :condition, :end],
 	[:atom_list_adjacent2, :else, :end],
-
-  [:atom_list_base, :definable, :atom_list_base2],
-  [:atom_list_base2, :condition, :atom_list_base3],
-  [:atom_list_base2, :else, :atom_list_base4],
-	[:atom_list_base3, [/\s*and\b/i, :definable, :condition], :end],
-  [:atom_list_base3, :else, :end],
-	[:atom_list_base4, [/\s*and\b/i, :definable], :atom_list_base5],
-  [:atom_list_base4, :else, :end],
-	[:atom_list_base5, :condition, :end],
-	[:atom_list_base5, :else, :end],
 
 	[:universal, /\s*for (all|any|each|every)\b/i, :post_quantifier_exp],
 
@@ -233,7 +209,7 @@ def grammar_rules
 	[:no_existential, /\s*there (exist|exists|is|are) no\b/i, :post_quantifier],
 
 	[:post_quantifier_exp, :list_with_such, :post_quantifier_exp2],
-	[:post_quantifier_exp2, [/,/, :exp], :end],
+	[:post_quantifier_exp2, [/,\s/, :exp], :end],
 
 	[:post_quantifier, :list_with_such, :end],
 
