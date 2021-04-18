@@ -230,11 +230,11 @@ def grammar_rules
 
 	[:define, /\s*define\b/i, :post_quantifier],
 
-  [:condition, [/\s*in\b/i, :operand], :end],
-  [:condition, [/\s*not in\b/i, :operand], :end],
-  [:condition, [:inequality, :operand], :end],
-	[:condition, [:set_relation, :operand], :end],
-  [:condition, [:not_equal, :operand], :end],
+  [:condition, [/\s*in\b/i, :exp3], :end],
+  [:condition, [/\s*not in\b/i, :exp3], :end],
+  [:condition, [:inequality, :exp3], :end],
+	[:condition, [:set_relation, :exp3], :end],
+  [:condition, [:not_equal, :exp3], :end],
 
   [:inequality, /\s*<=/i, :end],
 	[:inequality, /\s*≤/i, :end],
