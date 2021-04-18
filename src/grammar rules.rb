@@ -381,15 +381,15 @@ def grammar_rules
   [:definable_raw, /\+|\-|\*|\÷|\/|\^|⊆|⊊|⊂|\|\||{}|∪|∩|</, :end],
   [:definable_raw, :atom, :end],
 
-	[:atom, /(so|now|then|proof|end proof)\b/i, :null],
-	[:atom, /(if|is|let)\b/i, :null],
-	[:atom, /(true|false|contradiction|thesis)\b/i, :null],
-	[:atom, /(not|and|or|implies|iff|then)\b/i, :null],
-	[:atom, /for (all|any|each|every)\b/i, :null],
-	[:atom, /(for (at least one|some)|for at most one|for no)\b/i, :null],
-	[:atom, /(such that|where|with|in|there (is|are|exist|exists))\b/i, :null],
-	[:atom, /(assume|suppose|by|from|exit|take|define|axiom|schema)\b/i, :null],
-	[:atom, /(every|some|no|at most one|at least one)\b/i, :null],
+	[:atom, /for (all|any|at least one|at most one)\b/i, :null],
+	[:atom, /for (each|every|no|some)\b/i, :null],
+	[:atom, /there (are|exist|exists|is)\b/i, :null],
+	[:atom, /(at least one|at most one|every|some|no)\b/i, :null],
+	[:atom, /(and|any|define|if|iff|implies|in|is|let|not|of|on|or)\b/i, :null],
+	[:atom, /(such that|then|where|with)\b/i, :null],
+	[:atom, /(assume|axiom|begin assume|by|end|exit|from|include|now)\b/i, :null],
+	[:atom, /(proof|schema|so|suppose|take)\b/i, :null],
+	[:atom, /(contradiction|false|thesis|true)\b/i, :null],
 	[:atom, /((?!
 			\(|\)|\[|\]|,|;|\.\s|\.\z|=|!=|≠|\+|\-|\*|÷|\^
 			|<=|≤|<|>=|≥|>|:|"|`|{|}|\$|\||⊆|⊇|⊊|⊋|⊂|⊃|\/
