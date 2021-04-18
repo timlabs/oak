@@ -26,7 +26,7 @@ oak [-v] [-c] [-w] [filename]
 
 ## Version history
 
-### v0.4 - ????-??-??
+### v0.4 - 2021-04-17
 * new examples: `infinite_primes.oak` and `set.oak`
 * merged `peano.oak` into `naturals.oak` and expanded
 * `-w` option to wait for validity if unknown
