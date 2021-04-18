@@ -8,7 +8,7 @@ class Proof
 		proof = Proof.new instance_options
 		tracker = Tracker.new
 		my_options = {:tracker => tracker, :wait_on_unknown => options[:wait]}
-		include proof, input, is_filename, my_options
+		exited = include proof, input, is_filename, my_options
 
 		message = case proof.scopes.last
 			when :suppose then 'error at end of input: active supposition'
@@ -21,13 +21,21 @@ class Proof
 			raise ProofException, message
 		end
 
-		puts "all lines accepted"
+		if exited
+			puts "all lines accepted prior to exit"
+		else
+			puts "all lines accepted"
+		end
 
 		if not tracker.assumptions.empty?
 			print_assumptions tracker
 		else
 			print_axioms tracker
-			puts 'proof successful!'
+			if exited
+				puts 'proof incomplete due to exit'
+			else
+				puts 'proof successful!'
+			end
 		end
 	end
 
@@ -54,6 +62,7 @@ class Proof
 			wrapper = WordWrapper.new ' ', 2
 			line_number = nil # external scope, for error reporting
 			from_include = false
+			exited = false
 			wrapper.print "#{filename}: processing line "
 			Parser.new.parse_each(input) {|sentence, action, content, reasons, label,
 																		 fileline|
@@ -62,7 +71,8 @@ class Proof
 				wrapper.print "#{line_number} "
 				if action == :exit
 					wrapper.puts
-					wrapper.print "exit at line #{line_number}: skipping remaining lines"
+					wrapper.puts "exit at line #{line_number}: skipping remaining lines"
+					exited = true
 					break
 				end
 				if content.is_a? Content
@@ -77,8 +87,10 @@ class Proof
 						content = File.expand_path content, dirname if is_path
 						wrapper.puts
 						from_include = true
-						include_internal proof, content, :is_filename, options, fileline
+						exited = include_internal proof, content, :is_filename, options,
+																			fileline
 						from_include = false
+						break if exited
 						wrapper.print "#{filename}: processing line "
 					when :suppose then proof.suppose content, id
 					when :now then proof.now
@@ -117,6 +129,8 @@ class Proof
 				end
 			}
 			tracker.end_file if tracker
+			wrapper.puts unless exited
+			exited
 		rescue ProofException => e
 			message = case e # update the message (but don't print it)
 				when ParseException then e.message
@@ -145,7 +159,6 @@ class Proof
 			end
 			raise e, message # preserve exception class
 		end
-		puts
 	end
 
 	def self.print_assumptions tracker
