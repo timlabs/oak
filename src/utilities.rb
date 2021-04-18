@@ -123,6 +123,7 @@ end
 def find_minimal_subsets input_array
 	# find the minimal subsets for which yield returns true, assuming that if it
 	# returns false for a given set, it will return false for all of its subsets
+	input_array = input_array.uniq
 	pending, results = [input_array], {}
 	until pending.empty?
 		array = pending.shift
