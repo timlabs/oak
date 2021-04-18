@@ -209,8 +209,11 @@ class Parser
 					subtrees = [Tree.new(:equals, [variable, right_side])]
 					Tree.new :not, subtrees
 				elsif condition.branches[0].value.downcase == 'in'
-					condition_subtrees = [Tree.new('in', []), variable, right_side]
-					Tree.new :predicate, condition_subtrees
+					subtrees = [Tree.new('in', []), variable, right_side]
+					Tree.new :predicate, subtrees
+				elsif condition.branches[0].value.downcase == 'not in'
+					subtrees = [Tree.new('in', []), variable, right_side]
+					Tree.new :not, [Tree.new(:predicate, subtrees)]
 				elsif condition.branches[0].value == :set_relation
 					relation = condition.branches[0].branches[0].value
 					convert_set relation, [variable, right_side]
