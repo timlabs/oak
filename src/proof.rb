@@ -4,8 +4,9 @@ require_relative 'utilities.rb'
 
 class Proof
 	def self.process input, is_filename = false, options = {}
-		proof = Proof.new options
-		include proof, input, is_filename
+		instance_options = options.select {|k,v| k != :wait}
+		proof = Proof.new instance_options
+		include proof, input, is_filename, options[:wait]
 
 		message = case proof.scopes.last
 			when :suppose then 'error at end of input: active supposition'
@@ -29,7 +30,7 @@ class Proof
 		end
 	end
 
-	def self.include proof, input, is_path = false
+	def self.include proof, input, is_path = false, wait_on_unknown = false
 		if is_path
 			dirname = File.dirname input
 			filename = File.basename input
@@ -47,7 +48,8 @@ class Proof
 			line_number = nil # external scope, for error reporting
 			from_include = false
 			wrapper.print "#{filename}: processing line "
-			Parser.new.parse_each(input) {|sentence, action, content, reasons, label, fileline|
+			Parser.new.parse_each(input) {|sentence, action, content, reasons, label,
+																		 fileline|
 				next if action == :empty
 				line_number = fileline
 				wrapper.print "#{line_number} "
@@ -68,7 +70,7 @@ class Proof
 						content = File.expand_path content, dirname if is_path
 						wrapper.puts
 						from_include = true
-						include proof, content, :is_filename
+						include proof, content, :is_filename, wait_on_unknown
 						from_include = false
 						wrapper.print "#{filename}: processing line "
 					when :suppose then proof.suppose content, id
@@ -94,15 +96,28 @@ class Proof
 				end
 			}
 		rescue ProofException => e
-			message = case e
+			message = case e # update the message (but don't print it)
 				when ParseException then e.message
 				when DeriveException then e.message line_number
 				else "error at line #{line_number}: #{e}"
 			end
-			if not from_include # already printed otherwise
+			if not from_include # already done otherwise
 				wrapper.puts e.line_number if e.is_a? ParseException
 				wrapper.puts if not e.is_a? ParseException
 				wrapper.puts message
+				if e.is_a? DeriveException and e.result == :unknown and wait_on_unknown
+					wrapper.puts "line #{line_number}: -w option: checking validity " \
+											 "without work limit (may take forever, press ctrl-c " \
+											 "to abort)"
+					result = ExternalProver.valid_e? e.checked, true
+					message = case result
+						when :invalid then 'invalid derivation'
+						when Numeric then "valid derivation, but took #{result.round 1} " \
+															"times the work limit"
+						else raise
+					end
+					wrapper.puts "line #{line_number}: -w option: #{message}"
+				end
 			end
 			raise e, message # preserve exception class
 		end

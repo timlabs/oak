@@ -19,15 +19,22 @@ if ARGV.delete '-c'
 	options[:reduce] = true
 end
 
+if ARGV.delete '-w'
+	options[:wait] = true
+end
+
 if ARGV.size != 1 or ARGV[0].start_with? '-'
-	puts "usage: oak [-v] [-c] [filename]"
+	puts "usage: oak [-v] [-c] [-w] [filename]"
 	exit
 end
 
 begin
 	Proof.process ARGV[0], :is_filename, options
+rescue ProofException
+	# already printed
+rescue Interrupt
+	puts "\naborted due to ctrl-c"
 rescue => e
-	exit if e.is_a? ProofException # already printed
 	puts "\n\n#{e.message} (#{e.class}) [#{name_version}]"
   puts "\tfrom #{e.backtrace.join "\n\tfrom "}"
 	puts "\nBUG: You have found a bug in the proof checker!  It would be " \

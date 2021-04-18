@@ -3,12 +3,14 @@ require 'tempfile'
 module ExternalProver
 extend self
 
-def valid_e? tree
+def valid_e? tree, wait_forever = false
+	tb_insert_limit = 80000
 	valid_tptp?(tree) {|file_path|
 		settings = []
-		settings << '--tb-insert-limit=80000'
+		settings << "--tb-insert-limit=#{tb_insert_limit}" unless wait_forever
 		settings << '-m 128' # memory limit for safety
 		settings << '--detsort-rw --detsort-new' # make it deterministic
+		settings << '--print-statistics' if wait_forever
 
 		# use local copy if there is one, otherwise call it without a path
 		local = File.expand_path '../eprover/PROVER/eprover', File.dirname(__FILE__)
@@ -16,9 +18,16 @@ def valid_e? tree
 
 		output = `"#{location}" #{settings.join ' '} --auto --tptp3-format -s #{file_path} 2>&1`
 #		puts "\n" + output
-		next :valid if output.include? '# Proof found!'
+
+		if output.include? '# Proof found!'
+			next :valid unless wait_forever
+			work = output.match(/# Termbank termtop insertions\s+: (\d+)/).to_a[1]
+			next :valid if (Integer work) <= tb_insert_limit
+			next Float(work) / tb_insert_limit
+		end
 		next :invalid if output.include? '# No proof found!'
 		next :unknown if output.include? '# Failure: User resource limit exceeded!'
+
 		message = "unexpected output when calling eprover:\n  #{output.strip}\n"
 		if 	$?.exitstatus == 127 or 					# command not found
 				output.include? 'Unknown Option' 	# happens with version < 2.0

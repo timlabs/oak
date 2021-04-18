@@ -343,17 +343,13 @@ class Proof
 		# puts 'checking tree:'
 		# puts tree
 
-#		result = ExternalProver.valid_cvc4? tree
 		result = ExternalProver.valid_e? tree
-#		result = ExternalProver.valid_iprover? tree
-#		result = ExternalProver.valid_prover9? tree
-#		result = ExternalProver.valid_spass? tree
 
 		if schema_line_number and result != :valid
 			raise ProofException, 'could not instantiate schema'
 		end
 
-	  result
+	  [result, tree]
 	end
 
 	def citation_string line_numbers
@@ -365,13 +361,15 @@ class Proof
 	def derive_internal content, line_numbers, id
 		check_admission content
 
-		result = check content.sentence, line_numbers
-		if result == :invalid
-			raise DeriveException.new 'invalid derivation', content.sentence
-		elsif result == :unknown
-			raise DeriveException.new 'could not determine validity of derivation', content.sentence
-		elsif result != :valid
-			raise
+		result, checked = check content.sentence, line_numbers
+
+		if result != :valid
+			message = case result
+				when :invalid then 'invalid derivation'
+				when :unknown then 'could not determine validity of derivation'
+				else raise
+			end
+			raise DeriveException.new message, content.sentence, result, checked
 		end
 
 		if @options[:reduce]
@@ -380,7 +378,7 @@ class Proof
 			minimal = find_minimal_subsets(labeled) {|subset|
 				begin
 					# note: order and duplicates do not matter to check
-					result = check content.sentence, unlabeled + subset
+					result, checked = check content.sentence, unlabeled + subset
 					{:valid => true, :invalid => false}[result]
 				rescue ProofException # e.g. "could not instantiate schema"
 					false
@@ -421,12 +419,14 @@ end
 class ProofException < StandardError; end
 
 class DeriveException < ProofException
-	def initialize type, sentence
-		@type, @sentence = type, sentence
+	attr_reader :result, :checked
+
+	def initialize message, sentence, result, checked
+		@message, @sentence, @result, @checked = message, sentence, result, checked
 	end
 
 	def message line_number
-		"line #{line_number}: #{@type} \"#{@sentence}\""
+		"line #{line_number}: #{@message} \"#{@sentence}\""
 	end
 end
 
