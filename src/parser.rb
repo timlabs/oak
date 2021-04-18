@@ -60,26 +60,20 @@ class Parser
 
 	def convert_set relation, subtrees
 		case relation
-			# ⊆ is the most common, so translate everything to that
+			# any of {⊆, ⊊}, {⊆, ⊂}, {⊂, ⊊} may be desired, so we do not translate
+			# between relations, other than flipping them
 			when '⊆'
 				operator = :predicate
 				subtrees = [Tree.new('⊆', []), *subtrees]
-			when '⊊'
-				operator = :and
-				subtrees = [
-					Tree.new(:predicate, [Tree.new('⊆', []), *subtrees]),
-					Tree.new(:not, [Tree.new(:equals, subtrees)])
-				]
       when '⊇'
 				operator = :predicate
 				subtrees = [Tree.new('⊆', []), *subtrees.reverse]
+			when '⊊'
+				operator = :predicate
+				subtrees = [Tree.new('⊊', []), *subtrees]
 			when '⊋'
-				operator = :and
-				subtrees = [
-					Tree.new(:predicate, [Tree.new('⊆', []), *subtrees.reverse]),
-					Tree.new(:not, [Tree.new(:equals, subtrees)])
-				]
-			# ⊂ and ⊃ are ambiguous, so translate them separately
+				operator = :predicate
+				subtrees = [Tree.new('⊊', []), *subtrees.reverse]
 			when '⊂'
 				operator = :predicate
 				subtrees = [Tree.new('⊂', []), *subtrees]
@@ -196,7 +190,7 @@ class Parser
 					elsif branch.branches[0].value.downcase == 'in'
 						condition_subtrees = [Tree.new('in', []), variable, right_side]
 						Tree.new :predicate, condition_subtrees
-					elsif branch.branches[0].value == :set
+					elsif branch.branches[0].value == :set_relation
 						relation = branch.branches[0].branches[0].value
 						convert_set relation, [variable, right_side]
 					else
@@ -451,7 +445,7 @@ class Parser
             operator = :not
             subsubtrees = [Tree.new('in', []), *subtrees]
             subtrees = [Tree.new(:predicate, subsubtrees)]
-          elsif operator == :set
+          elsif operator == :set_relation
 						relation = node.branches[1].branches[0].value
 						set_tree = convert_set relation, subtrees
 						operator, subtrees = set_tree.operator, set_tree.subtrees

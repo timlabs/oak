@@ -124,7 +124,7 @@ def grammar_rules
 	[:exp2a, :is_not_in, :exp2b],
 	[:exp2a, :is_not, :is_predicate],
 	[:exp2a, :is, :is_predicate],
-	[:exp2a, :set, :exp2b],
+	[:exp2a, :set_relation, :exp2b],
 
 	# putting this here for now, not sure about it though.
 	# should it have a different precedence?  should it be removed entirely?
@@ -246,7 +246,7 @@ def grammar_rules
 
   [:condition, [/\s*in\b/i, :operand], :end],
   [:condition, [:inequality, :operand], :end],
-	[:condition, [:set, :operand], :end],
+	[:condition, [:set_relation, :operand], :end],
   [:condition, [:not_equal, :operand], :end],
 
   [:inequality, /\s*<=/i, :end],
@@ -256,12 +256,12 @@ def grammar_rules
 	[:inequality, /\s*≥/i, :end],
 	[:inequality, /\s*>/i, :end],
 
-	[:set, /\s*\⊆/i, :end],
-	[:set, /\s*\⊊/i, :end],
-	[:set, /\s*\⊇/i, :end],
-	[:set, /\s*\⊋/i, :end],
-	[:set, /\s*\⊂/i, :end],
-	[:set, /\s*\⊃/i, :end],
+	[:set_relation, /\s*\⊆/i, :end],
+	[:set_relation, /\s*\⊊/i, :end],
+	[:set_relation, /\s*\⊇/i, :end],
+	[:set_relation, /\s*\⊋/i, :end],
+	[:set_relation, /\s*\⊂/i, :end],
+	[:set_relation, /\s*\⊃/i, :end],
 
 	[:not_equal, /\s*!=/i, :end],
 	[:not_equal, /\s*≠/i, :end],
@@ -378,7 +378,7 @@ def grammar_rules
 
 	[:definable, [/\s*/, :definable_raw], :end, :catch],
 
-  [:definable_raw, /\+|\-|\*|\÷|\/|\^/, :end],
+  [:definable_raw, /\+|\-|\*|\÷|\/|\^|⊆|⊊|⊂/, :end],
   [:definable_raw, :atom, :end],
 
 	[:atom, /(so|now|then|proof|end proof)\b/i, :null],
