@@ -6,58 +6,58 @@ class Proof
 	class Line < Content
 		attr_reader :label, :filename, :fileline
 
-		def initialize content, reason, suppositions, id
+		def initialize content, type, suppositions, id
 			super content.binding # carries all information about content
-			@reason, @suppositions = reason, suppositions
+			@type, @suppositions = type, suppositions
 			@label, @filename, @fileline = id[:label], id[:filename], id[:fileline]
 			sentence_string = @sentence.to_s.rstrip
-			reason_string = @reason.to_s.rstrip
+			type_string = @type.to_s.rstrip
 			if sentence_string.empty?
-				raise ProofException, 'cannot add line with empty sentence' 
+				raise ProofException, 'cannot add line with empty sentence'
 			end
-			raise ProofException, 'cannot add line with empty reason' if reason_string.empty?
+			raise ProofException, 'cannot add line with empty type' if type_string.empty?
 			illegal = ['%%', "\t", "\n"]
 			found = illegal.find {|string|
-				sentence_string.include?(string) or reason_string.include?(string)
+				sentence_string.include?(string) or type_string.include?(string)
 			}
 			if found
 			  raise ProofException, "cannot add line containing illegal substring #{found.inspect}"
 			end
 		end
 
-		def rows supposition_space = nil, sentence_space = nil, reason_space = nil
+		def rows supposition_space = nil, sentence_space = nil, type_space = nil
 			rows = []
-			suppositions, sentence, reason = supposition_string, @sentence.to_s.dup, @reason.to_s.dup
-			if not supposition_space and not sentence_space and not reason_space
+			suppositions, sentence, type = supposition_string, @sentence.to_s.dup, @type.to_s.dup
+			if not supposition_space and not sentence_space and not type_space
 				supposition_space = [suppositions.size, 15].min
 				remaining = 79 - supposition_space - 8 # 8 for two instances of ' %% '
 				sentence_space = [sentence.size, remaining / 2].min
-				reason_space = remaining - sentence_space
+				type_space = remaining - sentence_space
 			end
-			until suppositions.empty? and sentence.empty? and reason.empty?
+			until suppositions.empty? and sentence.empty? and type.empty?
 				row = suppositions.slice! 0...supposition_space
 				row << ' ' * (supposition_space - row.size) if row.size < supposition_space
 				row << ' %% '
 				pad = (sentence.size < sentence_space) ? ' ' * (sentence_space - sentence.size) : ''
 				row << sentence.slice!(0...sentence_space) + pad + ' %% '
-				row << reason.slice!(0...reason_space)
+				row << type.slice!(0...type_space)
 				rows << row
 			end
 			rows
 		end
 
 		def schema?
-			@reason == :'assumption schema' or @reason == :'axiom schema'
+			@type == :'assumption schema' or @type == :'axiom schema'
 		end
 
     def supposition?
-      @reason == :supposition
+      @type == :supposition
     end
-    
+
 		def supposition_string
 			@suppositions.collect {|supposition| supposition + 1}.sort.join ','
 		end
-	
+
 		def to_s
 			rows.join "\n"
 		end
@@ -76,7 +76,7 @@ class Proof
 		@assume_blocks = []
 		@axioms = []
 		@active_suppositions = []
-		@active_reason_sets = [[]]
+		@active_contexts = [[]]
 		@scopes = []
 		@theses = []
 		@label_stack = [[]]
@@ -170,7 +170,7 @@ class Proof
 			raise ProofException, '"begin assume" must end with "end assume"'
 		end
 		last_scope = @scopes.pop
-		last_reason_set = @active_reason_sets.pop
+		last_context = @active_contexts.pop
 		last_thesis = @theses.pop
 		if last_scope.is_a? Array # end of proof block
 			@label_stack[-1].each {|label|
@@ -183,13 +183,13 @@ class Proof
 
 			content, id = last_scope
       if @scopes.include? :assume then assume content, id # assume block
-      else derive_internal content, last_reason_set, id end
+      else derive_internal content, last_context, id end
 		else
 			if last_scope == :suppose
 				@active_suppositions.pop
 				@bindings.end_block
 			end
-			@active_reason_sets.last.concat last_reason_set
+			@active_contexts.last.concat last_context
 		end
 	end
 
@@ -199,7 +199,7 @@ class Proof
 
 	def now
 		@scopes << :now
-		@active_reason_sets << []
+		@active_contexts << []
 		@theses << @theses[-1] # inherit thesis if it exists
 	end
 
@@ -232,7 +232,7 @@ class Proof
 
 	def proof content, id = nil
 		@scopes << [content, id]
-		@active_reason_sets << []
+		@active_contexts << []
 		@theses << content
 		@label_stack << []
 
@@ -241,26 +241,26 @@ class Proof
 
 	def so content, reasons = [], id = nil
     return so_assume content, id if @scopes.include? :assume # assume block
-		if @active_reason_sets[-1].empty?
+		if @active_contexts[-1].empty?
 			raise ProofException, 'nothing for "so" to use'
 		end
 		line_numbers = process_reasons reasons
-		line_numbers.concat @active_reason_sets[-1]
-		@active_reason_sets[-1] = []
+		line_numbers.concat @active_contexts[-1]
+		@active_contexts[-1] = []
 		derive_internal content, line_numbers, id
 	end
 
 	def so_assume content, id = nil
-		if @active_reason_sets[-1].empty?
+		if @active_contexts[-1].empty?
 			raise ProofException, 'nothing for "so" to use'
 		end
-		@active_reason_sets[-1] = []
+		@active_contexts[-1] = []
 		assume content, id
 	end
 
 	def suppose content, id = nil
 		@scopes << :suppose
-		@active_reason_sets << []
+		@active_contexts << []
 		@theses << @theses[-1] # inherit thesis if it exists
 		check_admission content
 		@active_suppositions << @lines.size
@@ -277,10 +277,10 @@ class Proof
 		supposition_space = [max_supposition, 15].min
 		remaining = 79 - number_space - supposition_space - 8 # 8 for two instances of ' %% '
 		sentence_space = [max_sentence, remaining / 2].min
-		reason_space = remaining - sentence_space
+		type_space = remaining - sentence_space
 	  string = ''
 		@lines.each_with_index {|line, index|
-		  rows = line.rows supposition_space, sentence_space, reason_space
+		  rows = line.rows supposition_space, sentence_space, type_space
 			string << ' ' * (@lines.size.to_s.size - (index + 1).to_s.size)
 			string << (index + 1).to_s + '. ' + rows[0] + "\n"
 			rows[1..-1].each {|row| string << ' ' * number_space + row + "\n"}
@@ -290,10 +290,10 @@ class Proof
 
 	private #####################################################################
 
-	def add content, reason, id
-		line = Line.new content, reason, @active_suppositions.dup, id
+	def add content, type, id
+		line = Line.new content, type, @active_suppositions.dup, id
 		unless line.schema?
-			@bindings.begin_block if reason == :axiom or reason == :supposition
+			@bindings.begin_block if type == :axiom or type == :supposition
 			@bindings.admit line
 		end
 		label = id[:label]
@@ -304,9 +304,9 @@ class Proof
     n = @lines.size - 1
 		if label
 			@label_stack[-1] << label
-    	@line_numbers_by_label[label] = n 
+			@line_numbers_by_label[label] = n
 		else
-    	@active_reason_sets[-1] << n
+			@active_contexts[-1] << n
 		end
     n
   end
