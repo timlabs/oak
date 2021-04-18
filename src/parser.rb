@@ -406,14 +406,13 @@ class Parser
 						end
 						raise ParseException, 'ambiguous expression' if is
 					}
-				elsif node.branches.size >= 3 and [:plus, :times].include? node.branches[1].value
-					operator = case node.branches[1].value
-						when :plus then :'+'
-						when :times then :'*'
-					end
+				elsif node.branches.size >= 3 and [
+						:plus, :union, :intersection, :times
+					].include? node.branches[1].value
+					operator = node.branches[1].branches[0].value
 					branches = node.branches.select.each_with_index {|branch, i| i.even?}
 					subtrees = branches.collect {|branch| tree_from_grammar branch}
-					operator_tree = Tree.new operator.to_s, []
+					operator_tree = Tree.new operator, []
 					tree = Tree.new :predicate, [operator_tree, subtrees[0], subtrees[1]]
 					subtrees[2..-1].each {|subtree|
 						tree = Tree.new :predicate, [operator_tree, tree, subtree]
@@ -546,6 +545,17 @@ class Parser
 					branches = node.branches.select.each_with_index {|branch, i| i.odd?}
 					subtrees = branches.collect {|branch| tree_from_grammar branch}
 					subtrees.unshift Tree.new('list', [])
+				end
+			when :set
+				if node.branches.size == 2
+					# empty set is not a predicate because predicates need >= 1 arguments
+					operator = '{}'
+					subtrees = []
+				else
+					operator = :predicate
+					branches = node.branches.select.each_with_index {|branch, i| i.odd?}
+					subtrees = branches.collect {|branch| tree_from_grammar branch}
+					subtrees.unshift Tree.new('set', [])
 				end
 			when :map, :subst
 				operator = :predicate

@@ -133,7 +133,7 @@ def grammar_rules
 	[:exp2a, :else, :end],
 	[:exp2b, :exp3, :end],
 
-	# addition and subtraction
+	# addition, subtraction, union, and intersection
 	[:exp3, :exp4, :exp3a],
 	[:exp3a, :plus, :plus1],
 		[:plus, /\s*\+/i, :end],
@@ -141,9 +141,19 @@ def grammar_rules
 		[:plus2, :plus, :plus1],
 		[:plus2, :else, :end],
 	[:exp3a, /\s*\-/i, :exp3b],
+	[:exp3a, :union, :union1],
+		[:union, /\s*\∪/i, :end],
+		[:union1, :exp4, :union2],
+		[:union2, :union, :union1],
+		[:union2, :else, :end],
+	[:exp3a, :intersection, :intersection1],
+		[:intersection, /\s*\∩/i, :end],
+		[:intersection1, :exp4, :intersection2],
+		[:intersection2, :intersection, :intersection1],
+		[:intersection2, :else, :end],
 	[:exp3a, :else, :end],
 	[:exp3b, :exp4, :end],
-	
+
 	# multiplication and division
 	[:exp4, :exp5, :exp4a],
 	[:exp4a, :times, :times1],
@@ -341,9 +351,10 @@ def grammar_rules
 	[:operand_base, [/\s*\(/, :exp, /\s*\)/], :end],
 	[:operand_base, [/\s*\|/, :exp, /\s*\|/], :end],
 	[:operand_base, :list, :end],
+	[:operand_base, :set, :end],
 	[:operand_base, :word, :end],
 	[:operand_base, :quote, :end],
-	
+
 	[:list, /\s*\[/, :list1a],
 	[:list1a, /\s*\]/, :end],
 	[:list1a, :else, :list2],
@@ -351,14 +362,22 @@ def grammar_rules
 	[:list3, /,/, :list2],
 	[:list3, :else, :list4],
 	[:list4, /\s*\]/, :end],
-	
+
 	[:params, /\[/, :list2],
 	[:params, /\(/, :params2],
 	[:params2, :exp, :params3],
 	[:params3, /,/, :params2],
 	[:params3, :else, :params4],
 	[:params4, /\s*\)/, :end],
-	
+
+	[:set, /\s*{/, :set1a],
+	[:set1a, /\s*}/, :end],
+	[:set1a, :else, :set2],
+	[:set2, :exp, :set3],
+	[:set3, /,/, :set2],
+	[:set3, :else, :set4],
+	[:set4, /\s*}/, :end],
+
 	[:map, /\s*{/, :map2],
 	[:map2, [:word, /\s*:/, :exp], :map3],
 	[:map3, /\s*,/, :map2],
@@ -378,7 +397,7 @@ def grammar_rules
 
 	[:definable, [/\s*/, :definable_raw], :end, :catch],
 
-  [:definable_raw, /\+|\-|\*|\÷|\/|\^|⊆|⊊|⊂/, :end],
+  [:definable_raw, /\+|\-|\*|\÷|\/|\^|⊆|⊊|⊂|∪|∩/, :end],
   [:definable_raw, :atom, :end],
 
 	[:atom, /(so|now|then|proof|end proof)\b/i, :null],
