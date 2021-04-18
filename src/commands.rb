@@ -379,6 +379,7 @@ class Proof
 			unlabeled = line_numbers - labeled
 			minimal = find_minimal_subsets(labeled) {|subset|
 				begin
+					# note: order and duplicates do not matter to check
 					result = check content.sentence, unlabeled + subset
 					{:valid => true, :invalid => false}[result]
 				rescue ProofException # e.g. "could not instantiate schema"
@@ -398,8 +399,7 @@ class Proof
 	end
 
 	def process_reasons reasons
-		line_numbers = []
-		line_numbers.concat reasons.collect {|reason|
+		reasons.collect {|reason|
 			i = @line_numbers_by_label[reason]
 			if not i
 				if @inactive_labels.include? reason
@@ -413,7 +413,6 @@ class Proof
 			end
 			i
 		}
-    line_numbers
 	end
 end
 
