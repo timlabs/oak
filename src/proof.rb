@@ -25,7 +25,6 @@ class Proof
 
 		if not tracker.assumptions.empty?
 			print_assumptions tracker
-			puts 'proof incomplete due to assumptions'
 		else
 			print_axioms tracker
 			puts 'proof successful!'
@@ -150,9 +149,10 @@ class Proof
 	end
 
 	def self.print_assumptions tracker
+		# assumption locations
 		wrapper = WordWrapper.new ',', 2
 		tracker.assumptions.each {|filename, assumptions|
-			if assumptions.size == 1 and assumptions.is_a? Numeric
+			if assumptions.size == 1 and assumptions[0].is_a? Numeric
 				wrapper.print "#{filename}: assumption on line "
 			else
 				wrapper.print "#{filename}: assumptions on lines "
@@ -160,6 +160,24 @@ class Proof
 			values = assumptions.collect {|x| x.is_a?(Numeric) ? x : x.join('-')}
 			wrapper.puts values.join ', '
 		}
+		# assumption counts
+		blocks, lines = 0, 0
+		tracker.assumptions.values.each {|assumptions|
+			assumptions.each {|x|
+				if x.is_a? Numeric
+					lines += 1
+				elsif x.first.is_a? Numeric # to skip :start
+					blocks += 1
+				end
+			}
+		}
+		counts = []
+		counts << "#{blocks} assume block" if blocks == 1
+		counts << "#{blocks} assume blocks" if blocks > 1
+		counts << "#{lines} assumption" if lines == 1
+		counts << "#{lines} assumptions" if lines > 1
+		return if counts.empty?
+		wrapper.puts "proof incomplete due to #{counts.join ' and '}"
 	end
 
 	def self.print_axioms tracker
