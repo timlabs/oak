@@ -32,9 +32,8 @@ def grammar_rules
 
 	[:end_assume, /\s*end assume\b/i, :end],
 
-	[:filename, [/\s*'/, /[^'\n]+/, /'/], :end],
 	[:filename, [/\s*"/, /[^"\n]+/, /"/], :end],
-	
+
 	[:assume, /\s*assume\b/i, :label_schema],
 
 	[:axiom, /\s*axiom\b/i, :label_schema],
