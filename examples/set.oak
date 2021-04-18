@@ -6,9 +6,7 @@ comprehension axioms.
 #/
 
 ###############################################################################
-
 include "naturals.oak"
-
 ###############################################################################
 
 # set axioms
@@ -62,11 +60,11 @@ set_func_set_comprehension: axiom schema
 	for all meta S,f,A,x,φ such that not free[S,φ],
 		`for some S, for all f in Function, for all A in Set,
 			 S[f,A] is in Set and for all x,
-			 	 x is in S[f,A] iff ((x is in N) and φ)`
+         x is in S[f,A] iff ((x is in N) and φ)`
 
 func_comprehension: axiom schema
-	for all meta f,x,X,w,y,z,Y,φ such that not free[f,φ],
-		`(for all x in X, for all w,z in Y, (φ{y:w} and φ{y:z}) implies w = z)
+	for all meta f,x,X,y,Y,φ such that not free[f,φ],
+		`(for all x in X, for at most one y in Y, φ)
 			 implies
 		 (for some f in Function, for all x in X and y in Y, f[x] = y iff φ)`
 
@@ -148,7 +146,7 @@ biject_empty: for all f in Function, for all S in Set,
 
 biject_reflexive: for all A in Set, for some f in Function, bijection[f,A,A]
 proof
-  for all x in N, for all y1,y2 in N, (x = y1 and x = y2) implies y1 = y2
+  for all x in N, for at most one y in N, x = y
 	so for some f in Function, for all x in N and y in N, f[x] = y iff x = y
     by func_comprehension
 	so thesis by set_domain,biject_def,one_to_one
@@ -162,7 +160,7 @@ proof
 		suppose 1: for some f in Function, bijection[f,A,B]
 			2: for some p, for all b,a in N, p[b,a] iff f[a] = b
 				by comprehension_nat2
-			for all b in B, for all a1,a2 in A, if p[b,a1] and p[b,a2] then a1 = a2
+      for all b in B, for at most one a in A, p[b,a]
 				by biject_def,1,one_to_one,2,set_domain
 			so 3: for some g in Function, for all b in B and a in A,
 				g[b] = a iff p[b,a] by func_comprehension
@@ -182,8 +180,7 @@ proof
 		suppose 1: for some f,g in Function, bijection[f,A,B] and bijection[g,B,C]
 			2: for some p, for all a,c in N, p[a,c] iff g[f[a]] = c
 				by comprehension_nat2
-			for all a in A, for all c1,c2 in C, if p[a,c1] and p[a,c2] then c1 = c2
-				by 2,set_domain
+      for all a in A, for at most one c in C, p[a,c] by 2,set_domain
 			so 3: for some h in Function, for all a in A and c in C,
 				h[a] = c iff p[a,c] by func_comprehension
 			for all a in A, h[a] is in C by biject_def,1,2,set_domain,3
@@ -332,8 +329,7 @@ proof
 		so P[n+1] by P_def,nat_closed_add
 	end
 	so for all n in N, P[n] by induction
-  so for all S in Set, for all n1,n2 in N, if q[S,n1] and q[S,n2] then n1 = n2
-    by P_def
+  so for all S in Set, for at most one n in N, q[S,n] by P_def
   so for some g in Function, for all S in Set and n in N,
      g[S] = n iff q[S,n] by func_comprehension
 	so thesis by 1

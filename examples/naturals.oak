@@ -368,13 +368,13 @@ proof
 	end
 end
 
-strong_induction_strict: for all P, for all c in N,
+strong_induction_strict: for all P and c in N,
 	if 	for all n in N where n > c,
 				(for all m in N where m > c and m < n, P[m]) implies P[n]
 	then
 			for all n in N where n > c, P[n]
 proof
-	take any P,c with c is in N
+	take any P and c in N
 		suppose 1: for all n in N where n > c,
 						     (for all m in N where m > c and m < n, P[m]) implies P[n]
 		  types: c+1 is in N by nat_closed_add
