@@ -38,29 +38,11 @@ induction: axiom for all P,
 
 ###############################################################################
 
-tie-in `a+b` with `if a is in N and b is in N then a+b is in N`
-	for all terms a,b
-		by nat_closed_add
+tie-in `a+b` with `if a is in N and b is in N then a+b is in N` for all a,b
+	by nat_closed_add
 
-tie-in `a*b` with `if a is in N and b is in N then a*b is in N`
-	for all terms a,b
-		by nat_closed_mult
-
-# tie-in `a+b` with `if a is in N and b is in N then a+b = b+a` for all terms a,b
-# 	by add_commute
-#
-# tie-in `a*b` with `if a is in N and b is in N then a*b = b*a` for all terms a,b
-# 	by mult_commute
-#
-# tie-in `a+(b+c)` with
-# 	`if a is in N and b is in N and c is in N then a+(b+c) = (a+b)+c`
-# 		for all terms a,b,c
-# 			by add_assoc
-#
-# tie-in `a*(b*c)` with
-# 	`if a is in N and b is in N and c is in N then a*(b*c) = (a*b)*c`
-# 		for all terms a,b,c
-# 			by mult_assoc
+tie-in `a*b` with `if a is in N and b is in N then a*b is in N` for all a,b
+	by nat_closed_mult
 
 2_def: define 2 in N such that 2 = 1+1
 3_def: define 3 in N such that 3 = 2+1
@@ -241,12 +223,8 @@ total_order: for all a,b,c in N,
 	(a < b or a = b or b < a)							# connex
 		by irreflexive,transitive,connex
 
-# would like to have a tie-in here for the transitive case of total_order, need
-# compound tie-in to do that!  use for length_member and card_oftwo so do not
-# need to cite total_order.
-
 tie-in `a < b` with
-  `if a is in N and b is in N then (a < b iff not b <= a)` for all terms a,b
+	`if a is in N and b is in N then (a < b iff not b <= a)` for all a,b
     by total_order
 
 nat_greater_eq_0: for all n in N, n >= 0
@@ -307,7 +285,6 @@ proof
 				so a=b by 2
 			end
 		end
-		# before tie-ins, did not need this line
 		so for all a,b,c in N where a < n+1 and b < n+1 and c != 0,
 			if a*c = b*c then a=b
 		so p[n+1] by p_def
@@ -348,9 +325,9 @@ mult_positive: for all a,b in N where a > 0 and b > 0, a*b > 0
 
 mult_greater: for all a,b in N where a != 0 and b > 1, a*b > a
 proof
-	mg0: take any a,b in N where a != 0 and b > 1
+	1: take any a,b in N where a != 0 and b > 1
 		suppose a > 0
-			so b*a > 1*a by inequal_mult,mg0
+			so b*a > 1*a by inequal_mult,1
 			so a*b > a by mult_commute,mult_1
 		end
 	end

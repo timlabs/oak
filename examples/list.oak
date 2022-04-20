@@ -8,23 +8,9 @@ Axioms and results for lists, including linked lists.
 include "set.oak"
 ###############################################################################
 
-# LISTS #######################################################################
-
 list_def: axiom define List such that for all l in List,
 	length[l] is in N and for all x, x is in l iff
 		for some i in N where i >= 1 and i <= length[l], l[i] = x
-
-tie-in `l[i] is in l` with
-	`if l is in List and i is in N and i >= 1 and i <= length[l]
-	 then l[i] is in l`
-		for all terms l,i
-			by list_def
-
-tie-in `length[l]` with `if l is in List then length[l] is in N` for all terms l
-	by list_def
-
-# list_equality: axiom for all l,m in List, l = m iff (length[l] = length[m] and
-# 	for all i in N where i >= 1 and i <= length[l], l[i] = m[i])
 
 list_literal: axiom define [] such that for all x,a,b,c,d,e,f,g,
 	(if x = [a] then
@@ -45,7 +31,18 @@ list_literal: axiom define [] such that for all x,a,b,c,d,e,f,g,
 	(if x = [a,b,c,d,e,f,g] then
 		(x is in List and length[x] = 7 and x[1] = a and x[2] = b and x[3] = c and
 		x[4] = d and x[5] = e and x[6] = f and x[7] = g))
-	
+
+###############################################################################
+
+tie-in `l[i] is in l` with
+	`if l is in List and i is in N and i >= 1 and i <= length[l]
+	 then l[i] is in l`
+		for all l,i
+			by list_def
+
+tie-in `length[l]` with `if l is in List then length[l] is in N` for all l
+	by list_def
+
 first_def: define first such that for all l in List,
 	if length[l] >= 1 then first[l] = l[1]
 proof
@@ -90,17 +87,9 @@ end
 
 3_third: for all a,b,c, third[[a,b,c]] = c by list_literal,third_def
 
-# tie-in `[a,b,c]` with `[a,b,c] is in List` for all terms a,b,c
-# 	by list_literal
-
-# tie-in `[a,b,c]` with `length[[a,b,c]] = 3` for all terms a,b,c
-# 	by list_literal
-
-# maybe ideally, this would be three compound tie-ins based on
-# "first + [a,b,c]", "second + [a,b,c]", and "third + [a,b,c]"
 tie-in `[a,b,c]` with
 	`first[[a,b,c]] = a and second[[a,b,c]] = b and third[[a,b,c]] = c`
-		for all terms a,b,c
+		for all a,b,c
 			by 3_first,3_second,3_third
 
 index_def: define indexes such that for all l in List,
@@ -122,7 +111,7 @@ end
 
 tie-in `i is in indexes[l]` with
 	`if l is in List and i is in indexes[l] then i is in N`
-		for all terms i,l
+		for all i,l
 			by index_def
 
 index_prop: for all l in List and x,
@@ -148,13 +137,11 @@ end
 linked_list_def: define linked_list such that for all l,
 	linked_list[l] iff (l is in List and for all i in indexes[l],
 		(if i != length[l] then next[l[i]] = l[i+1]) and
-		# (if i = length[l] then for no x in l, next[l[i]] = x))
 		(if i = length[l] then for no j in indexes[l], next[l[i]] = l[j]))
 	by property2
 
-tie-in `linked_list[l]` with `linked_list[l] implies l is in List`
-	for all terms l
-		by linked_list_def
+tie-in `linked_list[l]` with `linked_list[l] implies l is in List` for all l
+	by linked_list_def
 
 linked_distinct: for all l where linked_list[l], for all i,j in indexes[l],
 	if i != j then l[i] != l[j]
@@ -232,13 +219,13 @@ proof
 		p[l,x,y] iff (linked_list[l] and x is in l and y is in l and
 				(x is in l and x != last[l] and next[x] = y))
 			by property122
-	so thesis by linked_list_def,list_def,next_exists
+	so thesis by next_exists
 end
 
 succ_exists: for all l where linked_list[l],
 	for all x in l where x != last[l],
 		for some y in l, succ[l,x,y]
-			by succ_def,next_exists,list_def,linked_list_def
+			by succ_def,next_exists
 
 pred_exists: for all l where linked_list[l],
 	for all y in l where y != first[l],

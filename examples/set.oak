@@ -15,7 +15,7 @@ set_equality: axiom for all A,B in Set,
 # Tao - Analysis I - Axiom 3.2
 empty_def: axiom define ∅ in Set such that there is no x in ∅
 
-# Tao - Analysis I - Axiom 3.3 (expanded)
+# Tao - Analysis I - Axiom 3.3 (extended)
 set_literal: axiom define {} such that for all x,a,b,c,d,e,f,g,
   {a} is in Set and
   {a,b} is in Set and
@@ -65,40 +65,38 @@ function3: axiom for all op and A,B in Set,
 
 ###############################################################################
 
-tie-in N with N is in Set by infinity
+tie-in `N` with `N is in Set` by infinity
 
 tie-in `f is in Functions[A,B]` with
 	`if A is in Set and B is in Set and f is in Functions[A,B] then
 		(f is in Function and domain[f] = A and range[f] = B)`
-			for all terms f,A,B
+			for all f,A,B
 				by function2
 
-tie-in `{a}` with `{a} is in Set` for all terms a by set_literal
-tie-in `{a,b}` with `{a,b} is in Set` for all terms a,b by set_literal
-tie-in `{a,b,c}` with `{a,b,c} is in Set` for all terms a,b,c by set_literal
-tie-in `{a,b,c,d}` with `{a,b,c,d} is in Set` for all terms a,b,c,d
+tie-in `{a}` with `{a} is in Set` for all a by set_literal
+tie-in `{a,b}` with `{a,b} is in Set` for all a,b by set_literal
+tie-in `{a,b,c}` with `{a,b,c} is in Set` for all a,b,c by set_literal
+tie-in `{a,b,c,d}` with `{a,b,c,d} is in Set` for all a,b,c,d by set_literal
+tie-in `{a,b,c,d,e}` with `{a,b,c,d,e} is in Set` for all a,b,c,d,e
+  by set_literal
+tie-in `{a,b,c,d,e,f}` with `{a,b,c,d,e,f} is in Set` for all a,b,c,d,e,f
 	by set_literal
-tie-in `{a,b,c,d,e}` with `{a,b,c,d,e} is in Set` for all terms a,b,c,d,e
+tie-in `{a,b,c,d,e,f,g}` with `{a,b,c,d,e,f,g} is in Set` for all a,b,c,d,e,f,g
 	by set_literal
-tie-in `{a,b,c,d,e,f}` with `{a,b,c,d,e,f} is in Set` for all terms a,b,c,d,e,f
-	by set_literal
-tie-in `{a,b,c,d,e,f,g}` with `{a,b,c,d,e,f,g} is in Set`
-	for all terms a,b,c,d,e,f,g
-		by set_literal
 
 1_set: for all a,x, x is in {a} iff x=a by set_literal
 
-tie-in `x is in {a}` with `x is in {a} iff x=a` for all terms x,a by 1_set
+tie-in `x is in {a}` with `x is in {a} iff x=a` for all x,a by 1_set
 
 2_set: for all a,b,x, x is in {a,b} iff (x=a or x=b) by set_literal
 
-tie-in `x is in {a,b}` with `x is in {a,b} iff (x=a or x=b)` for all terms x,a,b
+tie-in `x is in {a,b}` with `x is in {a,b} iff (x=a or x=b)` for all x,a,b
 	by 2_set
 
 3_set: for all a,b,c,x, x is in {a,b,c} iff (x=a or x=b or x=c) by set_literal
 
 tie-in `x is in {a,b,c}` with `x is in {a,b,c} iff (x=a or x=b or x=c)`
-	for all terms x,a,b,c
+	for all x,a,b,c
 		by 3_set
 
 4_set: for all a,b,c,d,x, x is in {a,b,c,d} iff (x=a or x=b or x=c or x=d)
@@ -106,7 +104,7 @@ tie-in `x is in {a,b,c}` with `x is in {a,b,c} iff (x=a or x=b or x=c)`
 
 tie-in `x is in {a,b,c,d}` with
 	`x is in {a,b,c,d} iff (x=a or x=b or x=c or x=d)`
-		for all terms x,a,b,c,d
+		for all x,a,b,c,d
 			by 4_set
 
 5_set: for all a,b,c,d,e,x,
@@ -115,7 +113,7 @@ tie-in `x is in {a,b,c,d}` with
 
 tie-in `x is in {a,b,c,d,e}` with
 	`x is in {a,b,c,d,e} iff (x=a or x=b or x=c or x=d or x=e)`
-		for all terms x,a,b,c,d,e
+		for all x,a,b,c,d,e
 			by 5_set
 
 6_set: for all a,b,c,d,e,f,x,
@@ -124,7 +122,7 @@ tie-in `x is in {a,b,c,d,e}` with
 
 tie-in `x is in {a,b,c,d,e,f}` with
 	`x is in {a,b,c,d,e,f} iff (x=a or x=b or x=c or x=d or x=e or x=f)`
-		for all terms x,a,b,c,d,e,f
+		for all x,a,b,c,d,e,f
 			by 6_set
 
 7_set: for all a,b,c,d,e,f,g,x,
@@ -134,7 +132,7 @@ tie-in `x is in {a,b,c,d,e,f}` with
 tie-in `x is in {a,b,c,d,e,f,g}` with
 	`x is in {a,b,c,d,e,f,g} iff (x=a or x=b or x=c or x=d or x=e or x=f
 			or x = g)`
-		for all terms x,a,b,c,d,e,f,g
+		for all x,a,b,c,d,e,f,g
 			by 7_set
 
 set_not_empty: for all S in Set where S != ∅, there is an x in S
@@ -145,20 +143,18 @@ subset_def: define ⊆ such that for all A,B,
 		for all x in A, x is in B)
 			by property22
 
-tie-in `A ⊆ B` with `A ⊆ B implies (A is in Set and B is in Set)`
-  for all terms A,B
-    by subset_def
+tie-in `A ⊆ B` with `A ⊆ B implies (A is in Set and B is in Set)` for all A,B
+  by subset_def
 
 proper_subset_def: define ⊂ such that for all A,B,
 	A ⊂ B iff	(A is in Set and B is in Set and
 		(A ⊆ B and for some x in B, x is not in A))
 			by property22
 
-tie-in `A ⊂ B` with `A ⊂ B implies (A is in Set and B is in Set)`
-  for all terms A,B
-    by proper_subset_def
+tie-in `A ⊂ B` with `A ⊂ B implies (A is in Set and B is in Set)` for all A,B
+  by proper_subset_def
 
-tie-in `A ⊂ B` with `A ⊂ B implies A ⊆ B` for all terms A,B
+tie-in `A ⊂ B` with `A ⊂ B implies A ⊆ B` for all A,B
   by proper_subset_def
 
 empty_subset: for all S in Set, ∅ ⊆ S by subset_def,empty_def
@@ -169,12 +165,12 @@ disjoint_def: define disjoint such that for all A,B,
       by property22
 
 tie-in `A ∪ B` with `if A is in Set and B is in Set then A ∪ B is in Set`
-	for all terms A,B
+	for all A,B
 		by union_def
 
 tie-in `x is in A ∪ B` with `if A is in Set and B is in Set then
   (x is in A ∪ B iff (x is in A or x is in B))`
-		for all terms x,A,B
+		for all x,A,B
 			by union_def
 
 union_empty: for all A in Set, A ∪ ∅ = A
@@ -208,7 +204,7 @@ proof
 end
 
 tie-in `A-B` with `if A is in Set and B is in Set then A-B is in Set`
-  for all terms A,B
+  for all A,B
     by setdiff_def
 
 # TO DO: prove this from a recursion theorem
@@ -257,7 +253,7 @@ proof
 	end
 end
 
-image_def: define image such that for all f in Function and S ⊆ domain(f),
+image_def: define image such that for all f in Function and S ⊆ domain[f],
 	image[f,S] is in Set and for all y,
 		y is in image[f,S] iff for some x in S, f[x] = y
 proof
@@ -273,11 +269,16 @@ proof
 	take any f in Function and S ⊆ domain[f]
 		for some T in Set, for all y, y is in T iff for some x in S, f[x] = y
 			by replace
-		so q[f,S,T] by q_def,function1,subset_def
+		so q[f,S,T] by q_def
 		so op[f,S] is in Set by op_def
 	end
 	so thesis by q_def,op_def
 end
+
+tie-in `image[f,S]` with
+  `if f is in Function and S ⊆ domain[f], then image[f,S] is in Set`
+    for all f,S
+      by image_def
 
 one_to_one: define one_to_one such that for all f in Function and S in Set,
 	one_to_one[f,S] iff for all x,y in S where x != y, f[x] != f[y]
@@ -371,9 +372,8 @@ proof
 	so thesis by p_def,op_def
 end
 
-tie-in `before[n]` with `if n is in N then before[n] is in Set`
-  for all terms n
-    by before_def
+tie-in `before[n]` with `if n is in N then before[n] is in Set` for all n
+  by before_def
 
 before_sub: for all n in N, before[n] ⊆ before[n+1]
 	by nat_closed_add,before_def,inequal_add_right,subset_def
@@ -402,8 +402,8 @@ proof
 		end
 		take any x in before[n]
 			x is in before[n+1] by before_sub,subset_def
-			x is not in {n} by 1_set,total_order,before_def
-			so x is in before[n+1]-{n} by setdiff_def,before_def
+			x is not in {n} by total_order,before_def
+			so x is in before[n+1]-{n} by setdiff_def
 		end
 	end
 	so thesis by set_equality
@@ -431,7 +431,7 @@ proof
 						op[x] = y iff p[x,y]
 							by operation22
 					take any x in S-{z}
-						3: x is in S and x != z by setdiff_def,1_set#,set_domain
+						3: x is in S and x != z by setdiff_def,1_set
 						if f[x] = n then for some y in before[n], p[x,y]
 							by 1,biject_def,one_to_one,3,nat_ineq_2,before_def,p_def
 						if f[x] != n then for some y in before[n], p[x,y]
@@ -446,7 +446,7 @@ proof
 
 				one_to_one[g, S-{z}] proof
 					for all x,y in S-{z} where x != y, g[x] != g[y]
-						by 2,1,biject_def,one_to_one,setdiff_def,1_set#,set_domain
+						by 2,1,biject_def,one_to_one,setdiff_def,1_set
 					so thesis by one_to_one
 				end
 
@@ -455,12 +455,12 @@ proof
 						y is in before[n+1] by before_sub,subset_def
 						so 4: for some x in S, f[x] = y by 1,biject_def
 						if x != z then (x is in S-{z} and g[x] = y)
-							by 1_set,setdiff_def,before_excl,2,4#,set_domain
+							by 1_set,setdiff_def,before_excl,2,4
 						suppose 5: x = z
 							6: for some xf in S, f[xf] = n
                 by 1,biject_def,nat_ineq_2,before_def
 							f[z] != n by 4,5,before_excl
-							so 7: xf is in S-{z} by 6,setdiff_def,1_set#,set_domain
+							so 7: xf is in S-{z} by 6,setdiff_def,1_set
 							g[xf] = f[z] by 7,6,2
 							so xf is in S-{z} and g[xf] = y by 7,4,5
 						end
@@ -473,8 +473,6 @@ proof
 	end
 end
 
-# card_def: define || such that for all S in Set and n in N,
-# 	|S| = n iff for some f in Function, bijection[f,S,before[n]]
 card_def: define || such that for all S in Set and n in N,
 	(if |S| = n then
 		for some f in Functions[S,before[n]], bijection[f,S,before[n]])
@@ -502,7 +500,7 @@ proof
 				for some f in Functions[S-{x}, before[l]],
 					bijection[f, S-{x}, before[l]]
             by lemma_3.6.8,1,3,4
-				so n = l by hyp,P_def,1#,set_domain
+				so n = l by hyp,P_def,1
 				so m = n+1 by 4
 			end
 		end
@@ -529,9 +527,8 @@ finite_def: define finite such that for all S in Set,
 	finite[S] iff |S| is in N
 		by property2a
 
-# would like this to be a compound tie-in on finite and ||
 tie-in `finite[S]` with `if S is in Set and finite[S] then |S| is in N`
-  for all terms S
+  for all S
     by finite_def
 
 infinite_def: define infinite such that for all S in Set,
@@ -547,10 +544,10 @@ proof
 		1: so for some k in N and f in Function with k = |A|,
 			bijection[f,A,before[k]] by card_def,A_def,function2
 
-		types: A is in Set and {w} is in Set by A_def#,set_domain
+		types: A is in Set and {w} is in Set by A_def
 
 		2: for all x in S, x = w or x is in A
-			by 1_set,A_def,setdiff_def#,set_domain
+			by 1_set,A_def,setdiff_def
 		3: for all x in A, x is in S
 			by A_def,setdiff_def
 		4: for no x in S, x = w and x is in A
@@ -609,7 +606,7 @@ card_add2: for all S in Set and c not in S where finite[S],
 proof
   take any S in Set and c not in S with finite[S]
     so S = (S ∪ {c}) - {c} by set_add_drop
-    c is in S ∪ {c} by 1_set
+    c is in S ∪ {c}
     so |S ∪ {c}| = |S| + 1 by card_add
   end
 end
@@ -620,7 +617,7 @@ card_0: |∅| = 0
 card_1: for all a, |{a}| = 1
 proof
 	take any a
-		|∅ ∪ {a}| = |∅| + 1 by card_add2,1_set,finite_def,card_0,empty_def
+		|∅ ∪ {a}| = |∅| + 1 by card_add2,finite_def,card_0,empty_def
 		so |∅ ∪ {a}| = 1 by plus_0,add_commute,card_0
 		{a} = ∅ ∪ {a} by set_equality,union_def,union_empty
 	end
@@ -638,7 +635,7 @@ card_3: for all a,b,c, if a != b and a != c and b != c, then |{a,b,c}| = 3
 proof
 	take any a,b,c with a != b and a != c and b != c
 		{a,b,c} = {a,b} ∪ {c} by set_equality,1_set,2_set,union_def,3_set
-		|{a,b} ∪ {c}| = 3 by card_add2,2_set,1_set,finite_def,card_2,3_def
+		|{a,b} ∪ {c}| = 3 by card_add2,2_set,finite_def,card_2,3_def
 	end
 end
 
@@ -649,7 +646,7 @@ proof
 	take any a,b,c,d with a != b and a != c and a != d and
 												b != c and b != d and c != d
 		{a,b,c,d} = {a,b,c} ∪ {d} by set_equality,1_set,3_set,union_def,4_set
-		|{a,b,c} ∪ {d}| = 4 by card_add2,3_set,1_set,finite_def,card_3,4_def
+		|{a,b,c} ∪ {d}| = 4 by card_add2,3_set,finite_def,card_3,4_def
 	end
 end
 
@@ -661,10 +658,10 @@ proof
 	take any a,b,c,d,e with a != b and a != c and a != d and a != e and b != c and
 												  b != d and b != e and c != d and c != e and d != e
 		take any x
-			x is in {a,b,c,d,e} iff x is in {a,b,c,d} ∪ {e} by 1_set,4_set
+			x is in {a,b,c,d,e} iff x is in {a,b,c,d} ∪ {e}
 		end
 		so {a,b,c,d,e} = {a,b,c,d} ∪ {e} by set_equality
-		|{a,b,c,d} ∪ {e}| = 5 by card_add2,4_set,1_set,finite_def,card_4,5_def
+		|{a,b,c,d} ∪ {e}| = 5 by card_add2,4_set,finite_def,card_4,5_def
 	end
 end
 
@@ -678,10 +675,10 @@ proof
 			and b != c and b != d and b != e and b != f and c != d and c != e and
 			c != f and d != e and d != f and e != f
 		take any x
-			x is in {a,b,c,d,e,f} iff x is in {a,b,c,d,e} ∪ {f} by 1_set,5_set
+			x is in {a,b,c,d,e,f} iff x is in {a,b,c,d,e} ∪ {f}
 		end
 		so {a,b,c,d,e,f} = {a,b,c,d,e} ∪ {f} by set_equality
-		|{a,b,c,d,e} ∪ {f}| = 6 by card_add2,5_set,1_set,finite_def,card_5,6_def
+		|{a,b,c,d,e} ∪ {f}| = 6 by card_add2,5_set,finite_def,card_5,6_def
 	end
 end
 
@@ -696,10 +693,10 @@ proof
 			c != d and c != e and c != f and c != g and d != e and d != f and d != g
 			and e != f and e != g and f != g
 		take any x
-			x is in {a,b,c,d,e,f,g} iff x is in {a,b,c,d,e,f} ∪ {g} by 1_set,6_set
+			x is in {a,b,c,d,e,f,g} iff x is in {a,b,c,d,e,f} ∪ {g}
 		end
 		so {a,b,c,d,e,f,g} = {a,b,c,d,e,f} ∪ {g} by set_equality
-		|{a,b,c,d,e,f} ∪ {g}| = 7 by card_add2,6_set,1_set,finite_def,card_6,7_def
+		|{a,b,c,d,e,f} ∪ {g}| = 7 by card_add2,6_set,finite_def,card_6,7_def
 	end
 end
 
@@ -732,7 +729,7 @@ proof
 		end
 		suppose 2: a is not in less
 			take any x
-				x is in more iff x is in less ∪ {a} by 1_set,2_set,3_set
+				x is in more iff x is in less ∪ {a} by 2_set,3_set
 			end
 			so more = less ∪ {a} by set_equality
 			so |more| = |less| + 1 by card_add2,1,finite_def,2
@@ -753,7 +750,7 @@ proof
 		end
 		suppose 2: a is not in less
 			take any x
-				x is in more iff x is in less ∪ {a} by 1_set,3_set,4_set
+				x is in more iff x is in less ∪ {a} by 3_set,4_set
 			end
 			so more = less ∪ {a} by set_equality
 			so |more| = |less| + 1 by card_add2,1,finite_def,2
@@ -774,7 +771,7 @@ proof
 		end
 		suppose 2: a is not in less
 			take any x
-				x is in more iff x is in less ∪ {a} by 1_set,4_set,5_set
+				x is in more iff x is in less ∪ {a} by 4_set,5_set
 			end
 			so more = less ∪ {a} by set_equality
 			so |more| = |less| + 1 by card_add2,1,finite_def,2
@@ -796,7 +793,7 @@ proof
 		end
 		suppose 2: a is not in less
 			take any x
-				x is in more iff x is in less ∪ {a} by 1_set,5_set,6_set
+				x is in more iff x is in less ∪ {a} by 5_set,6_set
 			end
 			so more = less ∪ {a} by set_equality
 			so |more| = |less| + 1 by card_add2,1,finite_def,2
@@ -818,7 +815,7 @@ proof
 		end
 		suppose 2: a is not in less
 			take any x
-				x is in more iff x is in less ∪ {a} by 1_set,6_set,7_set
+				x is in more iff x is in less ∪ {a} by 6_set,7_set
 			end
 			so more = less ∪ {a} by set_equality
 			so |more| = |less| + 1 by card_add2,1,finite_def,2
@@ -827,29 +824,28 @@ proof
 	end
 end
 
-tie-in ∅ with ∅ is finite by card_0,finite_def
+tie-in `∅` with `∅ is finite` by card_0,finite_def
 
-tie-in `{a}` with `{a} is finite` for all terms a
+tie-in `{a}` with `{a} is finite` for all a
 	by card_1,finite_def,set_literal
 
-tie-in `{a,b}` with `{a,b} is finite` for all terms a,b
+tie-in `{a,b}` with `{a,b} is finite` for all a,b
 	by card_2_bound,finite_def,set_literal
 
-tie-in `{a,b,c}` with `{a,b,c} is finite` for all terms a,b,c
+tie-in `{a,b,c}` with `{a,b,c} is finite` for all a,b,c
 	by card_3_bound,finite_def,set_literal
 
-tie-in `{a,b,c,d}` with `{a,b,c,d} is finite` for all terms a,b,c,d
+tie-in `{a,b,c,d}` with `{a,b,c,d} is finite` for all a,b,c,d
 	by card_4_bound,finite_def,set_literal
 
-tie-in `{a,b,c,d,e}` with `{a,b,c,d,e} is finite` for all terms a,b,c,d,e
+tie-in `{a,b,c,d,e}` with `{a,b,c,d,e} is finite` for all a,b,c,d,e
 	by card_5_bound,finite_def,set_literal
 
-tie-in `{a,b,c,d,e,f}` with `{a,b,c,d,e,f} is finite` for all terms a,b,c,d,e,f
+tie-in `{a,b,c,d,e,f}` with `{a,b,c,d,e,f} is finite` for all a,b,c,d,e,f
 	by card_6_bound,finite_def,set_literal
 
-tie-in `{a,b,c,d,e,f,g}` with `{a,b,c,d,e,f,g} is finite`
-	for all terms a,b,c,d,e,f,g
-		by card_7_bound,finite_def,set_literal
+tie-in `{a,b,c,d,e,f,g}` with `{a,b,c,d,e,f,g} is finite` for all a,b,c,d,e,f,g
+	by card_7_bound,finite_def,set_literal
 
 finite_biject: for all A,B in Set,
   if finite[A] and for some f in Function, bijection[f,A,B], then
@@ -877,7 +873,7 @@ proof
 	P[0] proof
 		before[0] = ∅ by before_def,empty_def,nonnegative,set_equality
 		for all A in Set where A ⊆ ∅, A = ∅ by empty_def,subset_def,set_equality
-		so P[0] by P_def,card_0,finite_def
+		so P[0] by P_def,card_0
 	end
 	take hyp: any k in N where P[k]
 		take any A in Set where A ⊆ before[k+1]
@@ -886,7 +882,7 @@ proof
 			B_def: for some B in Set, B = A-{k}
 			so 1: finite[B] and |B| <= k by hyp,P_def,B_def
 			suppose k is not in A
-				so A = B by B_def,setdiff_def,1_set,set_equality#,set_domain
+				so A = B by B_def,setdiff_def,1_set,set_equality
 				so finite[A] and |A| <= k by 1
 				so finite[A] and |A| <= k+1 by total_order,ineq_def,0_not_1
 			end
@@ -903,23 +899,21 @@ end
 subset_finite: for all S in Set where finite[S], for all A ⊆ S,
 	finite[A] and |A| <= |S|
 proof
-	take 0: any S in Set and A ⊆ S where finite[S]
-		1: for some k in N, |S| = k by 0
+	take any S in Set and A ⊆ S where finite[S]
+		1: so for some k in N, |S| = k
 		2: for some f in Functions[S,before[k]], bijection[f,S,before[k]]
-			by card_def,1
-		types: A is in Set and image[f,A] is in Set by image_def,0
+      by card_def,1
 		bijection[f,A,image[f,A]] proof
-			for all x in A, f[x] is in image[f,A] by image_def,types
-			one_to_one[f,A] by 2,0,subset_def,biject_def,one_to_one
-			for all y in image[f,A], for some x in A, f[x] = y by image_def,types
-			so thesis by biject_def,types
+			for all x in A, f[x] is in image[f,A] by image_def
+			one_to_one[f,A] by 2,subset_def,biject_def,one_to_one
+			for all y in image[f,A], for some x in A, f[x] = y by image_def
+			so thesis by biject_def
 		end
-		now
-			image[f,A] ⊆ before[k] by subset_def,image_def,0,biject_def,2
-			so finite[image[f,A]] and |image[f,A]| <= k by lemma_9.5
-		end
-		so finite[A] and |A| <= |S|
-			by finite_biject,1,types,biject_symmetric,function2
+    now
+      image[f,A] ⊆ before[k] by subset_def,image_def,biject_def,2
+      so finite[image[f,A]] and |image[f,A]| <= k by lemma_9.5
+    end
+		so finite[A] and |A| <= |S| by finite_biject,1,biject_symmetric,function2
 	end
 end
 
@@ -938,17 +932,16 @@ proper_card: for all A,B in Set where finite[A] and B ⊂ A, |B| < |A|
 proof
 	take 1: any A,B in Set where finite[A] and B ⊂ A
     there is an x in A with x is not in B by proper_subset_def,1
-		C_def: let C = A - {x}
-		types: C is in Set by C_def#,set_domain
+    C_def: for some C in Set, C = A - {x}
     take any y in B
-      y is in A and y != x by subset_def,proper_subset_def,1
-      so y is in C by C_def,setdiff_def,1_set#,set_domain
+      y is in A and y != x by subset_def,1
+      so y is in C by C_def,setdiff_def,1_set
     end
-    so B ⊆ C by C_def,subset_def#,set_domain
+    so B ⊆ C by subset_def
 		2: finite[C] and |A| = |C|+1 by card_drop,C_def,1
 		so finite[B] and |B| <= |C| by subset_finite,2
-		|C| < |A| by 2,less_add_1,types
-		so |B| < |A| by total_order,2,types
+		|C| < |A| by 2,less_add_1
+		so |B| < |A| by total_order,2
 	end
 end
 
@@ -993,10 +986,9 @@ proof
 			take 2: any n in N where Q[n]
 				take 3: any A ⊆ S where |A| <= n+1
 					take any B ⊂ A
-						|A| is in N and |B| is in N
-              by subset_finite,finite_def,0,proper_subset_def
+						|A| is in N and |B| is in N by subset_finite,finite_def,0
 						so |B| <= n by proper_card,3,nat_ineq_2,total_order,0,subset_finite
-						so P[B] by Q_def,2,proper_subset_def,subset_def
+						so P[B] by Q_def,2,subset_def
 					end
 					so for all B ⊂ A, P[B]
 					so P[A] by 1
@@ -1092,10 +1084,10 @@ proof
 	end
 end
 
-tie-in `power[S]` with `if S is in Set then power[S] is in Set` for all terms S
+tie-in `power[S]` with `if S is in Set then power[S] is in Set` for all S
 	by power_def
 
 tie-in `A is in power[S]` with
 	`if S is in Set and A is in power[S] then A is in Set`
-		for all terms A,S
+		for all A,S
 			by power_def,subset_def

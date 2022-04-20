@@ -21,7 +21,7 @@ primes_def: define Primes in Set such that for all x,
 	x is in Primes iff (x is in N and prime[x])
 		by specify
 
-tie-in Primes with Primes is in power[N] by primes_def,subset_def,power_def
+tie-in `Primes` with `Primes is in power[N]` by primes_def,subset_def,power_def
 
 zero_divides: for all n in N where n != 0, not divides[0,n]
 	by divides_def,0_mult
@@ -39,8 +39,7 @@ proof
   take 1: any n in N where divides[n,1]
     n <= 1 by divides_less,1,0_not_1
     n != 0 by 0_mult,1,divides_def,0_not_1
-    so n <= 1 and n >= 1 by nat_if_not_0
-    so n = 1 by total_order
+		so n = 1 by nat_if_not_0
   end
 end
 

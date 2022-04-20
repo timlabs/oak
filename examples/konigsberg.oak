@@ -1,33 +1,12 @@
 /#
-|- !G. vertices(G) = {0,1,2,3} /\
-         edges(G) = {10,20,30,40,50,60,70} /\
-         termini G (10) = {0,1} /\
-         termini G (20) = {0,2} /\
-         termini G (30) = {0,3} /\
-         termini G (40) = {1,2} /\
-         termini G (50) = {1,2} /\
-         termini G (60) = {2,3} /\
-         termini G (70) = {2,3}
-         ==> ~(?es a b. eulerian G es (a,b))
-         
-Theorem konigsberg_bridges :
-  let E := [(0, 1); (0, 2); (0, 3); (1, 2); (1, 2); (2, 3); (2, 3)] in
-  forall p, path p -> eulerian E p -> False.
-  
-Hypotheses
-Ref	Expression
-konigsberg.v	⊢ 𝑉 = (0...3)
-konigsberg.e	⊢ 𝐸 = ⟨“{0, 1} {0, 2} {0, 3} {1, 2} {1, 2} {2, 3} {2, 3}”⟩
-konigsberg.g	⊢ 𝐺 = ⟨𝑉, 𝐸⟩
-Assertion
-Ref	Expression
-konigsberg	⊢ (EulerPaths‘𝐺) = ∅
+
+Euler's result that no path crosses each of the bridges of Königsberg once and
+only once.
+
 #/
 
 ###############################################################################
-begin assume
 include "graph.oak"
-end assume
 ###############################################################################
 
 konigsberg_def: define konigsberg such that konigsberg = [
@@ -40,7 +19,7 @@ multi_konig: multigraph[konigsberg]
 	by 7_set,card_2,2_set,4_set,distinct_nats,multigraph_def,konigsberg_def,
 		 list_literal
 
-tie-in konigsberg with multigraph[konigsberg] by multi_konig
+tie-in `konigsberg` with `multigraph[konigsberg]` by multi_konig
 
 konigsberg_edges_for_nodes: for some k, k = konigsberg and
 	edges_for_node[k,0] = {1,2,3} and

@@ -691,13 +691,9 @@ proof
 	t1: so for all b in N such that b >= 1, P[b] by strong_induction,1_in_N
 	take any n in D such that rational[n]
 		so for some a,b in N with b != 0, n = a/b by rational_def
-		now
-			P[b] by t1,nat_if_not_0
-			so for all a in N, for some c,d in N, a/b = c/d and simplified[c,d]
-				by P_def0
-		end
+		P[b] by t1,nat_if_not_0
 		so for some c,d in N with d != 0, n = c/d and simplified[c,d]
-			by simplified_def,domain
+			by P_def0,simplified_def,domain
 	end
 end
 

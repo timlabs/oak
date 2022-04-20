@@ -8,8 +8,6 @@ Definitions and results for graphs (actually multigraphs) and paths in graphs.
 include "list.oak"
 ###############################################################################
 
-# GRAPHS ######################################################################
-
 multigraph_def: define multigraph such that for all m,
 	multigraph[m] iff (m is in List and for some V,E in Set and r,
 		m = [V,E,r] and V is finite and E is finite and
@@ -56,14 +54,12 @@ proof
 	end
 end
 
-tie-in `nodes[m]` with
-	`if multigraph[m] then (nodes[m] is in Set)`# and nodes[m] is finite)`
-		for all terms m
-			by nodes_def,multigraph_def,list_literal,first_def,1_less_3
+tie-in `nodes[m]` with `if multigraph[m] then nodes[m] is in Set` for all m
+	by nodes_def,multigraph_def,list_literal,first_def,1_less_3
 
 tie-in `edges[m]` with
 	`if multigraph[m] then (edges[m] is in Set and edges[m] is finite)`
-		for all terms m
+		for all m
 			by edges_def,multigraph_def,list_literal,second_def,2_less_3
 
 edges_for_node: define edges_for_node such that for all m where multigraph[m],
@@ -103,7 +99,7 @@ end
 tie-in `edges_for_node[m,v]` with
 	`if multigraph[m] and v is in nodes[m] then
 		(edges_for_node[m,v] is in Set and edges_for_node[m,v] is finite)`
-			for all terms m,v
+			for all m,v
 				by edges_for_node,edges_node_finite
 
 degree_def: define degree such that for all m where multigraph[m],
@@ -124,7 +120,7 @@ end
 
 tie-in `degree[m,v]` with
 	`if multigraph[m] and v is in nodes[m] then degree[m,v] is in N`
-	 	for all terms v,m
+		for all v,m
 			by degree_def
 
 odd_nodes_def: define nodes_of_odd_degree such that
@@ -150,7 +146,7 @@ end
 
 tie-in `nodes_of_odd_degree[m]` with
 	`if multigraph[m] then nodes_of_odd_degree[m] is in Set`
-		for all terms m
+		for all m
 			by odd_nodes_def
 
 node_edge: for all m where multigraph[m],
@@ -176,9 +172,9 @@ path_def: define path such that for all p,m,
 			 nodes_for_edge[m, out[x]] = {node[x], node[y]}))
 				 by property11
 
-tie-in `path[p,m]` with `path[p,m] implies linked_list[p]` for all terms p,m
+tie-in `path[p,m]` with `path[p,m] implies linked_list[p]` for all p,m
 	by path_def
-			
+
 edges_path_def: define edges_in_path such that
 	for all m,p where multigraph[m] and path[p,m],
 		for all e, e is in edges_in_path[m,p] iff
@@ -335,7 +331,7 @@ end
 tie-in `incoming[m,p,v]` with
   `if multigraph[m] and path[p,m] and v is in nodes[m] then
 		(incoming[m,p,v] is in Set and incoming[m,p,v] is finite)`
-			for all terms m,p,v
+			for all m,p,v
 proof
 	take any m,p,v with multigraph[m] and path[p,m] and v is in nodes[m]
 		for all e in incoming[m,p,v], e is in edges[m]
@@ -347,7 +343,7 @@ end
 tie-in `outgoing[m,p,v]` with
   `if multigraph[m] and path[p,m] and v is in nodes[m] then
 		(outgoing[m,p,v] is in Set and outgoing[m,p,v] is finite)`
-			for all terms m,p,v
+			for all m,p,v
 proof
 	take any m,p,v with multigraph[m] and path[p,m] and v is in nodes[m]
 		for all e in outgoing[m,p,v], e is in edges[m]
@@ -396,7 +392,7 @@ eulerian_def: define eulerian_path such that for all p,m,
 				 by property21
 
 tie-in `eulerian_path[p,m]` with `eulerian_path[p,m] implies path[p,m]`
-	for all terms p,m
+	for all p,m
 		by eulerian_def
 
 eulerian_succ: for all m,p where multigraph[m] and eulerian_path[p,m],
@@ -405,11 +401,11 @@ eulerian_succ: for all m,p where multigraph[m] and eulerian_path[p,m],
 proof
 	take any m,p with multigraph[m] and eulerian_path[p,m]
 		take any x,y in p with x != last[p] and y != first[p]
-			suppose 1: out[x] = into[y]
-				2: for some z in p, succ[p,x,z] by succ_exists,1
-				out[x] = into[z] by path_def,2
-				so z = y by eulerian_def,succ_not_first_last,1,2
-				so succ[p,x,y] by 2
+			suppose out[x] = into[y]
+				1: for some z in p, succ[p,x,z] by succ_exists
+				out[x] = into[z] by path_def,1
+				so z = y by eulerian_def,succ_not_first_last,1
+				so succ[p,x,y] by 1
 			end
 		end
 	end
@@ -456,9 +452,9 @@ proof
         e1 is in edges[m] by in_out_prop
         2: for some x in p where x != first[p], into[x] = e1 and node[x] = v
 					by in_def
-        2a: x != last[p] by 2,1,start_stop
-      	for some e2 in outgoing[m,p,v], out[x] = e2 by 2a,out_def,2
-				so op[e1] = e2 by op_def,r_def,2,2a,first_last
+        2a: x != last[p] by 1,2,start_stop
+				out[x] is in outgoing[m,p,v] by 2,2a,out_def
+				so op[e1] is in outgoing[m,p,v] by op_def,r_def,2,2a,first_last
       end
 	    so for some f in Functions[incoming[m,p,v], outgoing[m,p,v]],
 				for all e1 in incoming[m,p,v], f[e1] = op[e1]
@@ -511,14 +507,14 @@ proof
     take 1: any v in nodes[m] where v != start[m,p] and v != stop[m,p]
 			take any e in edges_for_node[m,v]
 			  so for some x in p, node[x] = v and
-					((x != first[p] and into[x] = e) or
-				 	 (x != last[p] and out[x] = e))
-       		by path_edge_node,node_edge,edges_node_graph,eulerian_def
+					   ((x != first[p] and into[x] = e) or
+					    (x != last[p] and out[x] = e))
+				  by path_edge_node,node_edge,edges_node_graph,eulerian_def
 				so e is in incoming[m,p,v] or e is in outgoing[m,p,v] by in_def,out_def
-				so e is in incoming[m,p,v] ∪ outgoing[m,p,v] by union_def
+				so e is in incoming[m,p,v] ∪ outgoing[m,p,v]
 			end
 			take any e in incoming[m,p,v] ∪ outgoing[m,p,v]
-				e is in incoming[m,p,v] or e is in outgoing[m,p,v] by union_def
+				e is in incoming[m,p,v] or e is in outgoing[m,p,v]
 				so e is in edges_for_node[m,v] by in_def,out_def,path_in_out
 			end
       so edges_for_node[m,v] = incoming[m,p,v] ∪ outgoing[m,p,v] by set_equality
