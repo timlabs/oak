@@ -1,10 +1,11 @@
 /#
 
-Axioms and results for natural numbers.  We include comprehension schemas for
-definitions.  This also allows induction to be a statement rather than a schema.
+Axioms and results for natural numbers.
 
 #/
 
+###############################################################################
+include "comprehension.oak"
 ###############################################################################
 
 # domain axioms
@@ -12,14 +13,6 @@ definitions.  This also allows induction to be a statement rather than a schema.
 1_in_N: axiom define 1 in N
 nat_closed_add: axiom for all a,b in N, a+b is in N
 nat_closed_mult: axiom for all a,b in N, a*b is in N
-
-tie-in `a+b` with `if a is in N and b is in N then a+b is in N`
-	for all terms a,b
-		by nat_closed_add
-
-tie-in `a*b` with `if a is in N and b is in N then a*b is in N`
-	for all terms a,b
-		by nat_closed_mult
 
 # commutative semiring axioms
 add_assoc: axiom for all a,b,c in N, a+(b+c) = (a+b)+c
@@ -29,6 +22,29 @@ mult_commute: axiom for all a,b in N, a*b = b*a
 mult_dist: axiom for all a,b,c in N, a*(b+c) = (a*b)+(a*c)
 plus_0: axiom for all a in N, a+0 = a
 mult_1: axiom for all a in N, a*1 = a
+
+# cancellation axiom (apparently necessary in the absence of inverses)
+add_cancel: axiom for all a,b,c in N, if a+c = b+c then a=b
+
+# zero is not a successor
+not_plus_one_equal_zero: axiom there is no x in N where x+1 = 0
+
+# induction axiom
+induction: axiom for all P,
+	if 	P[0] and
+			for all n in N, P[n] implies P[n+1]
+	then
+			for all n in N, P[n]
+
+###############################################################################
+
+tie-in `a+b` with `if a is in N and b is in N then a+b is in N`
+	for all terms a,b
+		by nat_closed_add
+
+tie-in `a*b` with `if a is in N and b is in N then a*b is in N`
+	for all terms a,b
+		by nat_closed_mult
 
 # tie-in `a+b` with `if a is in N and b is in N then a+b = b+a` for all terms a,b
 # 	by add_commute
@@ -46,44 +62,23 @@ mult_1: axiom for all a in N, a*1 = a
 # 		for all terms a,b,c
 # 			by mult_assoc
 
-# cancellation axiom (apparently necessary in the absence of inverses)
-add_cancel: axiom for all a,b,c in N, if a+c = b+c then a=b
-
-# zero is not a successor
-not_plus_one_equal_zero: axiom there is no x in N where x+1 = 0
-
-# induction axiom
-induction: axiom for all P,
-	if 	P[0] and
-			for all n in N, P[n] implies P[n+1]
-	then
-			for all n in N, P[n]
-
-# comprehension axioms
-
-comprehension_nat: axiom schema
-	for all meta P,n,φ such that not free[P,φ],
-		`for some P, for all n in N, P[n] iff φ`
-
-comprehension_nat2: axiom schema
-	for all meta P,m,n,φ such that not free[P,φ],
-		`for some P, for all m,n in N, P[m,n] iff φ`
-
-###############################################################################
+2_def: define 2 in N such that 2 = 1+1
+3_def: define 3 in N such that 3 = 2+1
+4_def: define 4 in N such that 4 = 3+1
+5_def: define 5 in N such that 5 = 4+1
+6_def: define 6 in N such that 6 = 5+1
+7_def: define 7 in N such that 7 = 6+1
 
 nat_reduce: for all n in N such that n != 0, for some m in N, n = m+1
 proof
 	p_def: for some P, for all n in N,
 		P[n] iff (n = 0 or for some m in N, n = m+1)
-			by comprehension_nat
+			by property2a
 	P[0] by p_def
 	for all n in N, P[n+1] by p_def,nat_closed_add
 	so for all n in N, P[n] by induction
 	so thesis by p_def
 end
-
-0_not_1: 0 != 1
-	by not_plus_one_equal_zero,plus_0
 
 0_mult: for all a in N, 0*a = 0
 proof
@@ -107,15 +102,29 @@ proof
 	end
 end
 
-cancel_zero: for all a,b,c in N, a+b = b implies a = 0
+cancel_zero: for all a,b in N, a+b = b implies a = 0
 	by add_cancel,plus_0,add_commute
 
 cancellation_left: for all a,b,c in N, if a+b = a+c then b=c
 	by add_cancel,add_commute
 
+0_not_1: 0 != 1
+	by plus_0,not_plus_one_equal_zero
+
+distinct_nats:
+  0 != 1 and 0 != 2 and 0 != 3 and 0 != 4 and 0 != 5 and 0 != 6 and 0 != 7 and
+             1 != 2 and 1 != 3 and 1 != 4 and 1 != 5 and 1 != 6 and 1 != 7 and
+                        2 != 3 and 2 != 4 and 2 != 5 and 2 != 6 and 2 != 7 and
+                                   3 != 4 and 3 != 5 and 3 != 6 and 3 != 7 and
+                                              4 != 5 and 4 != 6 and 4 != 7 and
+                                                         5 != 6 and 5 != 7 and
+                                                                    6 != 7
+	by not_plus_one_equal_zero,cancel_zero,add_assoc,
+		 0_not_1,2_def,3_def,4_def,5_def,6_def,7_def
+
 ineq_def: define < such that for all m,n in N,
 	m < n iff for some d in N where d != 0, m+d = n
-		by comprehension_nat2
+		by property22a
 
 ineq_less_equal: for all m,n in N, m <= n iff for some d in N, m+d = n
 	by ineq_def,plus_0
@@ -192,7 +201,7 @@ connex: for all a,b in N, a < b or a = b or b < a
 proof
 	p_def: for some p, for all b in N,
 		p[b] iff for all a in N where not a >= b, a < b
-			by comprehension_nat
+			by property2a
 	p[0] by p_def,ineq_def,plus_0,add_commute
 	take 1: any b in N where p[b]
 		take any a in N where not a >= b+1
@@ -232,6 +241,14 @@ total_order: for all a,b,c in N,
 	(a < b or a = b or b < a)							# connex
 		by irreflexive,transitive,connex
 
+# would like to have a tie-in here for the transitive case of total_order, need
+# compound tie-in to do that!  use for length_member and card_oftwo so do not
+# need to cite total_order.
+
+tie-in `a < b` with
+  `if a is in N and b is in N then (a < b iff not b <= a)` for all terms a,b
+    by total_order
+
 nat_greater_eq_0: for all n in N, n >= 0
 	by nonnegative,total_order
 
@@ -248,12 +265,34 @@ end
 pair_less: for all a,b in N, for some c in N, a < c and b < c
 	by nat_ineq_2,nat_closed_add,total_order
 
+less_equal_one: for all a,b in N, a < b iff a+1 <= b
+proof
+	take any a,b in N
+		a < b iff a+1 <= b by nat_ineq_2
+	end
+end
+
+1_less_2: 1 < 2
+	by 2_def,less_equal_one
+
+1_less_3: 1 < 3
+	by 2_def,3_def,add_assoc,ineq_def,distinct_nats
+
+2_less_3: 2 < 3
+	by 3_def,ineq_def,distinct_nats
+
+2_less_4: 2 < 4
+	by 2_def,3_def,4_def,add_assoc,ineq_def,distinct_nats
+
+double: for all a in N, a+a = 2*a
+	by 2_def,mult_commute,mult_dist,mult_1
+
 mult_cancel: for all a,b,c in N where c != 0, if a*c = b*c then a=b
 proof
 	p_def: for some p, for all n in N,
 		p[n] iff for all a,b,c in N where a < n and b < n and c != 0,
 			if a*c = b*c then a=b
-				by comprehension_nat
+				by property2a
 	p[0] by nonnegative,p_def
 	take hyp: any n in N where p[n]
 		take 1: any a,b,c in N with c != 0 where a < n+1 and b < n+1 and a*c = b*c
@@ -290,7 +329,6 @@ proof
 			c*e != 0 by mult_not_0
 			so contradiction by add_not_zero
 		end
-		so a <= b by total_order
 	end
 end
 
@@ -298,7 +336,7 @@ inequal_mult: for all a,b,c in N, if a < b and c > 0, then a*c < b*c
 proof
 	take any a,b,c in N with c > 0 where a < b
 		2: so for some d in N with d != 0, b = a+d by ineq_def
-		d*c != 0 by mult_not_0,total_order
+		d*c != 0 by mult_not_0
 		so a*c < (a*c)+(d*c) by ineq_def
 		so a*c < (a+d)*c by mult_dist,mult_commute
 		so a*c < b*c by 2
@@ -316,9 +354,94 @@ proof
 			so a*b > a by mult_commute,mult_1
 		end
 	end
-	so thesis by total_order,nonnegative
+	so thesis by nonnegative
 end
 
+even_def: define even such that for all n in N,
+	n is even iff for some k in N, n = 2*k
+		by property2a
+
+odd_def: define odd such that for all n in N,
+	n is odd iff for some k in N, n = (2*k)+1
+		by property2a
+
+0_even: 0 is even by even_def,0_mult,mult_commute
+
+even_or_odd: for all n in N, n is even or n is odd
+proof
+	P_def: for some P, for all n in N, P[n] iff (n is even or n is odd)
+		by property2a
+	P[0] by P_def,0_even
+	take any n in N such that P[n]
+		if n is even, then n+1 is odd by even_def,odd_def
+		suppose n is odd
+			so for some k in N, n = (2*k)+1 by odd_def
+			so n+1 = (k+1)+(k+1) by double,add_assoc,add_commute
+			so n+1 = 2*(k+1) by double
+			so n+1 is even by even_def
+		end
+		so P[n+1] by P_def
+	end
+	so thesis by induction,P_def
+end
+
+not_even_and_odd: for no n in N, n is even and n is odd
+proof
+	P_def: for some P, for all n in N, P[n] iff not (n is even and n is odd)
+		by property2a
+
+	0 is not odd by odd_def,add_not_zero,0_not_1,nat_closed_mult
+	so P[0] by P_def
+
+	neo0: take any n in N such that P[n] and not P[n+1]
+
+		n is even
+		proof
+			for some k in N, n+1 = (2*k)+1 by neo0,P_def,odd_def
+			so thesis by even_def,add_cancel
+		end
+
+		n is odd
+		proof
+			neo1: for some k in N, n+1 = 2*k by neo0,P_def,even_def
+			2*k != 0 by neo1,add_not_zero,0_not_1
+			so k != 0 by 0_mult,mult_commute
+			so for some l in N, k = l+1 by nat_reduce
+			so n+1 = 2*(l+1) by neo1
+			so n+1 = l+1+l+1 by double,add_assoc
+			so n = l+1+l by add_cancel
+			so n = (2*l)+1 by double,add_commute,add_assoc
+			so thesis by odd_def
+		end
+
+		so contradiction by neo0,P_def
+	end
+
+	so thesis by induction,P_def
+end
+
+even_odd: for all n in N, n is even iff n is not odd
+	by even_or_odd, not_even_and_odd
+
+even_odd_inc: for all n in N,
+	(n is even iff n+1 is odd) and (n is odd iff n+1 is even)
+proof
+	take any n in N
+		if n is even then n+1 is odd by even_def,odd_def
+		suppose n+1 is odd
+			so for some k in N, n+1 = (2*k)+1 by odd_def
+			so n is even by even_def,add_cancel
+		end
+	end
+	so thesis by even_odd
+end
+
+1_odd: 1 is odd by 0_even,even_odd_inc,plus_0,add_commute
+2_even: 2 is even by 2_def,1_odd,even_odd_inc
+3_odd: 3 is odd by 3_def,2_even,even_odd_inc
+4_even: 4 is even by 4_def,3_odd,even_odd_inc
+5_odd: 5 is odd by 5_def,4_even,even_odd_inc
+	
 strong_induction_from_0: for all P,
 	if 	for all n in N,
 				(for all m in N such that m < n, P[m]) implies P[n]
@@ -329,7 +452,7 @@ proof
 
 		Q_defx: for some Q, for all n in N,
 			Q[n] iff for all m in N such that m < n, P[m]
-				by comprehension_nat
+				by property2a
 
 		ssi0: suppose for all n in N,
 					(for all m in N such that m < n, P[m]) implies P[n]
@@ -358,7 +481,7 @@ proof
 	take any P and c in N
 		si1: suppose for all n in N such that n >= c,
 				(for all m in N such that m >= c and m < n, P[m]) implies P[n]
-			Q_def: for some Q, for all n in N, Q[n] iff P[n+c] by comprehension_nat
+			Q_def: for some Q, for all n in N, Q[n] iff P[n+c] by property2a
 			take any n in N such that for all m in N such that m < n, Q[m]
 				so for all m in N such that m < n, P[m+c] by Q_def
 				so si3: for all b in N such that b+c >= c and b+c < n+c, P[b+c]
@@ -404,6 +527,56 @@ proof
 			end
 			so for all n in N where n >= c+1, P[n] by strong_induction
 			so for all n in N where n > c, P[n] by nat_ineq_2,total_order
+		end
+	end
+end
+
+bounded_induction: for all P and c in N,
+	if P[0] and
+		 for all n in N where n < c, P[n] implies P[n+1]
+	then
+		 for all n in N where n <= c, P[n]
+proof
+	take any P and c in N
+		suppose 1: P[0] and for all n in N where n < c, P[n] implies P[n+1]
+			Q_def: for some Q, for all n in N, Q[n] iff (P[n] or n > c)
+				by property2a
+			Q[0] by 1,Q_def
+			take any n in N where Q[n]
+				so P[n] or n >= c by Q_def
+				so if n < c then P[n+1] by 1
+				so if n < c then Q[n+1] by Q_def
+				if n >= c then Q[n+1] by Q_def,nat_ineq_2
+			end
+			so for all n in N, Q[n] by induction
+			so for all n in N where n <= c, P[n] by Q_def,total_order
+		end
+	end
+end
+
+downward_induction: for all P and c in N,
+	if P[c] and
+		 for all n in N where n < c, P[n+1] implies P[n]
+	then
+		 for all n in N where n <= c, P[n]
+proof
+	take any P and c in N
+		suppose 1: P[c] and for all n in N where n < c, P[n+1] implies P[n]
+			Q_def: for some Q, for all d in N,
+				Q[d] iff for some e in N, e+d = c and P[e]
+					by property2a
+			Q[0] by Q_def,1,plus_0
+			take any d in N where d < c and Q[d]
+				so 2: for some e in N with e != 0, d+e = c and P[e]
+					by Q_def,ineq_def,add_cancel,add_commute
+				3: for some f in N, f+1 = e by nat_reduce
+				4: f+(d+1) = c by 2,3,add_assoc,add_commute
+				P[f] by 1,2,3,ineq_def,4,not_plus_one_equal_zero
+				so Q[d+1] by Q_def,4
+			end
+			so for all d in N where d <= c, Q[d] by bounded_induction
+			so for all n in N where n <= c, P[n]
+				by Q_def,ineq_less_equal,add_commute,add_cancel
 		end
 	end
 end

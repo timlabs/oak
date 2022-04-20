@@ -1,0 +1,96 @@
+/#
+
+Comprehension axioms, for properties and operations.  Should look into reducing
+the number of these.
+
+Each axiom contains guards on each of its parameters, to ensure that the
+property or operation being created cannot contradict itself.
+
+#/
+
+property2: axiom schema
+	for all meta p,x,q,a,φ such that not free[p,φ],
+		`for some p, for all x, p[x] iff (q[x,a] and φ)`
+
+property2a: axiom schema
+	for all meta p,x,q,a,φ such that not free[p,φ],
+		`for some p, for all x where q[x,a], p[x] iff φ`
+
+property11: axiom schema
+	for all meta p,x,y,q,r,φ such that not free[p,φ],
+		`for some p, for all x,y, p[x,y] iff (q[x] and r[y] and φ)`
+
+property12a: axiom schema
+	for all meta p,x,y,q,r,a,φ such that not free[p,φ],
+		`for some p, for all x,y where q[x] and r[y,a], p[x,y] iff φ`
+
+property21: axiom schema
+	for all meta p,x,y,q,a,r,φ such that not free[p,φ],
+		`for some p, for all x,y, p[x,y] iff (q[x,a] and r[y] and φ)`
+
+property22: axiom schema
+	for all meta p,x,y,q,a,r,b,φ such that not free[p,φ],
+		`for some p, for all x,y, p[x,y] iff (q[x,a] and r[y,b] and φ)`
+
+property22a: axiom schema
+	for all meta p,x,y,q,a,r,b,φ such that not free[p,φ],
+		`for some p, for all x,y where q[x,a] and r[y,b], p[x,y] iff φ`
+
+property122: axiom schema
+	for all meta p,x,y,z,q,r,s,a,b,φ such that not free[p,φ],
+		`for some p, for all x,y,z,
+			p[x,y,z] iff (q[x] and r[y,a] and s[z,b] and φ)`
+
+property122a: axiom schema
+	for all meta p,x,y,z,q,r,s,a,b,φ such that not free[p,φ],
+		`for some p, for all x,y,z where q[x] and r[y,a] and s[z,b],
+			p[x,y,z] iff φ`
+
+property222: axiom schema
+	for all meta p,x,y,z,q,a,r,b,s,c,φ such that not free[p,φ],
+		`for some p, for all x,y,z,
+			p[x,y,z] iff (q[x,a] and r[y,b] and s[z,c] and φ)`
+
+property222a: axiom schema
+	for all meta p,x,y,z,q,a,r,b,s,c,φ such that not free[p,φ],
+		`for some p, for all x,y,z where q[x,a] and r[y,b] and s[z,c],
+			p[x,y,z] iff φ`
+
+property1222a: axiom schema
+	for all meta p,w,x,y,z,q,r,s,t,a,b,c,φ such that not free[p,φ],
+		`for some p, for all w,x,y,z where q[w] and r[x,a] and s[y,b] and t[z,c],
+			p[w,x,y,z] iff φ`
+
+operation12: axiom schema
+	for all meta x,y,p,q,a,f,φ such that not free[f,φ],
+		`if for all x where p[x], for at most one y where q[y,a], φ then
+			for some f, for all x,y where p[x] and q[y,a], f[x] = y iff φ`
+
+operation22: axiom schema
+	for all meta x,y,p,q,a,b,f,φ such that not free[f,φ],
+		`if for all x where p[x,a], for at most one y where q[y,b], φ then
+			for some f, for all x,y where p[x,a] and q[y,b], f[x] = y iff φ`
+
+operation122: axiom schema
+	for all meta x,y,z,q,r,s,a,b,f,φ such that not free[f,φ],
+		`if for all x,y where q[x] and r[y,a],
+			 for at most one z where s[z,b], φ
+		 then
+		 	 for some f, for all x,y,z where q[x] and r[y,a] and s[z,b],
+			 	 f[x,y] = z iff φ`
+
+operation222: axiom schema
+	for all meta x,y,z,q,r,s,a,b,c,f,φ such that not free[f,φ],
+		`if for all x,y where q[x,a] and r[y,b],
+			 for at most one z where s[z,c], φ
+		 then
+		 	 for some f, for all x,y,z where q[x,a] and r[y,b] and s[z,c],
+			 	 f[x,y] = z iff φ`
+
+operation1222: axiom schema
+	for all meta w,x,y,z,q,r,s,t,a,b,c,f,φ such that not free[f,φ],
+		`if for all w,x,y where q[w] and r[x,a] and s[y,b],
+			 for at most one z where t[z,c], φ
+		 then
+		 	 for some f, for all w,x,y,z where q[w] and r[x,a] and s[y,b] and t[z,c],
+			 	 f[w,x,y] = z iff φ`
