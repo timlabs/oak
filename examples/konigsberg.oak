@@ -1,0 +1,123 @@
+/#
+|- !G. vertices(G) = {0,1,2,3} /\
+         edges(G) = {10,20,30,40,50,60,70} /\
+         termini G (10) = {0,1} /\
+         termini G (20) = {0,2} /\
+         termini G (30) = {0,3} /\
+         termini G (40) = {1,2} /\
+         termini G (50) = {1,2} /\
+         termini G (60) = {2,3} /\
+         termini G (70) = {2,3}
+         ==> ~(?es a b. eulerian G es (a,b))
+         
+Theorem konigsberg_bridges :
+  let E := [(0, 1); (0, 2); (0, 3); (1, 2); (1, 2); (2, 3); (2, 3)] in
+  forall p, path p -> eulerian E p -> False.
+  
+Hypotheses
+Ref	Expression
+konigsberg.v	⊢ 𝑉 = (0...3)
+konigsberg.e	⊢ 𝐸 = ⟨“{0, 1} {0, 2} {0, 3} {1, 2} {1, 2} {2, 3} {2, 3}”⟩
+konigsberg.g	⊢ 𝐺 = ⟨𝑉, 𝐸⟩
+Assertion
+Ref	Expression
+konigsberg	⊢ (EulerPaths‘𝐺) = ∅
+#/
+
+###############################################################################
+begin assume
+include "graph.oak"
+end assume
+###############################################################################
+
+konigsberg_def: define konigsberg such that konigsberg = [
+	{0,1,2,3}, # nodes
+	{1,2,3,4,5,6,7}, # edges
+	[{0,1}, {0,2}, {0,3}, {1,2}, {1,2}, {2,3}, {2,3}] # nodes for edges
+]
+
+multi_konig: multigraph[konigsberg]
+	by 7_set,card_2,2_set,4_set,distinct_nats,multigraph_def,konigsberg_def,
+		 list_literal
+
+tie-in konigsberg with multigraph[konigsberg] by multi_konig
+
+konigsberg_edges_for_nodes: for some k, k = konigsberg and
+	edges_for_node[k,0] = {1,2,3} and
+	edges_for_node[k,1] = {1,4,5} and
+	edges_for_node[k,2] = {2,4,5,6,7} and
+	edges_for_node[k,3] = {3,6,7}
+proof
+  there is a k with k = konigsberg
+
+	0n: nodes[k] = {0,1,2,3} by konigsberg_def,nodes_def
+	0e: edges[k] = {1,2,3,4,5,6,7} by konigsberg_def,edges_def
+
+	ne: nodes_for_edge[k,1] = {0,1} and
+			nodes_for_edge[k,2] = {0,2} and
+			nodes_for_edge[k,3] = {0,3} and
+			nodes_for_edge[k,4] = {1,2} and
+			nodes_for_edge[k,5] = {1,2} and
+			nodes_for_edge[k,6] = {2,3} and
+			nodes_for_edge[k,7] = {2,3}
+		by konigsberg_def,0e,7_set,nodes_for_edge_def,list_literal
+
+	edges_for_node[k,0] = {1,2,3}
+	proof
+		x: 0 is in nodes[k] by 0n,4_set
+		take any e
+			e is in edges_for_node[k,0] iff e is in {1,2,3}
+				by edges_for_node,x,2_set,0e,7_set,ne,distinct_nats
+		end
+		so thesis by set_equality,x
+	end
+
+	edges_for_node[k,1] = {1,4,5}
+	proof
+		x: 1 is in nodes[k] by 0n,4_set
+		take any e
+			e is in edges_for_node[k,1] iff e is in {1,4,5}
+				by edges_for_node,x,2_set,0e,7_set,ne,distinct_nats
+		end
+		so thesis by set_equality,x
+	end
+
+	edges_for_node[k,2] = {2,4,5,6,7}
+	proof
+		x: 2 is in nodes[k] by 0n,4_set
+		take any e
+			e is in edges_for_node[k,2] iff e is in {2,4,5,6,7}
+				by edges_for_node,x,2_set,0e,7_set,ne,distinct_nats
+		end
+		so thesis by set_equality,x
+	end
+
+	edges_for_node[k,3] = {3,6,7}
+	proof
+		x: 3 is in nodes[k] by 0n,4_set
+		take any e
+			e is in edges_for_node[k,3] iff e is in {3,6,7}
+				by edges_for_node,x,2_set,0e,7_set,ne,distinct_nats
+		end
+		so thesis by set_equality,x
+	end
+end
+
+konigsberg_odd: |nodes_of_odd_degree[konigsberg]| = 4
+proof
+  there is a k with k = konigsberg
+	0n: nodes[k] = {0,1,2,3} by konigsberg_def,nodes_def
+  |edges_for_node[k,0]| = 3 and |edges_for_node[k,1]| = 3 and
+	|edges_for_node[k,2]| = 5 and |edges_for_node[k,3]| = 3
+		by card_3,card_5,distinct_nats,konigsberg_edges_for_nodes
+  so for all v in nodes[k], degree[k,v] is odd
+		by 3_odd,5_odd,degree_def,4_set,0n
+  |nodes[k]| = 4 by distinct_nats,card_4,0n
+  so thesis by odd_nodes_def,set_equality
+end
+
+for no p, eulerian_path[p,konigsberg]
+proof
+  |nodes_of_odd_degree[konigsberg]| = 4 by konigsberg_odd
+  so thesis by eulerian_path_odd_degree,2_less_4
+end
