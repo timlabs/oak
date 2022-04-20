@@ -147,8 +147,8 @@ end
 infinite_primes: Primes is infinite
 proof
 	suppose 1: Primes is finite # to obtain a contradiction
-	  2: for some p in N, p = product[Primes] by 1,product_set_in_N
-	  3: for some q in N, q = p+1
+		2: for some p in N, p = product[Primes] by 1,product_set_in_N
+		3: for some q in N, q = p+1
 		4: for some d in N, d divides q and d is prime
 		proof
 			for all n in Primes, n > 0 by primes_def,prime_def,nonnegative,total_order
@@ -157,9 +157,9 @@ proof
 			so thesis by prime_factor
 		end
 		d divides p by divides_product,primes_def,1,2,4
-	  so d divides 1 by divides_diff,3,4
-	  so d is not prime by prime_def,divides_one,total_order
-	  so contradiction by 4
+		so d divides 1 by divides_diff,3,4
+		so d is not prime by prime_def,divides_one,total_order
+		so contradiction by 4
 	end
 	so thesis by infinite_def
 end
