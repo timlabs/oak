@@ -76,8 +76,7 @@ class Proof
 					break
 				end
 				if content.is_a? Content
-					is_schema = [:assume_schema, :axiom_schema].include? action
-					content = process_content content, proof.theses[-1], is_schema
+					content = process_content content, proof.theses[-1]
 				end
 				# puts "content for line #{fileline} is: #{content.inspect}"
 				id = {:label => label, :filename => filename, :fileline => fileline}
@@ -98,14 +97,8 @@ class Proof
 					when :assume
 						proof.assume content, id
 						tracker.assume filename, fileline if tracker
-					when :assume_schema
-						proof.assume_schema content, id
-						tracker.assume filename, fileline if tracker
 					when :axiom
 						proof.axiom content, id
-						tracker.axiom filename if tracker
-					when :axiom_schema
-						proof.axiom_schema content, id
 						tracker.axiom filename if tracker
 					when :derive then proof.derive content, reasons, id
 					when :so then proof.so content, reasons, id
@@ -149,7 +142,8 @@ class Proof
 					result = ExternalProver.valid_e? e.checked, true
 					message = case result
 						when :invalid then 'invalid derivation'
-						when Numeric then "valid derivation, but took #{result.round 1} " \
+						# use ceil rather than round to avoid "1.0 times the work limit"
+						when Numeric then "valid derivation, but took #{result.ceil 1} " \
 															"times the work limit"
 						when :unknown then 'eprover gave up'
 						else raise '' # new exception
@@ -201,33 +195,29 @@ class Proof
 		}
 	end
 
-	def self.process_content content, thesis, is_schema
-		if is_schema
-			# free_variables and substitute don't work for schemas, so use contains?
-			return content unless content.sentence.contains? 'thesis'
-			raise ProofException, 'cannot use thesis in schema'
-		elsif thesis
-			if content.binding?
-				if content.sentence.free_variables.include? 'thesis'
-					raise ProofException, "cannot use thesis in binding"
-				end
-				intersect = content.binding.variables & thesis.sentence.free_variables
-				conflict = intersect.first
-				return content unless conflict
-				raise ProofException, "cannot bind variable #{conflict}: part of thesis"
-			else
-				begin
-					tree = substitute content.sentence, {'thesis' => thesis.sentence}
-				rescue SubstituteException => e
-					message = "cannot quantify variable #{e}: conflicts with thesis"
-					raise ProofException, message
-				end
-				Content.new tree
-			end
-		elsif content.sentence.free_variables.include? 'thesis'
+	def self.process_content content, thesis
+		if not thesis
+			return content unless content.uses.include? 'thesis'
 			raise ProofException, 'thesis used outside of proof block'
+		elsif content.uses.include? 'thesis'
+			if content.schema
+				raise ProofException, 'cannot use thesis in schema'
+			elsif not content.binds.empty?
+				raise ProofException, "cannot use thesis in binding"
+			elsif not content.tie_ins.empty?
+				raise ProofException, "cannot use thesis in tie-in"
+			end
+			begin # content was just a Tree
+				tree = substitute content.sentence, {'thesis' => thesis.sentence}
+			rescue SubstituteException => e
+				message = "cannot quantify variable #{e}: conflicts with thesis"
+				raise ProofException, message
+			end
+			return Content.new tree
 		else
-			content
+			conflict = (thesis.uses & content.binds).first
+			return content unless conflict
+			raise ProofException, "cannot bind variable #{conflict}: part of thesis"
 		end
 	end
 
