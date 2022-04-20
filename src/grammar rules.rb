@@ -1,20 +1,24 @@
 def grammar_rules
 [
-	[:start, :ending, :end],
+	[:start, :ending, :end], # needed to preserve line numbers
 	[:start, :begin_assume, :start5],
 	[:start, :end_assume, :start5],
 	[:start, :include, :start5],
 	[:start, :now, :start5],
 	[:start, :end, :start5],
 	[:start, :exit, :start5],
+	[:start, :tie_in, :start3],
 	[:start, :label, :start2],
 	[:start, :else, :start2],
+
+	# things that can have labels
 	[:start2, :assume, :start4],
 	[:start2, :axiom, :start5],
 	[:start2, :suppose, :start5],
 	[:start2, :take, :start5],
 	[:start2, :so, :start3],
 	[:start2, :derive, :start3],
+
 	[:start3, :by, :start5],
 	[:start3, :proof, :start5],
 	[:start3, :else, :start5],
@@ -34,15 +38,25 @@ def grammar_rules
 
 	[:filename, [/\s*"/, /[^"\n]+/, /"/], :end],
 
-	[:assume, /\s*assume\b/i, :label_schema],
+	[:tie_in, /\s*tie-in\b/i, :tie_in2],
+	[:tie_in2, [:quote, :with, :quote], :tie_in3],
+	[:tie_in3, /\s*for (all|any|each|every)\b/i, :tie_in4],
+	[:tie_in3, :else, :end],
+	[:tie_in4, :atom_list_adjacent, :end],
+
+	[:assume, /\s*assume\b/i, :assume2],
+	[:assume2, :tie_in, :end],
+	[:assume2, :else, :label_schema],
 
 	[:axiom, /\s*axiom\b/i, :label_schema],
 
 	[:label_schema, :label_same_line, :label_schema2],
 	[:label_schema, :else, :label_schema2],
-	[:label_schema2, [/\s*schema\b/i, :exp], :end],
+	[:label_schema2, :schema, :end],
 	[:label_schema2, :define, :end],
 	[:label_schema2, :exp, :end],
+
+	[:schema, [/\s*schema\b/i, :universal_meta], :end],
 
 	[:suppose, /\s*suppose\b/i, :suppose2],
 	[:suppose2, :label_same_line, :suppose3],
@@ -177,7 +191,6 @@ def grammar_rules
 
 	[:prefix, :not, :end],
 	[:prefix, :if, :end],
-	[:prefix, :universal_meta, :end],
 	[:prefix, :universal, :end],
 	[:prefix, :for_at_most_one, :end],
 	[:prefix, :no_existential, :end],
@@ -202,7 +215,8 @@ def grammar_rules
 
 	[:universal, /\s*for (all|any|each|every)\b/i, :post_quantifier_exp],
 
-	[:universal_meta, /\s*for (all|any|each|every) meta\b/i, :post_quantifier_exp],
+	[:universal_meta, /\s*for (all|any|each|every) meta\b/i, :universal_meta2],
+	[:universal_meta2, [:list_with_such, /,\s/, :quote], :end],
 
 	[:existential, /\s*for (at least one|some)\b/i, :post_quantifier_exp],
 	[:existential, /\s*there (exist|exists|is|are)( (a|an|at least one|some))?\b/i, :post_quantifier],
@@ -334,7 +348,6 @@ def grammar_rules
 	[:operand_base, :list, :end],
 	[:operand_base, :set, :end],
 	[:operand_base, :word, :end],
-	[:operand_base, :quote, :end],
 
 	[:list, /\s*\[/, :list1a],
 	[:list1a, /\s*\]/, :end],
@@ -378,7 +391,7 @@ def grammar_rules
 
 	[:definable, [/\s*/, :definable_raw], :end, :catch],
 
-  [:definable_raw, /\+|\-|\*|\÷|\/|\^|⊆|⊊|⊂|\|\||{}|∪|∩|</, :end],
+  [:definable_raw, /\+|\-|\*|\÷|\/|\^|⊆|⊊|⊂|\|\||{}|\[\]|∪|∩|</, :end],
   [:definable_raw, :atom, :end],
 
 	[:atom, /for (all|any|at least one|at most one)\b/i, :null],
