@@ -1,64 +1,18 @@
-module Schema
+module SchemaModule
 extend self
 
-def check_schema_format tree, state = :top, vars = []
-	case state
-		when :top
-			unless tree.operator  == :for_all_meta
-				raise ParseException, 'schema must begin with "for all meta"'
-			end
-			vars.concat tree.subtrees[0].operator
-			check_schema_format tree.subtrees[1], :meta, vars
-		when :meta
-			if tree.operator == :for_all_meta
-				vars.concat tree.subtrees[0].operator
-				check_schema_format tree.subtrees[1], :meta, vars
-			elsif tree.operator == :implies
-				return false if not check_schema_format tree.subtrees[0], :with, vars
-				check_schema_format tree.subtrees[1], :quote, vars
-			else
-				check_schema_format tree, :quote, vars
-			end
-		when :with
-			case tree.operator
-				when :and, :or, :not, :implies, :iff
-					tree.subtrees.all? {|subtree| check_schema_format subtree, :with, vars}
-				when :predicate
-					return false unless tree.subtrees.size == 3
-					return false unless tree.subtrees[0].operator == 'free'
-					return false unless tree.subtrees[1].subtrees.empty?
-					return false unless tree.subtrees[2].subtrees.empty?
-					return false unless vars.include? tree.subtrees[1].operator
-					return false unless vars.include? tree.subtrees[2].operator
-					true
-				else
-					return false
-			end
-		when :quote
-			return false unless tree.operator == :quote
-			check_schema_format tree.subtrees[0], :normal, vars
-		when :normal
-			case tree.operator
-				when :for_all_meta, :quote
-					false
-				when :substitution
-					vars.include? tree.subtrees[0].operator
-				else
-					tree.subtrees.all? {|subtree| check_schema_format subtree, :normal, vars}
-			end
+def check_schema_format metas, condition, pattern
+	if condition
+		return false unless check_schema_format_condition condition, metas
 	end
+	check_schema_format_pattern pattern, metas
 end
 
 def instantiate_schema schema, instance
 	# puts "schema: #{schema}"
-
-	variables, pattern, requirements = parse_schema schema
-	# puts "variables: #{variables}"
-	# puts "pattern: #{pattern}"
-	# puts "requirements: #{requirements}"
 	# puts "instance: #{instance}"
 
-	constraints = find_constraints pattern, instance, variables
+	constraints = find_constraints schema.pattern, instance, schema.metas
 	raise ProofException if not constraints
 	# puts "constraints are:"
 	# constraints.each {|constraint| puts "#{constraint[0]} = #{constraint[1]}"}
@@ -69,10 +23,11 @@ def instantiate_schema schema, instance
 	# puts "resolved:"
 	# p resolved
 
-	# every variable must have an assignment
-	raise ProofException unless (variables - resolved.keys).empty?
+	# every meta must have an assignment
+	raise ProofException unless (schema.metas - resolved.keys).empty?
 
-	requirements_tree requirements, resolved
+	return tree_for_true if not schema.condition
+	apply_resolved schema.condition, resolved
 end
 
 private #######################################################################
@@ -98,6 +53,34 @@ def apply_resolved requirement, resolved
 				tree_for_false
 			end
 		else raise
+	end
+end
+
+def check_schema_format_condition tree, metas
+	case tree.operator
+		when :and, :or, :not, :implies, :iff
+			tree.subtrees.all? {|subtree|
+				check_schema_format_condition subtree, metas
+			}
+		when :predicate
+			return false unless tree.subtrees.size == 3
+			return false unless tree.subtrees[0].operator == 'free'
+			return false unless tree.subtrees[1].subtrees.empty?
+			return false unless tree.subtrees[2].subtrees.empty?
+			return false unless metas.include? tree.subtrees[1].operator
+			return false unless metas.include? tree.subtrees[2].operator
+			true
+		else
+			return false
+	end
+end
+
+def check_schema_format_pattern tree, metas
+	case tree.operator
+		when :substitution
+			metas.include? tree.subtrees[0].operator
+		else
+			tree.subtrees.all? {|subtree| check_schema_format_pattern subtree, metas}
 	end
 end
 
@@ -132,38 +115,15 @@ def find_constraints pattern, instance, variables
 	end
 end
 
-def parse_schema schema
-	case schema.operator
-		when :for_all_meta
-			variables, pattern, requirements = parse_schema schema.subtrees[1]
-			variables.concat schema.subtrees[0].operator
-			[variables, pattern, requirements]
-		when :implies
-			variables, pattern, requirements = parse_schema schema.subtrees[1]
-			requirements.unshift schema.subtrees[0]
-			[variables, pattern, requirements]
-		when :quote
-			[[], schema.subtrees[0], []]
-		else raise
-	end
-end
-
-def requirements_tree requirements, resolved
-	return tree_for_true if requirements.empty?
-	conjunction_tree requirements.collect {|requirement|
-		apply_resolved requirement, resolved
-	}
-end
-
 def resolve_constraints constraints
 	absolutes = constraints.select {|target, x| target.is_a? String}
 	relatives = constraints - absolutes
 
-#	puts "absolutes:"
-#	absolutes.each {|constraint| puts "#{constraint[0]}  =  #{constraint[1]}"}
-#	puts "relatives:"
-#	relatives.each {|constraint| puts "#{constraint[0]}  =  #{constraint[1]}"}
-#	puts
+	# puts "absolutes:"
+	# absolutes.each {|constraint| puts "#{constraint[0]}  =  #{constraint[1]}"}
+	# puts "relatives:"
+	# relatives.each {|constraint| puts "#{constraint[0]}  =  #{constraint[1]}"}
+	# puts
 
 	substitution = {}
 	absolutes.each {|variable, x|

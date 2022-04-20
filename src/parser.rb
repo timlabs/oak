@@ -173,20 +173,19 @@ class Parser
 
 	def process_atom_list node
 		raise unless node.value == :atom_list
-		variables, condition_trees = [], []
+		variables, conditions = [], []
 		node.branches.each {|branch|
 			next if branch.value.downcase == 'and'
-			new_variables, new_condition_trees = process_atom_list_adjacent branch
+			new_variables, new_conditions = process_atom_list_adjacent branch
 			variables.concat new_variables
-			condition_trees.concat new_condition_trees
+			conditions.concat new_conditions
 		}
-		condition_tree = conjunction_tree condition_trees
-		[variables, condition_tree]
+		[variables, conditions]
 	end
 
 	def process_atom_list_adjacent node
 		raise unless node.value == :atom_list_adjacent
-		variable_trees, condition_trees = [], []
+		variable_trees, conditions = [], []
 		condition = nil # for scope
 		node.branches.each {|branch|
 			next if branch.value == ','
@@ -199,9 +198,9 @@ class Parser
 				raise "unknown branch value #{branch.value.inspect}"
 			end
 		}
-		if condition
+		conditions = if condition
 			right_side = tree_from_grammar condition.branches[1]
-			condition_trees = variable_trees.collect {|variable_tree|
+			variable_trees.collect {|variable_tree|
 				if condition.branches[0].value == :inequality
 					relation = condition.branches[0].branches[0].value
 					convert_inequality relation, [variable_tree, right_side]
@@ -221,24 +220,22 @@ class Parser
 					raise "unknown condition #{condition.branches[0].value.inspect}"
 				end
 			}
+		else
+			variable_trees.collect {|variable_tree| nil}
 		end
 		variables = variable_trees.collect {|tree| tree.operator}
-		[variables, condition_trees]
+		[variables, conditions]
 	end
 
 	def process_list_with_such node
-		variables, condition = process_atom_list node.branches[0]
-		raise if condition and contains_quantifiers? condition
+		variables, conditions = process_atom_list node.branches[0]
 		if (i = node.branches.index {|branch| branch.value == :with})
 			with = tree_from_grammar node.branches[i+1]
-			if with and contains_quantifiers? with
-				raise ParseException.new '"with" cannot contain quantifiers'
-			end
 		end
 		if (i = node.branches.index {|branch| branch.value == :such_that})
 			such_that = tree_from_grammar node.branches[i+1]
 		end
-		[variables, condition, with, such_that]
+		[variables, conditions, with, such_that]
 	end
 
 	def process_statement grammar_tree
@@ -262,7 +259,7 @@ class Parser
 		}
 
 		actions = [
-			:include, :assume, :axiom, :suppose, :take, :derive, :so,
+			:include, :assume, :axiom, :suppose, :take, :derive, :so, :tie_in,
 			:begin_assume, :end_assume
 		]
 		action_branch = tree.root.branches.find {|branch|
@@ -281,11 +278,9 @@ class Parser
 		content_branch = case action
 			when :assume
 				update_label.call action_branch.branches[1]
-				action = :assume_schema if action_branch.branches[-2].text == 'schema'
 				action_branch.branches[-1]
 			when :axiom
 				update_label.call action_branch.branches[1]
-				action = :axiom_schema if action_branch.branches[-2].text == 'schema'
 				action_branch.branches[-1]
 			when :suppose
 				update_label.call action_branch.branches[1]
@@ -303,7 +298,7 @@ class Parser
 					action = :so_assume
 					action_branch = action_branch.branches[1]
 					update_label.call action_branch.branches[1]
-					if action_branch.branches[-2].text == 'schema'
+					if action_branch.branches[-1].value == :schema
 						raise ParseException, 'cannot use "so" with schema'
 					end
 					action_branch.branches[-1]
@@ -312,6 +307,9 @@ class Parser
 					update_label.call action_branch.branches[1]
 					action_branch.branches[-1]
 				end
+			when :tie_in
+				action = :derive
+				action_branch
 		end
 
 		content = Content.new tree_from_grammar content_branch, true
@@ -327,24 +325,18 @@ class Parser
 
 		by_branch = tree.root.branches.find {|branch| branch.value == :by}
 		if by_branch
-			if action == :assume_schema
-				raise ParseException, 'cannot use "by" with schema'
-			end
+			raise ParseException, 'cannot use "by" with schema' if content.schema
 			branches = by_branch.branches.select {|branch| branch.value == :label_name}
       raise if branches.empty?
 			reasons.concat branches.collect {|branch| label_from_branch branch}
 		end
 
-		if action == :assume_schema or action == :axiom_schema
-			if not Schema.check_schema_format content.sentence
-				raise ParseException, 'unrecognized schema format'
-			end
-		else
-			if content.sentence.contains? :quote
-				raise ParseException, 'cannot use `...` outside schema'
-			elsif content.sentence.contains? :for_all_meta
-				raise ParseException, 'cannot use "for all meta" outside schema'
-			elsif content.sentence.contains? :substitution
+		if not content.schema
+			found = content.tie_ins.find {|tie_in|
+				tie_in.pattern.contains?(:substitution) or
+				tie_in.body.contains?(:substitution)
+			}
+			if found or content.sentence.contains? :substitution
 				raise ParseException, 'cannot use {...} outside schema'
 			end
 		end
@@ -548,11 +540,10 @@ class Parser
 #				raise unless node.branches[0].value == '$'
 #				operator = :meta
 #				subtrees = [tree_from_grammar(node.branches[1])]
+			when :schema
+				return tree_from_grammar node.branches[1]
 			when :quote
-				raise unless node.branches.size == 3
-				raise unless node.branches[0].value == '`' and node.branches[2].value == '`'
-        operator = :quote
-        subtrees = [tree_from_grammar(node.branches[1])]
+				return tree_from_grammar node.branches[1]
 			when :list, :params
 				if node.branches.size == 2
 					# empty list is not a predicate because predicates need >= 1 arguments
@@ -637,51 +628,77 @@ class Parser
 				]
 			when :universal, :existential, :take, :for_at_most_one, :no_existential,
 					 :define, :universal_meta
-				variables, condition, with, such_that = process_list_with_such node.branches[1]
+				variables, conditions, with, such_that = process_list_with_such node.branches[1]
 				variables_tree = Tree.new variables, []
+				conditions_tree = conjunction_tree conditions.compact
 				if node.branches.size > 2
 					raise unless node.branches[2].value == ','
 					raise if node.branches.size > 4 # multiple expressions after comma
           body = tree_from_grammar node.branches[3]
 				end
 				return case node.value
-					when :universal, :universal_meta
+					when :universal_meta
 						raise ParseException, '"with" not allowed in universal quantifier' if with
-						antecedent = conjunction_tree [condition, such_that].compact
+						antecedent = conjunction_tree [conditions_tree, such_that].compact
+						Schema.new variables, antecedent, body
+					when :universal
+						raise ParseException, '"with" not allowed in universal quantifier' if with
+						antecedent = conjunction_tree [conditions_tree, such_that].compact
 						tree = antecedent ? Tree.new(:implies, [antecedent, body]) : body
-						operator = :for_all if node.value == :universal
-						operator = :for_all_meta if node.value == :universal_meta
-						Tree.new operator, [variables_tree, tree]
+						Tree.new :for_all, [variables_tree, tree]
 					when :for_at_most_one
 						raise ParseException, '"with" not allowed in "at most one" quantifier' if with
-						tree = conjunction_tree [condition, such_that, body].compact
+						tree = conjunction_tree [conditions_tree, such_that, body].compact
 						Tree.new :for_at_most_one, [variables_tree, tree].compact
 					when :no_existential
 						raise ParseException, '"with" not allowed in negative quantifier' if with
-						tree = conjunction_tree [condition, such_that, body].compact
+						tree = conjunction_tree [conditions_tree, such_that, body].compact
 						tree = Tree.new :for_some, [variables_tree, tree].compact
 						tree = Tree.new :not, [tree]
-					when :define, :take
-						raise unless open_to_bind and not body
-						tie_in = conjunction_tree [condition, with].compact
-						Bind.new variables, such_that, tie_in, (node.value == :define)
-					when :existential
+					when :existential, :define, :take
+						tie_ins = []
+						[variables, conditions].transpose.each {|variable, condition|
+							variable_tree = Tree.new variable, []
+							# keep these separate so they can be de-duplicated later on
+							tie_ins << TieIn.new([], variable_tree, condition) if condition
+							tie_ins << TieIn.new([], variable_tree, with) if with
+						}
 						if open_to_bind
-							tie_in = conjunction_tree [condition, with].compact
-							without_tie_in = conjunction_tree [such_that, body].compact
-							Bind.new variables, without_tie_in, tie_in, false
+							{
+								:base => conjunction_tree([such_that, body].compact),
+								:binds => variables,
+								:definition? => (node.value == :define),
+								:tie_ins => tie_ins,
+							}
 						else
+							raise unless node.value == :existential
 							raise ParseException, '"with" not allowed in nested quantifier' if with
-							tree = conjunction_tree [condition, such_that, body].compact
+							tree = conjunction_tree [conditions_tree, such_that, body].compact
 							Tree.new :for_some, [variables_tree, tree].compact
 						end
+					else raise
 				end
 			when :let
 				raise unless open_to_bind
 				left = tree_from_grammar node.branches[1]
 				right = tree_from_grammar node.branches[3]
-				without_tie_in = Tree.new :equals, [left, right]
-				return Bind.new [left.operator], without_tie_in, nil, false
+				return {
+					:base => Tree.new(:equals, [left, right]),
+					:binds => [left.operator],
+					:definition? => false,
+					:tie_ins => [],
+				}
+			when :tie_in
+				pattern = tree_from_grammar node.branches[1]
+				body = tree_from_grammar node.branches[3]
+				metas = []
+				if node.branches[5]
+					metas, conditions = process_atom_list_adjacent node.branches[5]
+					if not conditions.compact.empty?
+						raise ParseException, 'tie-in variables cannot have conditions'
+					end
+				end
+				return TieIn.new metas, pattern, body
 		end
 		# make sure something actually made the tree
 		raise "#{node.value.inspect} not handled" unless operator and subtrees
@@ -694,14 +711,14 @@ class Tree
 
   def initialize operator, subtrees
 		subtrees.each {|subtree|
-			next if subtree.is_a? self.class				
+			next if subtree.is_a? self.class
 			raise "tree is a #{self.class}, but subtree is a #{subtree.class}!"
 		}
     raise if not operator
 		case operator
 			when :not
 				raise unless subtrees.size == 1
-			when :for_all, :for_all_meta
+			when :for_all
 				raise unless subtrees.size == 2
 				raise unless subtrees[0].operator.is_a? Array
 			when :for_some, :for_at_most_one
@@ -721,10 +738,8 @@ class Tree
 				if subtrees.any? {|subtree| subtree.boolean?}
 					raise ParseException, 'boolean operator used as a term'
 				end
-      when :quote
-        raise unless subtrees.size == 1
 			when :substitution
-				raise unless subtrees.size >= 2
+				raise unless subtrees.size == 2
 				raise unless subtrees[1].operator == :predicate
 				raise unless subtrees[1].subtrees[0].operator == 'map'
 			when String, Array
@@ -762,18 +777,30 @@ class Tree
 		return true if @operator == x
 		@subtrees.any? {|subtree| subtree.contains? x}
 	end
-	
+
   def eql? other # hash/set equality, also used by uniq, &, -
     other.is_a?(self.class) and to_s == other.to_s
+    # other.is_a?(self.class) and equal_up_to_variable_names? self, other
   end
 
 	def free_variables
-		return @operator if @operator.is_a? Array
-		return [@operator] if @operator.is_a? String
-		result = @subtrees.collect {|subtree| subtree.free_variables}.flatten.uniq
-		quantifiers = [:for_all, :for_some, :for_at_most_one]
-		result -= @subtrees[0].operator if quantifiers.include? @operator
-		result
+		return @free_variables if @free_variables
+		@free_variables = case @operator
+			when Array then @operator
+			when String then [@operator]
+			else
+				subtrees = @subtrees
+				if @operator == :substitution
+					# exclude 'map' since it is at the meta level
+					raise unless subtrees[1].subtrees[0].operator == 'map' # sanity check
+					subtrees = [subtrees[0], *subtrees[1].subtrees[1..-1]]
+				end
+				sub_results = subtrees.collect {|subtree| subtree.free_variables}
+				result = sub_results.flatten.uniq
+				quantifiers = [:for_all, :for_some, :for_at_most_one]
+				result -= @subtrees[0].operator if quantifiers.include? @operator
+				result
+		end
 	end
 
   def hash # has to be overriden along with eql?, apparently
@@ -787,24 +814,38 @@ class Tree
 		result
 	end
 
+	def pretty_print level = 0
+		s = '  ' * level + to_s
+		if s.length < 80
+			puts s
+		else
+			puts '  ' * level << @operator.to_s
+			@subtrees.each {|subtree|	subtree.pretty_print level+1}
+		end
+	end
+
   def to_s
+		return @to_s if @to_s
 		infixes = [:and, :or, :implies, :iff, :equals]
-		case @operator
+		@to_s = case @operator
 			when :not
 				operand = @subtrees[0].to_s
 				if infixes.include? @subtrees[0].operator
 					operand = '(' + operand + ')'
 				end
 				'not ' + operand
-			when :for_all, :for_some, :for_at_most_one, :for_all_meta
-				return "there is a #{@subtrees[0]}" if @subtrees.size == 1
-				operator = @operator.to_s.gsub '_', ' '
-				variables = @subtrees[0].to_s
-				expression = @subtrees[1].to_s
-				if infixes.include? @subtrees[1].operator
-					expression = '(' + expression + ')'
+			when :for_all, :for_some, :for_at_most_one
+				if @subtrees.size == 1
+					"there is a #{@subtrees[0]}"
+				else
+					operator = @operator.to_s.gsub '_', ' '
+					variables = @subtrees[0].to_s
+					expression = @subtrees[1].to_s
+					if infixes.include? @subtrees[1].operator
+						expression = '(' + expression + ')'
+					end
+					"#{operator} #{variables}, #{expression}"
 				end
-				"#{operator} #{variables}, #{expression}"
 			when :predicate
 				if @subtrees[0].operator == 'map'
 					arguments = @subtrees[1..-1].collect {|subtree|
@@ -847,8 +888,6 @@ class Tree
 #					operand = '(' + operand + ')'
 #				end
 #		  	'$' + operand
-      when :quote
-			  '`' + @subtrees[0].to_s + '`'
 			when :substitution
 				@subtrees[0].to_s + @subtrees[1].to_s
 			when Array
@@ -861,48 +900,96 @@ class Tree
   end
 end
 
-class Bind
-	attr_reader :variables, :body_with_tie_in, :tie_in
+class Schema
+	attr_reader :metas, :condition, :pattern
 
-  def initialize variables, body_without_tie_in, tie_in, is_definition
-		if variables.empty?
-			raise unless body_without_tie_in
-			raise if tie_in or is_definition
+	def initialize metas, condition, pattern
+		if not SchemaModule.check_schema_format metas, condition, pattern
+			raise ParseException, 'unrecognized schema format'
 		end
-		raise if tie_in and contains_quantifiers? tie_in
-		@variables = variables
-		@body_with_tie_in = conjunction_tree [tie_in, body_without_tie_in].compact
-		@tie_in = tie_in
-		@is_definition = is_definition
+		@metas, @condition, @pattern = metas, condition, pattern
+	end
+end
+
+class TieIn
+	attr_reader :metas, :pattern, :body
+
+	def initialize metas, pattern, body
+		if pattern.boolean?
+			raise ParseException.new 'tie-in pattern must be a term'
+		end
+		if not (metas - pattern.free_variables).empty?
+			raise ParseException.new 'tie-in variables must appear in pattern'
+		end
+		if contains_quantifiers? body
+			raise ParseException.new 'tie-in cannot contain quantifiers'
+		end
+		@metas, @pattern, @body = metas, pattern, body
+	end
+
+	def to_s # for debugging
+		"<TieIn @metas: #{@metas}, @pattern: #{@pattern}, @body: #{@body}>"
+	end
+end
+
+class Content
+	attr_reader :binds, :body, :schema, :sentence, :tie_ins
+
+	def initialize input
+		case input
+			when Content # needed when initializing the Line subclass
+				@body = input.body
+				@binds = input.binds
+				@is_definition = input.definition?
+				@schema = input.schema
+				@tie_ins = input.tie_ins
+			when Hash
+				raise unless input.keys.sort == [:base, :binds, :definition?, :tie_ins]
+				@binds = input[:binds]
+				@is_definition = input[:definition?]
+				@tie_ins = input[:tie_ins]
+				extras = @tie_ins.collect {|tie_in|
+					bind_variables tie_in.metas, tie_in.body, :for_all
+				}.uniq
+				@body = conjunction_tree [*extras, input[:base]].compact
+			when Schema
+				@body = nil
+				@binds = []
+				@is_definition = false
+				@schema = input
+				@tie_ins = []
+			when Tree
+				@body = input
+				@binds = []
+				@is_definition = false
+				@tie_ins = []
+			when TieIn
+				@body = bind_variables input.metas, input.body, :for_all
+				@binds = []
+				@is_definition = false
+				@tie_ins = [input]
+			else raise
+		end
+		@sentence = bind_variables @binds, @body, :for_some
 	end
 
 	def definition?
 		@is_definition
 	end
-end
 
-class Content # or Statement
-	attr_reader :sentence, :binding
-
-	def initialize input
-		case input
-			when Tree
-				@sentence = input
-				@binding = Bind.new [], @sentence, nil, false
-			when Bind
-				@binding = input
-				if @binding.body_with_tie_in
-					@sentence = bind_variables @binding.variables, @binding.body_with_tie_in, :for_some
-				else
-					@sentence = tree_for_true
-				end
-			else raise
+	def uses
+		result = (@body ? @body.free_variables : []).to_set
+		if @schema
+			# schema condition does not use anything (only contains metas)
+			result.merge @schema.pattern.free_variables.to_set.subtract @schema.metas
 		end
+		@tie_ins.each {|tie_in|
+			uses = tie_in.pattern.free_variables.to_set.subtract tie_in.metas
+			# tie-in body is already included in @body
+			result.merge uses
+		}
+		result.subtract @binds
 	end
-
-  def binding?
-		@binding.variables.any?
-  end
 end
 
 class LineNumberManager
