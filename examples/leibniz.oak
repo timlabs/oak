@@ -1,0 +1,52 @@
+# A formalization of Leibniz's proof of the existence of God in his Dissertatio
+# de Arte Combinatoria, published in 1666.
+
+# Leibniz's original nine premises
+axiom p1: for all x,
+  God[x] iff (substance[x] and incorporeal[x] and infinite_power[x])
+axiom p2: for all x, substance[x] iff (mover[x] or is_moved[x])
+axiom p3: for all x,
+  if (for some y, moves[x,y] and has_infinite_parts[y]) and not is_moved[x]
+  then infinite_power[x]
+axiom p4: for some y, for all x, part[x,y] iff (body[x] and mover[x])
+axiom p5: for all x,
+  is_moved[x] implies for some y where y != x and not part[y,x], moves[y,x]
+axiom p6: for all x where body[x] and mover[x], is_moved[x]
+axiom p7: for all x,
+  if (for all y where part[y,x], is_moved[y]) and for some y, part[y,x]
+  then is_moved[x]
+axiom p8: for all x, body[x] implies has_infinite_parts[x]
+axiom p9: for some x, body[x] and is_moved[x]
+
+# three extra premises I added to make the proof work
+axiom p0a: for all x,y, moves[x,y] implies (mover[x] and is_moved[y])
+axiom p0b: for all x, incorporeal[x] iff not body[x]
+axiom p0c: for all x, incorporeal[x] implies not is_moved[x]
+
+for some x, God[x]
+proof
+  1: for some A, body[A] and is_moved[A] by p9
+  2: for some B, moves[B,A] by p5,1
+  suppose sup: incorporeal[B]
+    infinite_power[B] proof
+      has_infinite_parts[A] by p8,1
+      so thesis by p3,2,sup,p0c
+    end
+    substance[B] by p2,2,p0a
+    so God[B] by p1,sup
+  end
+  suppose sup2: body[B]
+    3: for some C, for all x, part[x,C] iff (body[x] and mover[x]) by p4
+    for all y where part[y,C], is_moved[y] by p6,3
+    so 4: is_moved[C] by p7,sup2,2,3,p0a
+    5: for some D where D != C and not part[D,C], moves[D,C] by p5,4
+    6: incorporeal[D] by 3,5,p0a,p0b
+    infinite_power[D] proof
+      has_infinite_parts[C] by p8,4,p0b,p0c
+      so thesis by p3,5,6,p0c
+    end
+    substance[D] by p2,5,p0a
+    so God[D] by p1,6
+  end
+  so thesis by p0b
+end
