@@ -44,10 +44,15 @@ class WordWrapper
 end
 
 def bind_variables variables, body, quantifier
-	to_bind = variables & body.free_variables # only bind those that need it
+	if body
+		to_bind = variables & body.free_variables # only bind those that need it
+	else
+		raise unless quantifier == :for_some
+		to_bind = variables
+	end
 	return body if to_bind.empty?
 	variables_tree = Tree.new to_bind, []
-	Tree.new quantifier, [variables_tree, body]
+	Tree.new quantifier, [variables_tree, body].compact
 end
 
 def conjuncts trees
@@ -156,6 +161,12 @@ def first_orderize tree, by_arity = false
 	end
 end
 
+def implication_tree antecedents, consequent
+	antecedent = conjunction_tree antecedents.compact
+	return consequent if not antecedent
+	Tree.new :implies, [antecedent, consequent]
+end
+
 def new_name names, prefix = 'x'
 	# make a guess, for speed!
 	name = "#{prefix}_#{names.size}"
@@ -211,7 +222,11 @@ def replace_for_at_most_one tree
 	end
 end
 
-def substitute tree, substitution, bound = Set[]
+def self_implication? tree
+	tree.operator == :implies and equal_up_to_variable_names? *tree.subtrees
+end
+
+def substitute tree, substitution, bound = [] # faster than Set for some reason
 	# performs substitution on tree, where substitution keys are strings and
 	# values are trees.  does not substitute again within the values.
   case tree.operator
@@ -219,12 +234,20 @@ def substitute tree, substitution, bound = Set[]
 			return tree if tree.subtrees.size == 1 # empty quantifier body
       variables = tree.subtrees[0].operator
 			subtree = substitute tree.subtrees[1], substitution, (bound + variables)
-      Tree.new tree.operator, [tree.subtrees[0], subtree]
+			if subtree.equal? tree.subtrees[1]
+				tree
+			else
+				Tree.new tree.operator, [tree.subtrees[0], subtree]
+			end
 		when :and, :or, :not, :implies, :iff, :equals, :predicate
 			subtrees = tree.subtrees.collect {|subtree|
-				substitute subtree, substitution
+				substitute subtree, substitution, bound
 			}
-			Tree.new tree.operator, subtrees
+			if subtrees.each_index.all? {|i| subtrees[i].equal? tree.subtrees[i]}
+				tree
+			else
+				Tree.new tree.operator, subtrees
+			end
     when String
 			return tree if not substitution.has_key? tree.operator
 			return tree if bound.include? tree.operator
@@ -237,21 +260,6 @@ def substitute tree, substitution, bound = Set[]
 			raise "unexpected operator #{tree.operator.inspect}"
   end
 end
-
-=begin
-def substitute_meta tree, substitution
-	# substitute disregarding semantics (even substitutes quantified variables)
-	if tree.operator.is_a? String
-		return tree if not substitution.has_key? tree.operator
-		substitution[tree.operator]
-	else
-    subtrees = tree.subtrees.collect {|subtree|
-			substitute_meta subtree, substitution
-		}
-    Tree.new tree.operator, subtrees
-	end
-end
-=end
 
 def tree_for_false
 	Tree.new :and, [
