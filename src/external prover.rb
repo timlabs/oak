@@ -16,8 +16,9 @@ def valid_e? tree, wait_forever = false
 		local = File.expand_path '../eprover/PROVER/eprover', File.dirname(__FILE__)
 		location = File.exist?(local) ? local : 'eprover'
 
-		output = `"#{location}" #{settings.join ' '} --auto --tptp3-format -s #{file_path} 2>&1`
-#		puts "\n" + output
+		command = %{"#{location}" #{settings.join ' '} --auto --tptp3-format } +
+							%{-s #{file_path} 2>&1}
+		output = `#{command}`
 
 		if output.include? '# Proof found!'
 			next :valid unless wait_forever
@@ -27,13 +28,15 @@ def valid_e? tree, wait_forever = false
 		end
 		next :invalid if output.include? '# No proof found!'
 		next :unknown if output.include? '# Failure: User resource limit exceeded!'
+		next :unknown if output.include? '# Failure: Out of unprocessed clauses!'
 
 		message = "unexpected output when calling eprover:\n  #{output.strip}\n"
-		if 	$?.exitstatus == 127 or 					# command not found
-				output.include? 'Unknown Option' 	# happens with version < 2.0
+		if $?.exitstatus == 127 or 					# command not found
+			 output.include? 'Unknown Option' # happens with version < 2.0
 			message << "check that E Theorem Prover version >= 2.0 is installed"
+			raise ProofException, message
 		end
-		raise ProofException, message
+		raise message # no idea what happened, so treat it as a bug
 	}
 end
 

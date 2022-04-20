@@ -144,14 +144,15 @@ class Proof
 				if e.is_a? DeriveException and e.result == :unknown and
 					 options[:wait_on_unknown]
 					wrapper.puts "line #{line_number}: -w option: checking validity " \
-											 "without work limit (may take forever, press ctrl-c " \
+											 "without work limit (may never finish, press ctrl-c " \
 											 "to abort)"
 					result = ExternalProver.valid_e? e.checked, true
 					message = case result
 						when :invalid then 'invalid derivation'
 						when Numeric then "valid derivation, but took #{result.round 1} " \
 															"times the work limit"
-						else raise
+						when :unknown then 'eprover gave up'
+						else raise '' # new exception
 					end
 					wrapper.puts "line #{line_number}: -w option: #{message}"
 					wrapper.puts 'proof unsuccessful'
@@ -234,6 +235,8 @@ class Proof
 end
 
 class Tracker
+	# keeps track of assumptions and axioms
+
 	attr_reader :assumptions, :axioms
 
 	def initialize
