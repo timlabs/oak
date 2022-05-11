@@ -12,6 +12,7 @@ For downloads and more information, including a tutorial, go to [oakproof.org](h
 ## Editor support
 
   * The [Atom](https://atom.io/) text editor has a package [language-oak](https://github.com/timlabs/atom-language-oak) which provides syntax highlighting, automatic indentation, and comment toggling for Oak.
+  * For syntax highlighting on web pages, there is a [highlight.js language definition](https://github.com/timlabs/highlightjs-oak) for Oak.
   * Similar packages for other editors would be welcome.
 
 ## Usage
