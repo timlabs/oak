@@ -10,7 +10,7 @@ property or operation being created cannot contradict itself.
 
 property2: axiom schema
 	for all meta p,x,q,a,φ such that not free[p,φ],
-		`for some p, for all x, p[x] iff (q[x,a] and φ)`
+		`for some p, for all x, p[x] iff q[x,a] and φ`
 
 property2a: axiom schema
 	for all meta p,x,q,a,φ such that not free[p,φ],
@@ -18,7 +18,7 @@ property2a: axiom schema
 
 property11: axiom schema
 	for all meta p,x,y,q,r,φ such that not free[p,φ],
-		`for some p, for all x,y, p[x,y] iff (q[x] and r[y] and φ)`
+		`for some p, for all x,y, p[x,y] iff q[x] and r[y] and φ`
 
 property12a: axiom schema
 	for all meta p,x,y,q,r,a,φ such that not free[p,φ],
@@ -26,11 +26,11 @@ property12a: axiom schema
 
 property21: axiom schema
 	for all meta p,x,y,q,a,r,φ such that not free[p,φ],
-		`for some p, for all x,y, p[x,y] iff (q[x,a] and r[y] and φ)`
+		`for some p, for all x,y, p[x,y] iff q[x,a] and r[y] and φ`
 
 property22: axiom schema
 	for all meta p,x,y,q,a,r,b,φ such that not free[p,φ],
-		`for some p, for all x,y, p[x,y] iff (q[x,a] and r[y,b] and φ)`
+		`for some p, for all x,y, p[x,y] iff q[x,a] and r[y,b] and φ`
 
 property22a: axiom schema
 	for all meta p,x,y,q,a,r,b,φ such that not free[p,φ],
@@ -39,7 +39,7 @@ property22a: axiom schema
 property122: axiom schema
 	for all meta p,x,y,z,q,r,s,a,b,φ such that not free[p,φ],
 		`for some p, for all x,y,z,
-			p[x,y,z] iff (q[x] and r[y,a] and s[z,b] and φ)`
+			p[x,y,z] iff q[x] and r[y,a] and s[z,b] and φ`
 
 property122a: axiom schema
 	for all meta p,x,y,z,q,r,s,a,b,φ such that not free[p,φ],
@@ -49,7 +49,7 @@ property122a: axiom schema
 property222: axiom schema
 	for all meta p,x,y,z,q,a,r,b,s,c,φ such that not free[p,φ],
 		`for some p, for all x,y,z,
-			p[x,y,z] iff (q[x,a] and r[y,b] and s[z,c] and φ)`
+			p[x,y,z] iff q[x,a] and r[y,b] and s[z,c] and φ`
 
 property222a: axiom schema
 	for all meta p,x,y,z,q,a,r,b,s,c,φ such that not free[p,φ],

@@ -32,7 +32,7 @@ comprehension_nat: axiom schema
 
 comprehension_eq_partial: axiom schema
 	for all meta f,n,m,φ,x,y such that not free[f,φ],
-		`	(for all n,x,y in D, (φ{m:x} and φ{m:y}) implies x = y)
+		`	(for all n,x,y in D, φ{m:x} and φ{m:y} implies x = y)
 				implies
 			(for some f, for all n,m in D, f[n] = m iff φ)	`
 
@@ -45,17 +45,17 @@ closure_orig: axiom for all a,b in D,
 
 #### FIELD AXIOMS ########################################################
 
-field_orig: axiom for all a,b,c,				(
-	a+(b+c) = (a+b)+c								) and (
-	a*(b*c) = (a*b)*c								) and (
-	a+b = b+a												) and (
-	a*b = b*a												) and (
-	a+0 = a													) and (
-	a*1 = a													) and (
-#	a+(-a) = 0											) and (
-	if a ≠ 0 then a*inverse[a] = 1	) and (
-	a*(b+c) = (a*b)+(a*c)						) and (
-	0 != 1													)      
+field_orig: axiom for all a,b,c,
+	a+(b+c) = (a+b)+c									and
+	a*(b*c) = (a*b)*c									and
+	a+b = b+a													and
+	a*b = b*a													and
+	a+0 = a														and
+	a*1 = a														and
+	# a+(-a) = 0											and
+	(if a ≠ 0 then a*inverse[a] = 1)	and
+	a*(b+c) = (a*b)+(a*c)							and
+	0 != 1
 
 # apparently necessary in the absence of additive inverses
 cancellation: axiom for all a,b,c, if a+c = b+c then a=b
@@ -110,17 +110,17 @@ odd_def: define odd such that for all n in N,
 		by comprehension_nat
 
 divides_def: define divides such that for all a,b in D,
-	divides[a,b] iff (a is in N and for some c in N, a*c = b)
+	divides[a,b] iff a is in N and for some c in N, a*c = b
 		by comprehension2
 
 coprime_divides: define coprime such that for all a,b in D,
-	(coprime[a,b] iff there is no c in D such that c > 1 and
-			divides[c,a] and divides[c,b])
+	coprime[a,b] iff there is no c in D such that c > 1 and
+			divides[c,a] and divides[c,b]
 		by comprehension2
 
 simplified_def: define simplified such that for all a,b in D,
 	simplified[a,b] iff
-		(b != 0 and for all c,d in N such that a/b = c/d and d != 0, a <= c and b <= d)
+		b != 0 and for all c,d in N such that a/b = c/d and d != 0, a <= c and b <= d
 			by comprehension2
 
 ##########################################################################
@@ -160,16 +160,16 @@ domain:
 		if b != 0 then a/b is in D
 by 0_in_N,1_in_N,2_in_N,closure,nat_in_D,nat_closed
 
-field: for all a,b,c in D,				(
-	a+(b+c) = (a+b)+c					) and (
-	a*(b*c) = (a*b)*c					) and (
-	a+b = b+a									) and (
-	a*b = b*a									) and (
-	a+0 = a										) and (
-	a*1 = a										) and (
-	if a ≠ 0 then a*(1/a)=1		) and (
-	a*(b+c) = (a*b)+(a*c)			) and (
-	0 != 1										)
+field: for all a,b,c in D,
+	a+(b+c) = (a+b)+c					and
+	a*(b*c) = (a*b)*c					and
+	a+b = b+a									and
+	a*b = b*a									and
+	a+0 = a										and
+	a*1 = a										and
+	(if a ≠ 0 then a*(1/a)=1)	and
+	a*(b+c) = (a*b)+(a*c)			and
+	0 != 1
 		by field_orig,div_def_orig,1_in_D
 
 div_def: for all a,b in D,
@@ -188,7 +188,7 @@ greater_eq_one_zero: for all n in D, if n >= 1 then n != 0
 double: for all a in D, a+a = 2*a
 	by 2_def,field,2_in_D,1_in_D
 
-irreflexive: for all a in D, not (a < a)
+irreflexive: for all a in D, not a < a
 	by field,ineq_def,cancellation,0_in_D
 
 transitive: for all a,b,c in D,
@@ -204,7 +204,7 @@ proof
 end
 
 total_order: for all a,b,c in D,
-	(not (a < a)) 									and		# irreflexive
+	(not a < a) 										and		# irreflexive
 	(if a < b and b < c then a < c) and 	# transitive
 	(a < b or a = b or b < a)							# connex
 		by irreflexive,transitive,connex
@@ -270,16 +270,16 @@ end
 
 √_square: define √ such that for all n,k in D, √n = k iff k^2 = n
 proof
-	for all n,x,y in D, (x^2 = n and y^2 = n) implies x = y
+	for all n,x,y in D, x^2 = n and y^2 = n implies x = y
 		by squares_equal
 	so thesis by comprehension_eq_partial
 end
 
 nat_reduce: for all n in N such that n != 0, for some m in N, n = m+1
 proof
-	P_defr: for some P, for all n in N, P[n] iff (n = 0 or for some m in N, n = m+1)
+	P_defr: for some P, for all n in N, P[n] iff n = 0 or for some m in N, n = m+1
 		by comprehension_nat
-	
+
 	P[0] by P_defr,0_in_N
 	for all n in N, P[n+1] by P_defr,nat_closed
 	so for all n in N, P[n] by induction
@@ -288,7 +288,7 @@ end
 
 even_or_odd: for all n in N, n is even or n is odd
 proof
-	P_defeo: for some P, for all n in N, P[n] iff (n is even or n is odd)
+	P_defeo: for some P, for all n in N, P[n] iff n is even or n is odd
 		by comprehension_nat
 
 	0 is even by 0_in_N,even_def,0_mult,field,2_in_D,0_in_D
@@ -413,7 +413,7 @@ proof
 	so thesis by P_defs
 end
 
-nat_ineq_2: for all m,n in N, (m < n+1) iff (m < n or m = n)
+nat_ineq_2: for all m,n in N, m < n+1 iff m < n or m = n
 proof
 	take any m,n in N
 		suppose m < n+1
@@ -537,7 +537,7 @@ end
 
 mult_helper: (
 	for all a,b,c in D such that c != 0, a = b/c iff a*c = b	) and (
-	for all a,b,c in D such that c != 0, (a*b)/c = a*(b/c)   ) and (
+	for all a,b,c in D such that c != 0, (a*b)/c = a*(b/c)    ) and (
 	for all a,b,c in D such that c != 0, (a*b)/c = (a/c)*b		) and (
 	for all a,b,c in D,	a*b = b*a and a*c = c*a and b*c = c*b )
 proof
@@ -751,7 +751,7 @@ proof
 		(c*m)/(d*m) = c/d by euclid_7_17,sc3,sc4,domain
 		so (m*c)/(m*d) = c/d by field,domain
 		so c/d = a/b by sc2a,sc2b
-		not(b <= d) by total_order,domain,sc2b,field,mult_greater,sc4,sc1
+		not b <= d by total_order,domain,sc2b,field,mult_greater,sc4,sc1
 		so contradiction by sc0,simplified_def,sc4
 	end
 end

@@ -54,7 +54,7 @@ tie-in `a*b` with `if a is in N and b is in N then a*b is in N` for all a,b
 nat_reduce: for all n in N such that n != 0, for some m in N, n = m+1
 proof
 	p_def: for some P, for all n in N,
-		P[n] iff (n = 0 or for some m in N, n = m+1)
+		P[n] iff n = 0 or for some m in N, n = m+1
 			by property2a
 	P[0] by p_def
 	for all n in N, P[n+1] by p_def,nat_closed_add
@@ -121,7 +121,7 @@ proof
 	end
 end
 
-add_not_zero: for all a,b in N, a+b = 0 iff (a = 0 and b = 0)
+add_not_zero: for all a,b in N, a+b = 0 iff a = 0 and b = 0
 	by nonnegative,ineq_def,plus_0
 
 0_less_1: 0 < 1
@@ -159,7 +159,7 @@ proof
 	end
 end
 
-nat_ineq_2: for all m,n in N, (m < n+1) iff m <= n
+nat_ineq_2: for all m,n in N, m < n+1 iff m <= n
 proof
 	take any m,n in N
 		suppose m < n+1
@@ -202,7 +202,7 @@ proof
 	so thesis by p_def
 end
 
-irreflexive: for all a in N, not (a < a)
+irreflexive: for all a in N, not a < a
 	by ineq_def,add_cancel,add_commute,plus_0
 
 transitive: for all a,b,c in N,
@@ -218,7 +218,7 @@ proof
 end
 
 total_order: for all a,b,c in N,
-	(not (a < a)) 									and		# irreflexive
+	(not a < a) 										and		# irreflexive
 	(if a < b and b < c then a < c) and 	# transitive
 	(a < b or a = b or b < a)							# connex
 		by irreflexive,transitive,connex
@@ -346,7 +346,7 @@ odd_def: define odd such that for all n in N,
 
 even_or_odd: for all n in N, n is even or n is odd
 proof
-	P_def: for some P, for all n in N, P[n] iff (n is even or n is odd)
+	P_def: for some P, for all n in N, P[n] iff n is even or n is odd
 		by property2a
 	P[0] by P_def,0_even
 	take any n in N such that P[n]
@@ -516,7 +516,7 @@ bounded_induction: for all P and c in N,
 proof
 	take any P and c in N
 		suppose 1: P[0] and for all n in N where n < c, P[n] implies P[n+1]
-			Q_def: for some Q, for all n in N, Q[n] iff (P[n] or n > c)
+			Q_def: for some Q, for all n in N, Q[n] iff P[n] or n > c
 				by property2a
 			Q[0] by 1,Q_def
 			take any n in N where Q[n]

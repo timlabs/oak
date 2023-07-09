@@ -25,21 +25,21 @@ set_literal: axiom define {} such that for all x,a,b,c,d,e,f,g,
   {a,b,c,d,e,f} is in Set and
   {a,b,c,d,e,f,g} is in Set and
   (x is in {a} iff x=a) and
-  (x is in {a,b} iff (x=a or x=b)) and
-  (x is in {a,b,c} iff (x=a or x=b or x=c)) and
-  (x is in {a,b,c,d} iff (x=a or x=b or x=c or x=d)) and
-  (x is in {a,b,c,d,e} iff (x=a or x=b or x=c or x=d or x=e)) and
-  (x is in {a,b,c,d,e,f} iff (x=a or x=b or x=c or x=d or x=e or x=f)) and
-  (x is in {a,b,c,d,e,f,g} iff (x=a or x=b or x=c or x=d or x=e or x=f or x=g))
+  (x is in {a,b} iff x=a or x=b) and
+  (x is in {a,b,c} iff x=a or x=b or x=c) and
+  (x is in {a,b,c,d} iff x=a or x=b or x=c or x=d) and
+  (x is in {a,b,c,d,e} iff x=a or x=b or x=c or x=d or x=e) and
+  (x is in {a,b,c,d,e,f} iff x=a or x=b or x=c or x=d or x=e or x=f) and
+  (x is in {a,b,c,d,e,f,g} iff x=a or x=b or x=c or x=d or x=e or x=f or x=g)
 
 # Tao - Analysis I - Axiom 3.4
 union_def: axiom define ∪ such that for all A,B in Set,
 	A ∪ B is in Set and for all x,
-    x is in A ∪ B iff (x is in A or x is in B)
+    x is in A ∪ B iff x is in A or x is in B
 
 # Tao - Analysis I - Axiom 3.5
 specify: axiom for all A in Set and p,
-  for some S in Set, for all x, x is in S iff (x is in A and p[x])
+  for some S in Set, for all x, x is in S iff x is in A and p[x]
 
 # Tao - Analysis I - Axiom 3.6
 replace: axiom for all A in Set and op,
@@ -56,7 +56,7 @@ function1: axiom define Function such that for all f in Function,
 # Tao - Analysis I - Axiom 3.10
 function2: axiom define Functions such that for all A,B in Set,
 	Functions[A,B] is in Set and for all x, x is in Functions[A,B] iff
-		(x is in Function and domain[x] = A and range[x] = B)
+		x is in Function and domain[x] = A and range[x] = B
 
 # Tao - Analysis I - Definition 3.3.1
 function3: axiom for all op and A,B in Set,
@@ -69,7 +69,7 @@ tie-in `N` with `N is in Set` by infinity
 
 tie-in `f is in Functions[A,B]` with
 	`if A is in Set and B is in Set and f is in Functions[A,B] then
-		(f is in Function and domain[f] = A and range[f] = B)`
+		f is in Function and domain[f] = A and range[f] = B`
 			for all f,A,B
 				by function2
 
@@ -88,50 +88,50 @@ tie-in `{a,b,c,d,e,f,g}` with `{a,b,c,d,e,f,g} is in Set` for all a,b,c,d,e,f,g
 
 tie-in `x is in {a}` with `x is in {a} iff x=a` for all x,a by 1_set
 
-2_set: for all a,b,x, x is in {a,b} iff (x=a or x=b) by set_literal
+2_set: for all a,b,x, x is in {a,b} iff x=a or x=b by set_literal
 
-tie-in `x is in {a,b}` with `x is in {a,b} iff (x=a or x=b)` for all x,a,b
+tie-in `x is in {a,b}` with `x is in {a,b} iff x=a or x=b` for all x,a,b
 	by 2_set
 
-3_set: for all a,b,c,x, x is in {a,b,c} iff (x=a or x=b or x=c) by set_literal
+3_set: for all a,b,c,x, x is in {a,b,c} iff x=a or x=b or x=c by set_literal
 
-tie-in `x is in {a,b,c}` with `x is in {a,b,c} iff (x=a or x=b or x=c)`
+tie-in `x is in {a,b,c}` with `x is in {a,b,c} iff x=a or x=b or x=c`
 	for all x,a,b,c
 		by 3_set
 
-4_set: for all a,b,c,d,x, x is in {a,b,c,d} iff (x=a or x=b or x=c or x=d)
+4_set: for all a,b,c,d,x, x is in {a,b,c,d} iff x=a or x=b or x=c or x=d
 	by set_literal
 
 tie-in `x is in {a,b,c,d}` with
-	`x is in {a,b,c,d} iff (x=a or x=b or x=c or x=d)`
+	`x is in {a,b,c,d} iff x=a or x=b or x=c or x=d`
 		for all x,a,b,c,d
 			by 4_set
 
 5_set: for all a,b,c,d,e,x,
-  x is in {a,b,c,d,e} iff (x=a or x=b or x=c or x=d or x=e)
+  x is in {a,b,c,d,e} iff x=a or x=b or x=c or x=d or x=e
 		by set_literal
 
 tie-in `x is in {a,b,c,d,e}` with
-	`x is in {a,b,c,d,e} iff (x=a or x=b or x=c or x=d or x=e)`
+	`x is in {a,b,c,d,e} iff x=a or x=b or x=c or x=d or x=e`
 		for all x,a,b,c,d,e
 			by 5_set
 
 6_set: for all a,b,c,d,e,f,x,
-  x is in {a,b,c,d,e,f} iff (x=a or x=b or x=c or x=d or x=e or x=f)
+  x is in {a,b,c,d,e,f} iff x=a or x=b or x=c or x=d or x=e or x=f
 		by set_literal
 
 tie-in `x is in {a,b,c,d,e,f}` with
-	`x is in {a,b,c,d,e,f} iff (x=a or x=b or x=c or x=d or x=e or x=f)`
+	`x is in {a,b,c,d,e,f} iff x=a or x=b or x=c or x=d or x=e or x=f`
 		for all x,a,b,c,d,e,f
 			by 6_set
 
 7_set: for all a,b,c,d,e,f,g,x,
-  x is in {a,b,c,d,e,f,g} iff (x=a or x=b or x=c or x=d or x=e or x=f or x=g)
+  x is in {a,b,c,d,e,f,g} iff x=a or x=b or x=c or x=d or x=e or x=f or x=g
 		by set_literal
 
 tie-in `x is in {a,b,c,d,e,f,g}` with
-	`x is in {a,b,c,d,e,f,g} iff (x=a or x=b or x=c or x=d or x=e or x=f
-			or x = g)`
+	`x is in {a,b,c,d,e,f,g} iff x=a or x=b or x=c or x=d or x=e or x=f
+			or x = g`
 		for all x,a,b,c,d,e,f,g
 			by 7_set
 
@@ -139,19 +139,19 @@ set_not_empty: for all S in Set where S != ∅, there is an x in S
 	by empty_def,set_equality
 
 subset_def: define ⊆ such that for all A,B,
-	A ⊆ B iff (A is in Set and B is in Set and
-		for all x in A, x is in B)
+	A ⊆ B iff A is in Set and B is in Set and
+		for all x in A, x is in B
 			by property22
 
-tie-in `A ⊆ B` with `A ⊆ B implies (A is in Set and B is in Set)` for all A,B
+tie-in `A ⊆ B` with `A ⊆ B implies A is in Set and B is in Set` for all A,B
   by subset_def
 
 proper_subset_def: define ⊂ such that for all A,B,
-	A ⊂ B iff	(A is in Set and B is in Set and
-		(A ⊆ B and for some x in B, x is not in A))
+	A ⊂ B iff	A is in Set and B is in Set and
+		(A ⊆ B and for some x in B, x is not in A)
 			by property22
 
-tie-in `A ⊂ B` with `A ⊂ B implies (A is in Set and B is in Set)` for all A,B
+tie-in `A ⊂ B` with `A ⊂ B implies A is in Set and B is in Set` for all A,B
   by proper_subset_def
 
 tie-in `A ⊂ B` with `A ⊂ B implies A ⊆ B` for all A,B
@@ -160,8 +160,8 @@ tie-in `A ⊂ B` with `A ⊂ B implies A ⊆ B` for all A,B
 empty_subset: for all S in Set, ∅ ⊆ S by subset_def,empty_def
 
 disjoint_def: define disjoint such that for all A,B,
-	disjoint[A,B] iff (A is in Set and B is in Set and
-    for no x, x is in A and x is in B)
+	disjoint[A,B] iff A is in Set and B is in Set and
+    for no x, x is in A and x is in B
       by property22
 
 tie-in `A ∪ B` with `if A is in Set and B is in Set then A ∪ B is in Set`
@@ -169,7 +169,7 @@ tie-in `A ∪ B` with `if A is in Set and B is in Set then A ∪ B is in Set`
 		by union_def
 
 tie-in `x is in A ∪ B` with `if A is in Set and B is in Set then
-  (x is in A ∪ B iff (x is in A or x is in B))`
+  (x is in A ∪ B iff x is in A or x is in B)`
 		for all x,A,B
 			by union_def
 
@@ -187,15 +187,15 @@ end
 
 setdiff_def: define - such that for all A,B in Set,
 	A - B is in Set and for all x,
-		x is in A - B iff (x is in A and x is not in B)
+		x is in A - B iff x is in A and x is not in B
 proof
 	q_def: for some q, for all A,B,C, q[A,B,C] iff
-		(A is in Set and B is in Set and C is in Set and
-		for all x, x is in C iff (x is in A and x is not in B))
+		A is in Set and B is in Set and C is in Set and
+		for all x, x is in C iff x is in A and x is not in B
 			by property222
 	take any A,B in Set
-		for some p, for all x, p[x] iff (x is in A and x is not in B) by property2
-		for some C in Set, for all x, x is in C iff (x is in A and p[x]) by specify
+		for some p, for all x, p[x] iff x is in A and x is not in B by property2
+		for some C in Set, for all x, x is in C iff x is in A and p[x] by specify
 		1: so for some C in Set, q[A,B,C] by q_def
 		for at most one C in Set, q[A,B,C] by set_equality,q_def
 	end
@@ -258,8 +258,8 @@ image_def: define image such that for all f in Function and S ⊆ domain[f],
 		y is in image[f,S] iff for some x in S, f[x] = y
 proof
 	q_def: for some q, for all f,S,T, q[f,S,T] iff
-		(f is in Function and S is in Set and T is in Set and
-			(S ⊆ domain[f] and for all y, y is in T iff for some x in S, f[x] = y))
+		f is in Function and S is in Set and T is in Set and
+			(S ⊆ domain[f] and for all y, y is in T iff for some x in S, f[x] = y)
 				by property222
 	for all f in Function and S in Set, for at most one T in Set, q[f,S,T]
 		by set_equality,q_def
@@ -286,10 +286,10 @@ one_to_one: define one_to_one such that for all f in Function and S in Set,
 
 biject_def: define bijection such that
 	for all f in Function and A,B in Set,
-		bijection[f,A,B] iff (
+		bijection[f,A,B] iff
 			(for all x in A, f[x] is in B) and # subset
 			one_to_one[f,A] and # one-to-one
-			(for all y in B, for some x in A, f[x] = y)) # onto
+			(for all y in B, for some x in A, f[x] = y) # onto
 				by property222a
 
 biject_empty: for all f in Function, for all S in Set,
@@ -356,10 +356,10 @@ end
 
 before_def: define before such that for all n in N,
 	before[n] is in Set and for all x,
-		x is in before[n] iff (x is in N and x < n)
+		x is in before[n] iff x is in N and x < n
 proof
 	p_def: for some p, for all n in N and S in Set, p[n,S] iff
-		for all x, x is in S iff (x is in N and x < n)
+		for all x, x is in S iff x is in N and x < n
 			by property22a
 	for all n in N, for at most one S in Set, p[n,S]
 		by set_equality,p_def
@@ -423,9 +423,9 @@ proof
 					(if f[x] != n then g[x] = f[x])
 				proof
 					p_def: for some p, for all x in S-{z} and y in before[n], p[x,y] iff
-						((if f[x] = n then y = f[z]) and
-						 (if f[x] != n then y = f[x]))
-						by property22a
+						(if f[x] = n then y = f[z]) and
+						(if f[x] != n then y = f[x])
+              by property22a
 					for all x in S-{z}, for at most one y in before[n], p[x,y] by p_def
 					so 2a: for some op, for all x in S-{z} and y in before[n],
 						op[x] = y iff p[x,y]
@@ -454,7 +454,7 @@ proof
 					take any y in before[n]
 						y is in before[n+1] by before_sub,subset_def
 						so 4: for some x in S, f[x] = y by 1,biject_def
-						if x != z then (x is in S-{z} and g[x] = y)
+						if x != z then x is in S-{z} and g[x] = y
 							by 1_set,setdiff_def,before_excl,2,4
 						suppose 5: x = z
 							6: for some xf in S, f[xf] = n
@@ -558,9 +558,9 @@ proof
 			(if x is in A then g[x] = f[x])
 		proof
 			p_def: for some p, for all x in S and y in before[k+1], p[x,y] iff
-				((if x = w then y = k) and
-				 (if x is in A then y = f[x]))
-				by property22a
+				(if x = w then y = k) and
+				(if x is in A then y = f[x])
+          by property22a
 			for all x in S,	for at most one y in before[k+1], p[x,y]
 				by A_def,1_set,setdiff_def,p_def
 			so op_def: for some op, for all x in S and y in before[k+1],
@@ -849,7 +849,7 @@ tie-in `{a,b,c,d,e,f,g}` with `{a,b,c,d,e,f,g} is finite` for all a,b,c,d,e,f,g
 
 finite_biject: for all A,B in Set,
   if finite[A] and for some f in Function, bijection[f,A,B], then
-    (finite[B] and |B| = |A|)
+    finite[B] and |B| = |A|
 proof
 	take 1: any A,B in Set where
 			finite[A] and for some f in Function, bijection[f,A,B]
@@ -865,7 +865,7 @@ end
 
 # from Sundstrom - Mathematical Reasoning
 lemma_9.5: for all m in N, for all A in Set,
-  if A ⊆ before[m] then (finite[A] and |A| <= m)
+  if A ⊆ before[m] then finite[A] and |A| <= m
 proof
   P_def: for some P, for all m in N,
     P[m] iff for all A in Set where A ⊆ before[m], finite[A] and |A| <= m
@@ -1050,10 +1050,10 @@ proof
 			by operation22
 	take any S in Set
 		so for all f in Functions[S,{0,1}], for at most one A in Set,
-			for all x, x is in A iff (x is in S and f[x] = 1)
+			for all x, x is in A iff x is in S and f[x] = 1
 				by set_equality
 		so 0: for some op, for all f in Functions[S,{0,1}] and A in Set,
-			op[f] = A iff (for all x, x is in A iff (x is in S and f[x] = 1))
+			op[f] = A iff for all x, x is in A iff x is in S and f[x] = 1
 				by operation22
 		Functions[S,{0,1}] is in Set by function2
 		1: so for some P in Set, for all A,
@@ -1062,7 +1062,7 @@ proof
 		take any A in P
 			8: for some f in Functions[S,{0,1}], op[f] = A by 1
 			for some p, for all x in S, p[x] iff f[x] = 1 by property2a
-			so for some B in Set, for all x, x is in B iff (x is in S and f[x] = 1)
+			so for some B in Set, for all x, x is in B iff x is in S and f[x] = 1
 				by specify
 			so A is in Set by 8,0
 			so A ⊆ S by subset_def,0,8
@@ -1071,7 +1071,7 @@ proof
 			so for all x in S, for at most one i in {0,1},
 				(i = 1 and x is in A) or (i = 0 and x is not in A)
 			so 4: for some op2, for all x in S and i in {0,1},
-				op2[x] = i iff ((i = 1 and x is in A) or (i = 0 and x is not in A))
+				op2[x] = i iff (i = 1 and x is in A) or (i = 0 and x is not in A)
 					by operation22
 			for all x in S, op2[x] is in {0,1} by set_literal,4
 			so for some f in Functions[S,{0,1}], for all x in S, f[x] = op2[x]

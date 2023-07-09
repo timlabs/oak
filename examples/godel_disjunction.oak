@@ -10,9 +10,9 @@ axiom T is not computably_enumerable
 axiom K ⊆ T
 
 # some basic set theory
-axiom for all A,B, A = B iff (A ⊆ B and B ⊆ A)
+axiom for all A,B, A = B iff A ⊆ B and B ⊆ A
 axiom for all A,B, A ⊉ B iff not B ⊆ A
-axiom for all A,B, A ⊊ B iff (A ⊆ B and A != B)
+axiom for all A,B, A ⊊ B iff A ⊆ B and A != B
 
 # Gödel's disjunction
 so for all F where formal_system[F] and F ⊆ T,

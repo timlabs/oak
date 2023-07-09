@@ -14,23 +14,23 @@ list_def: axiom define List such that for all l in List,
 
 list_literal: axiom define [] such that for all x,a,b,c,d,e,f,g,
 	(if x = [a] then
-		(x is in List and length[x] = 1 and x[1] = a)) and
+		x is in List and length[x] = 1 and x[1] = a) and
 	(if x = [a,b] then
-		(x is in List and length[x] = 2 and x[1] = a and x[2] = b)) and
+		x is in List and length[x] = 2 and x[1] = a and x[2] = b) and
 	(if x = [a,b,c] then
-		(x is in List and length[x] = 3 and x[1] = a and x[2] = b and x[3] = c)) and
+		x is in List and length[x] = 3 and x[1] = a and x[2] = b and x[3] = c) and
 	(if x = [a,b,c,d] then
-		(x is in List and length[x] = 4 and x[1] = a and x[2] = b and x[3] = c and
-		x[4] = d)) and
+		x is in List and length[x] = 4 and x[1] = a and x[2] = b and x[3] = c and
+		x[4] = d) and
 	(if x = [a,b,c,d,e] then
-		(x is in List and length[x] = 5 and x[1] = a and x[2] = b and x[3] = c and
-		x[4] = d and x[5] = e)) and
+		x is in List and length[x] = 5 and x[1] = a and x[2] = b and x[3] = c and
+		x[4] = d and x[5] = e) and
 	(if x = [a,b,c,d,e,f] then
-		(x is in List and length[x] = 6 and x[1] = a and x[2] = b and x[3] = c and
-		x[4] = d and x[5] = e and x[6] = f)) and
+		x is in List and length[x] = 6 and x[1] = a and x[2] = b and x[3] = c and
+		x[4] = d and x[5] = e and x[6] = f) and
 	(if x = [a,b,c,d,e,f,g] then
-		(x is in List and length[x] = 7 and x[1] = a and x[2] = b and x[3] = c and
-		x[4] = d and x[5] = e and x[6] = f and x[7] = g))
+		x is in List and length[x] = 7 and x[1] = a and x[2] = b and x[3] = c and
+		x[4] = d and x[5] = e and x[6] = f and x[7] = g)
 
 ###############################################################################
 
@@ -93,16 +93,16 @@ tie-in `[a,b,c]` with
 			by 3_first,3_second,3_third
 
 index_def: define indexes such that for all l in List,
-	for all i, i is in indexes[l] iff (i is in N and i >= 1 and i <= length[l])
+	for all i, i is in indexes[l] iff i is in N and i >= 1 and i <= length[l]
 proof
 	for all l in List, for at most one S in Set,
-		for all i, i is in S iff (i is in N and i >= 1 and i <= length[l])
+		for all i, i is in S iff i is in N and i >= 1 and i <= length[l]
 			by set_equality
 	so op_def: for some op, for all l in List and S in Set, op[l] = S iff
-		for all i, i is in S iff (i is in N and i >= 1 and i <= length[l])
+		for all i, i is in S iff i is in N and i >= 1 and i <= length[l]
 			by operation22
 	take any l in List
-		for some p, for all i in N, p[i] iff (i >= 1 and i <= length[l])
+		for some p, for all i in N, p[i] iff i >= 1 and i <= length[l]
 			by property2a
 		so for some S in Set, op[l] = S by specify,op_def
 	end
@@ -119,7 +119,7 @@ index_prop: for all l in List and x,
 		by list_def,index_def
 
 length_member: for all l in List,
-	if (for some x, x is in l) then length[l] >= 1
+	if for some x, x is in l then length[l] >= 1
 		by list_def,total_order
 
 index_plus_one: for all l in List and i in indexes[l],
@@ -135,9 +135,9 @@ end
 # LINKED LISTS ################################################################
 
 linked_list_def: define linked_list such that for all l,
-	linked_list[l] iff (l is in List and for all i in indexes[l],
+	linked_list[l] iff l is in List and for all i in indexes[l],
 		(if i != length[l] then next[l[i]] = l[i+1]) and
-		(if i = length[l] then for no j in indexes[l], next[l[i]] = l[j]))
+		(if i = length[l] then for no j in indexes[l], next[l[i]] = l[j])
 	by property2
 
 tie-in `linked_list[l]` with `linked_list[l] implies l is in List` for all l
@@ -183,7 +183,7 @@ proof
 end
 
 next_exists: for all l where linked_list[l], for all x in l,
- 	if x != last[l] then (next[x] is in l and next[x] != first[l])
+	if x != last[l] then next[x] is in l and next[x] != first[l]
 proof
 	take 0: any l and x in l with linked_list[l] where x != last[l]
 		1: for some i in indexes[l], l[i] = x by index_prop
@@ -213,12 +213,12 @@ proof
 end
 
 succ_def: define succ such that for all l where linked_list[l], for all x,y,
-	succ[l,x,y] iff (x is in l and x != last[l] and next[x] = y)
+	succ[l,x,y] iff x is in l and x != last[l] and next[x] = y
 proof
 	for some p, for all l,x,y,
-		p[l,x,y] iff (linked_list[l] and x is in l and y is in l and
-				(x is in l and x != last[l] and next[x] = y))
-			by property122
+		p[l,x,y] iff linked_list[l] and x is in l and y is in l and
+			(x is in l and x != last[l] and next[x] = y)
+				by property122
 	so thesis by next_exists
 end
 
