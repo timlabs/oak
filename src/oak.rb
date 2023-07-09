@@ -5,7 +5,7 @@ end
 
 require_relative 'proof.rb'
 
-name_version = 'Oak version 0.5'
+name_version = 'Oak version 0.5post'
 issues_url = 'https://github.com/timlabs/oak/issues'
 
 options = {}
