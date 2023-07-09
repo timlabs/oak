@@ -4,7 +4,7 @@ module ExternalProver
 extend self
 
 def valid_e? tree, wait_forever = false
-	tb_insert_limit = 80000
+	tb_insert_limit = 100000
 	valid_tptp?(tree) {|file_path|
 		settings = []
 		settings << "--tb-insert-limit=#{tb_insert_limit}" unless wait_forever
