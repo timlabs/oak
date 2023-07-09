@@ -176,10 +176,11 @@ class Bindings
 		cited = cited_tree cited_lines, true
 		tree = nil
 		if content.body
-			# apply active tie-ins to the body, as long as they do not use vars which
-			# content is rebinding
-			tie_ins = @tie_ins.values.flatten.delete_if {|tie_in|
-				not (tie_in.line.uses & content.binds).empty?
+			# apply active tie-ins to the body, as long as they do not use or bind
+			# vars which content is rebinding
+			tie_ins = @tie_ins.values.flatten.select {|tie_in|
+				uses_or_binds = tie_in.line.uses + tie_in.line.binds
+				(uses_or_binds & content.binds).empty?
 			}
 			tied_in = tied_in_for content.body, tie_ins
 			tied_in = tied_in.collect {|match, used| match}
