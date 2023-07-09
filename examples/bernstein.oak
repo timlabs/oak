@@ -1,52 +1,61 @@
-include "set.oak"
+/#
+
+Proof of the Bernstein theorem that if there is an injection from A to B and an
+injection from B to A, then there is a bijection between A and B.
+
+#/
+
+###############################################################################
+include "recursion.oak"
+###############################################################################
 
 for all A,B in Set and f in Functions[A,B] and g in Functions[B,A],
   if one_to_one[f,A] and one_to_one[g,B] then
-    for some h in Function, bijection[h,A,B]
+    for some h in Functions[A,B], bijection[h,A,B]
 proof
   take any A,B in Set and f in Functions[A,B] and g in Functions[B,A]
+
     suppose one: one_to_one[f,A] and one_to_one[g,B]
 
-      assume e_def: for some E,
+      e_def: for some E in Functions[N, power[A]],
         E[0] = A - image[g,B] and for all k in N,
         E[k+1] = image[g, image[f,E[k]]]
-
-      e_set: for all k in N, E[k] is in Set
       proof
-        E[0] is in Set by e_def
-        take any k in N where E[k] is in Set
-          so image[g, image[f,E[k]]] is in Set
-          so E[k+1] is in Set by e_def
-        end
-        for some p, for all k in N, p[k] iff E[k] is in Set by property2a
-        so thesis by induction
+        for all S in power[A],
+          for at most one T in power[A], T = image[g, image[f,S]]
+        so op_def: for some op, for all S,T in power[A],
+          op[S] = T iff T = image[g, image[f,S]]
+            by operation22
+        for all S in power[A], image[g, image[f,S]] is in power[A]
+          by subset_def,power_def,image_subset
+        so for all S in power[A], op[S] is in power[A] by op_def
+        so next_def: for some next in Functions[power[A], power[A]],
+          for all S in power[A], next[S] = image[g, image[f,S]]
+            by function3,op_def
+        A - image[g,B] is in power[A] by power_diff
+        so for some E in Functions[N, power[A]],
+          E[0] = A - image[g,B] and for all k in N,
+          E[k+1] = next[E[k]]
+            by recursion
+        so thesis by function1,next_def
       end
 
-      tie-in `E[k]` with `if k is in N then E[k] is in Set` for all k by e_set
+      tie-in `E[k]` with `if k is in N then E[k] is in Set` for all k
+        by function1,power_element_set
 
       c_def: for some C in Set, for all x,
         x is in C iff for some k in N, x is in E[k]
       proof
         1: for some F in Set, for all x, x is in F iff for some k in N, x = E[k]
           by replace
-        for some C in Set, for all x, x is in C iff for some S in F, x is in S
-          by union,1,e_set
+        for all x in F, x is in Set by 1,function1,power_element_set
+        so for some C in Set, for all x,
+          x is in C iff for some S in F, x is in S
+            by union
         so thesis by 1
       end
 
-      c_a: C ⊆ A
-      proof
-        q_def: for some q, for all k in N, q[k] iff E[k] ⊆ A by property2a
-        q[0] by e_def,q_def,subset_def,setdiff_def
-        take any k in N where q[k]
-          so E[k] ⊆ A by q_def
-          so image[f,E[k]] ⊆ B by image_subset
-          so image[g, image[f,E[k]]] ⊆ A by image_subset
-          so q[k+1] by e_def,q_def
-        end
-        so for all k in N, q[k] by induction
-        so thesis by subset_def,c_def,q_def
-      end
+      c_a: C ⊆ A by function1,power_def,subset_def,c_def
 
       tie-in `x is in C` with `x is in C implies x is in A` for all x
         by c_a,subset_def
@@ -64,14 +73,7 @@ proof
         end
       end
 
-      d_c: D ⊆ C
-      proof
-        take any x in D
-          for some k in N, x is in E[k+1] by d_def
-          so x is in C by c_def
-        end
-        so thesis by subset_def
-      end
+      d_c: D ⊆ C by d_def,c_def,subset_def,nat_closed_add
 
       c_union: C = E[0] ∪ D
         by nat_reduce,d_def,subset_def,c_def,d_c,set_equality,union_def

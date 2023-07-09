@@ -434,8 +434,13 @@ end
 tie-in `before[n]` with `if n is in N then before[n] is in Set` for all n
   by before_def
 
+tie-in `x is in before[n]` with
+  `if n is in N and x is in before[n] then x is in N`
+    for all n,x
+      by before_def
+
 before_sub: for all n in N, before[n] ⊆ before[n+1]
-	by nat_closed_add,before_def,inequal_add_right,subset_def
+	by nat_closed_add,before_def,ineq_add_right,subset_def
 
 before_incl: for all n in N, n is in before[n+1]
 	by nat_closed_add,nat_ineq_2,before_def
@@ -464,9 +469,12 @@ proof
 			x is not in {n} by total_order,before_def
 			so x is in before[n+1]-{n} by setdiff_def
 		end
+    so before[n+1]-{n} = before[n] by set_equality
 	end
-	so thesis by set_equality
 end
+
+before_zero: for all n in N where n != 0, 0 is in before[n]
+  by before_def,nonnegative,total_order
 
 # from Tao - Analysis I
 lemma_3.6.8: for all S in Set and n in N,
@@ -497,9 +505,10 @@ proof
 							by 1,biject_def,before_drop,setdiff_def,p_def,set_literal
 						so for some y in before[n], p[x,y]
 					end
+          so for all x in S-{z}, op[x] is in before[n] by 2a
 					so for some g in Functions[S-{z}, before[n]],
 						for all x in S-{z}, g[x] = op[x]
-							by function3,2a
+							by function3
 					so thesis by p_def,function1,2a
 				end
 
@@ -792,7 +801,7 @@ proof
 			end
 			so more = less ∪ {a} by set_equality
 			so |more| = |less| + 1 by card_add2,1,finite_def,2
-			so |more| is in N and |more| <= 3 by inequal_add,3_def,1
+			so |more| is in N and |more| <= 3 by ineq_add,3_def,1
 		end
 	end
 end
@@ -813,7 +822,7 @@ proof
 			end
 			so more = less ∪ {a} by set_equality
 			so |more| = |less| + 1 by card_add2,1,finite_def,2
-			so |more| is in N and |more| <= 4 by inequal_add,4_def,1
+			so |more| is in N and |more| <= 4 by ineq_add,4_def,1
 		end
 	end
 end
@@ -834,7 +843,7 @@ proof
 			end
 			so more = less ∪ {a} by set_equality
 			so |more| = |less| + 1 by card_add2,1,finite_def,2
-			so |more| is in N and |more| <= 5 by inequal_add,5_def,1
+			so |more| is in N and |more| <= 5 by ineq_add,5_def,1
 		end
 	end
 end
@@ -856,7 +865,7 @@ proof
 			end
 			so more = less ∪ {a} by set_equality
 			so |more| = |less| + 1 by card_add2,1,finite_def,2
-			so |more| is in N and |more| <= 6 by inequal_add,6_def,1
+			so |more| is in N and |more| <= 6 by ineq_add,6_def,1
 		end
 	end
 end
@@ -878,7 +887,7 @@ proof
 			end
 			so more = less ∪ {a} by set_equality
 			so |more| = |less| + 1 by card_add2,1,finite_def,2
-			so |more| is in N and |more| <= 7 by inequal_add,7_def,1
+			so |more| is in N and |more| <= 7 by ineq_add,7_def,1
 		end
 	end
 end
@@ -947,7 +956,7 @@ proof
 			end
 			suppose k is in A
 				so finite[A] and |A| = |B|+1 by 1,card_add,B_def
-				so finite[A] and |A| <= k+1 by 1,inequal_add
+				so finite[A] and |A| <= k+1 by 1,ineq_add
 			end
 		end
 		so P[k+1] by P_def
@@ -1149,10 +1158,13 @@ end
 tie-in `power[S]` with `if S is in Set then power[S] is in Set` for all S
 	by power_def
 
+power_element_set: for all S in Set and x in power[S], x is in Set
+  by power_def,subset_def
+
 tie-in `A is in power[S]` with
 	`if S is in Set and A is in power[S] then A is in Set`
 		for all A,S
-			by power_def,subset_def
+			by power_element_set
 
 power_subset: for all A,B,S in Set,
   if A is in power[S] and B ⊆ A, then B is in power[S]
@@ -1161,6 +1173,9 @@ power_subset: for all A,B,S in Set,
 power_element: for all A,B in Set where A is in power[B],
   for all x in A, x is in B
     by power_def,subset_def
+
+power_diff: for all A,B in Set, A - B is in power[A]
+  by power_def,setdiff_self
 
 empty_power: for all S in Set, ∅ is in power[S]
   by power_def,empty_def,subset_def

@@ -3,16 +3,18 @@
 Recursive definition of the product of a finite set of natural numbers.  This is
 long because inside it, we are effectively proving a recursion theorem.
 
-Once we need other recursive definitions, should abstract out the recursion
-theorem from here so that it can be used for those as well.
+Once we need other recursive definitions over sets, should abstract out the
+recursion theorem from here so that it can be used for those as well.
 
 #/
 
+###############################################################################
 include "set.oak"
+###############################################################################
 
 product_def: define product such that for all finite S in power[N],
 	product[∅] = 1 and for all x in S,
-	product[S] = x * product[S - {x}]
+	product[S] = x * product[S-{x}]
 proof
 	/# Proving that recursive operations exist seems like a magic trick, but is
 	actually possible.  See Tao - Analysis I, Proposition 2.1.16 and Exercise
@@ -143,7 +145,7 @@ proof
 
 			take any S in PN[n+1] and x in S
 				t0: S-{x} is in PN[n] by setdiff_element,PN_proper_subset
-				t1: f[S - {x}] is in N by t0,p_prop,f_def_orig
+				t1: f[S-{x}] is in N by t0,p_prop,f_def_orig
 			end
 			t2: |∅| < n+1 by card_0,nat_greater_eq_0,nat_ineq_2
 
@@ -238,7 +240,7 @@ proof
 					so f2[S] = x * f[S-{x}] by f2_def,op2_def,t1
 				end
 			end
-			
+
 			f2_prop2: for all S in PN[n], f2[S] = f[S]
 			proof
 				take any S in PN[n]
@@ -252,14 +254,14 @@ proof
 					so f2[S] = f[S] by set_not_empty
 				end
 			end
-			
-			for all S in PN[n+1] and x in S, f2[S] = x * f2[S - {x}]
+
+			for all S in PN[n+1] and x in S, f2[S] = x * f2[S-{x}]
 				by f2_prop,f2_prop2,t0
 
 			so p[f2,n+1] by p_def,f2_prop,PN_def
       so q[n+1] by q_def
     end
-		
+
     so for all n in N, q[n] by induction
     so thesis by q_def
   end
@@ -298,7 +300,7 @@ proof
 
 	op[∅] = 1 by op_def,part1,p_def,empty_power
 
-	for all finite S in power[N] and x in S, op[S] = x * op[S - {x}]
+	for all finite S in power[N] and x in S, op[S] = x * op[S-{x}]
 	proof
 		take any finite S in power[N]
 			1: for some f, p[f,|S|] by part1

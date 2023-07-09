@@ -124,13 +124,10 @@ end
 add_not_zero: for all a,b in N, a+b = 0 iff a = 0 and b = 0
 	by nonnegative,ineq_def,plus_0
 
-0_less_1: 0 < 1
-	by ineq_def,0_not_1,plus_0,add_commute
-
 less_add_1: for all n in N, n < n+1
 	by ineq_def,0_not_1,nat_closed_add
 
-inequal_add_right: for all a,b,c in N, if a < b then a < b+c
+ineq_add_right: for all a,b,c in N, if a < b then a < b+c
 proof
 	take any a,b,c in N where a < b
 		so for some d in N with d != 0, a+d = b by ineq_def
@@ -140,7 +137,10 @@ proof
 	end
 end
 
-inequal_add: for all a,b,c in N, if a < b, then a+c < b+c
+ineq_add_left: for all a,b,c in N, if a < b then a < c+b
+	by ineq_add_right,add_commute
+
+ineq_add: for all a,b,c in N, if a < b, then a+c < b+c
 proof
 	take any a,b,c in N where a < b
 		so for some d in N with d != 0, a+d = b by ineq_def
@@ -156,6 +156,14 @@ proof
 		so (a+d)+c = b+c by add_assoc,add_commute
 		so a+d = b by add_cancel
 		so a < b by ineq_def
+	end
+end
+
+ineq_plus_one_two: for all a,b in N, a < b+1 iff a+1 < b+2
+proof
+	take any a,b in N
+		if a < b+1 then a+1 < b+2 by add_assoc,2_def,ineq_add
+		if a+1 < b+2 then a < b+1 by add_assoc,2_def,ineq_cancel
 	end
 end
 
@@ -188,12 +196,12 @@ proof
 	take 1: any b in N where p[b]
 		take any a in N where not a >= b+1
 			so not a+1 > b+1 by nat_ineq_2
-			so 2: not a > b by inequal_add
+			so 2: not a > b by ineq_add
 			suppose not a < b+1
 				so if a = b then contradiction by less_add_1
 				so not a >= b by 2
 				so a < b by p_def,1
-				so a < b+1 by inequal_add_right
+				so a < b+1 by ineq_add_right
 			end
 		end
 		so p[b+1] by p_def
@@ -234,7 +242,7 @@ nat_if_not_0: for all n in N, if n != 0 then n >= 1
 proof
 	take any n in N such that n != 0
 		so n > 0 by nat_greater_eq_0
-		so n+1 > 0+1 by inequal_add
+		so n+1 > 0+1 by ineq_add
 		so n+1 > 1 by plus_0,add_commute
 		so n >= 1 by nat_ineq_2
 	end
@@ -250,17 +258,14 @@ proof
 	end
 end
 
-1_less_2: 1 < 2
-	by 2_def,less_equal_one
+0_less_1: 0 < 1 by ineq_def,0_not_1,plus_0,add_commute
+1_less_2: 1 < 2 by 2_def,less_equal_one
+2_less_3: 2 < 3 by 3_def,less_equal_one
+3_less_4: 3 < 4 by 4_def,less_equal_one
 
-1_less_3: 1 < 3
-	by 2_def,3_def,add_assoc,ineq_def,distinct_nats
-
-2_less_3: 2 < 3
-	by 3_def,ineq_def,distinct_nats
-
-2_less_4: 2 < 4
-	by 2_def,3_def,4_def,add_assoc,ineq_def,distinct_nats
+0_less_2: 0 < 2 by 0_less_1,1_less_2,transitive
+1_less_3: 1 < 3 by 1_less_2,2_less_3,transitive
+2_less_4: 2 < 4 by 2_less_3,3_less_4,transitive
 
 double: for all a in N, a+a = 2*a
 	by 2_def,mult_commute,mult_dist,mult_1
@@ -309,7 +314,7 @@ proof
 	end
 end
 
-inequal_mult: for all a,b,c in N, if a < b and c > 0, then a*c < b*c
+ineq_mult: for all a,b,c in N, if a < b and c > 0, then a*c < b*c
 proof
 	take any a,b,c in N with c > 0 where a < b
 		2: so for some d in N with d != 0, b = a+d by ineq_def
@@ -327,7 +332,7 @@ mult_greater: for all a,b in N where a != 0 and b > 1, a*b > a
 proof
 	1: take any a,b in N where a != 0 and b > 1
 		suppose a > 0
-			so b*a > 1*a by inequal_mult,1
+			so b*a > 1*a by ineq_mult,1
 			so a*b > a by mult_commute,mult_1
 		end
 	end
@@ -471,7 +476,7 @@ proof
 				end
 				now
 					n >= 0 by nat_greater_eq_0
-					so 0+c <= n+c by inequal_add
+					so 0+c <= n+c by ineq_add
 					so n+c >= c by plus_0,add_commute
 				end
 				so P[n+c] by si1

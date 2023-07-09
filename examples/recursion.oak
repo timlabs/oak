@@ -1,0 +1,186 @@
+/#
+
+A recursion theorem for functions from natural numbers to sets.
+
+#/
+
+###############################################################################
+include "set.oak"
+###############################################################################
+
+recursion: for all S in Set and base in S and next in Functions[S,S],
+  for some f in Functions[N,S],
+    f[0] = base and for all n in N,
+    f[n+1] = next[f[n]]
+proof
+  take any S in Set and base in S and next in Functions[S,S]
+
+  	p_def: for some p, for all f,n,
+  		p[f,n] iff f is in Function and n is in N and
+  			(f[0] = base and for all m in N where m < n, f[m+1] = next[f[m]])
+  		by property22
+
+    p_prop: for all f,n where p[f,n], f[n] is in S
+    proof
+  		take 1: any f,n where p[f,n]
+  			tie-in `n` with `n is in N` by 1,p_def
+  			q_def: for some q, for all m in N, q[m] iff f[m] is in S by property2a
+        q[0] by p_def,q_def,1
+  			take hyp: any m in N where m < n and q[m]
+          f[m] is in S by q_def,hyp
+          so next[f[m]] is in S by function1
+          so f[m+1] is in S by p_def,hyp,1
+          so q[m+1] by q_def
+  			end
+        so for all m in N where m <= n, q[m] by bounded_induction
+  			so f[n] is in S by q_def
+  		end
+    end
+
+	  p_less: so for all f,n where p[f,n], for all m in N where m <= n, p[f,m]
+      by p_def,total_order
+
+  	part1: for all n in N, for some f, p[f,n]
+    proof
+  		q_def: for some q, for all n in N,
+        q[n] iff for some f, p[f,n] by property2a
+
+  		q[0]
+  		proof
+  			for some op, for all n in N, op[n] = base by operation2
+  			so for some f in Function, f[0] = base by function3,function2
+        so thesis by p_def,q_def,nonnegative
+  		end
+
+      take any n in N where q[n]
+  			so f_def_orig: for some f, p[f,n] by q_def
+  			f_def: f[0] = base and
+  				for all m in N where m < n, f[m+1] = next[f[m]]
+  					by p_def,f_def_orig
+
+  			r_def: for some r, for all m in N and x in S, r[m,x] iff
+          (if m < n+1 then x = f[m]) and
+          (if m = n+1 then x = next[f[n]])
+            by property22a
+
+        take any m in before[n+1]
+          m <= n by nat_ineq_2,before_def
+          t1: so f[m] is in S by p_prop,p_less,f_def_orig
+        end
+  			take any m in N where m+1 is in before[n+2]
+  				so m is in before[n+1] by before_def,ineq_plus_one_two
+          t2: so f[m] is in S by t1
+  			end
+
+  			r_prop: r[0,base] and for all m in before[n+1], r[m+1, next[f[m]]]
+  			proof
+          0 < n+1 by nat_greater_eq_0,nat_ineq_2
+  				so r[0,base] by f_def,r_def
+
+  				take any m in before[n+1]
+  					suppose 1: m < n
+  						f[m+1] = next[f[m]] by f_def,1
+              m+1 < n+1 by ineq_add,1
+              so r[m+1, next[f[m]]] by r_def,t1
+  					end
+  					suppose 2: m = n
+              next[f[m]] is in S by t1,function1
+              m+1 = n+1 by 2
+              so r[m+1, next[f[m]]] by r_def,2,total_order
+  					end
+  					so r[m+1, next[f[m]]] by nat_ineq_2,before_def
+  				end
+  			end
+
+  			take any m in before[n+2]
+          m <= n+1 by before_def,add_assoc,2_def,nat_ineq_2
+  				so for at most one x in S, r[m,x] by r_def
+  			end
+
+       	op2_def: so for some op2, for all m in before[n+2] and x in S,
+  			 	op2[m] = x iff r[m,x]
+  					by operation22
+
+  			f2_def: for some f2 in Functions[before[n+2], S],
+          for all m in before[n+2], f2[m] = op2[m]
+        proof
+    			take any m in before[n+2]
+    				r[0,base] by r_prop
+            suppose m != 0
+              so 1: for some m' in N, m = m'+1 by nat_reduce
+              m' < n+1 by before_def,1,ineq_plus_one_two
+              so r[m, next[f[m']]] by r_prop,before_def,1
+            end
+    				so for some x in S, r[m,x] by t2,function1
+    				so op2[m] is in S by op2_def
+    			end
+          so thesis by function3
+        end
+
+  			f2_prop: f2[0] = base and for all m in before[n+1], f2[m+1] = next[f[m]]
+  			proof
+          0 is in before[n+2] by 0_less_2,before_def,ineq_add_left
+  				r[0,base] by r_prop
+  				so f2[0] = base by f2_def,op2_def
+  				take any m in before[n+1]
+            m+1 is in before[n+2] by before_def,ineq_plus_one_two
+  					r[m+1, next[f[m]]] by r_prop
+  					so f2[m+1] = next[f[m]] by f2_def,op2_def,t1,function1
+  				end
+  			end
+
+  			for all m in before[n+1], f2[m] = f[m]
+  			proof
+  				take any m in before[n+1]
+  					if m = 0 then f2[m] = f[m] by f_def,f2_prop
+            suppose m != 0
+              so 1: for some m' in N, m = m'+1 by nat_reduce
+              m' is in before[n+1] by before_def,1,less_add_1,total_order
+              so f2[m'+1] = next[f[m']] by f2_prop
+              f[m'+1] = next[f[m']] by f_def,before_def,ineq_cancel,1
+              so f2[m] = f[m] by 1
+  					end
+  				end
+  			end
+
+  			so for all m in before[n+1], f2[m+1] = next[f2[m]] by f2_prop
+  			so p[f2,n+1] by p_def,f2_prop,before_def
+        so q[n+1] by q_def
+      end
+
+      so for all n in N, q[n] by induction
+      so thesis by q_def
+    end
+
+  	for all n in N, for at most one x in S,
+      for some f where p[f,n], f[n] = x
+    proof
+  		take 1: any n in N and f,g where p[f,n] and p[g,n]
+  			q_def: for some q, for all m in N, q[m] iff f[m] = g[m] by property2a
+        q[0] by p_def,q_def,1
+  			take hyp: any m in N where m < n and q[m]
+          f[m+1] = next[f[m]] by p_def,1,hyp
+          g[m+1] = next[g[m]] by p_def,1,hyp
+          so q[m+1] by q_def,hyp
+  			end
+        so for all m in N where m <= n, q[m] by bounded_induction
+  			so f[n] = g[n] by q_def
+  		end
+  	end
+
+  	so op_def: for some op, for all n in N and x in S,
+  		op[n] = x iff for some f where p[f,n], f[n] = x
+  			by operation22
+    for all n in N, op[n] is in S by part1,p_prop,op_def
+
+    so g_def: for some g in Functions[N,S], for all n in N,
+      g[n] = op[n] by function3
+
+  	g[0] = base by g_def,op_def,part1,p_def
+    take any n in N
+      1: for some f, p[f,n+1] and p[f,n] by part1,p_less,less_add_1
+      f[n+1] = next[f[n]] by p_def,less_add_1,1
+      so g[n+1] = next[g[n]] by g_def,op_def,p_prop,1
+    end
+  end
+end

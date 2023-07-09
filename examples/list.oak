@@ -127,7 +127,7 @@ index_plus_one: for all l in List and i in indexes[l],
 proof
 	take any l in List and i in indexes[l] where i != length[l]
 		so i+1 <= length[l] by index_def,less_equal_one
-		i+1 >= 1 by index_def,less_equal_one,inequal_add
+		i+1 >= 1 by index_def,less_equal_one,ineq_add
 		so i+1 is in indexes[l] by index_def
 	end
 end
@@ -166,7 +166,7 @@ proof
 						suppose 3: j != length[l]
 							i+1 is in indexes[l] and j+1 is in indexes[l]
 								by index_plus_one,2,3,t
-							so l[i+1] != l[j+1] by hyp,P_def,1,inequal_add
+							so l[i+1] != l[j+1] by hyp,P_def,1,ineq_add
 							next[l[j]] = l[j+1] by linked_list_def,3
 							so next[l[j]] != l[i+1]
 						end
