@@ -97,39 +97,66 @@ def grammar_rules
   [:ending, /\s*\n/, :end],
 	[:ending, /\s*\z/, :end],
 
-	[:exp, :prefix, :end],
-	[:exp, :exp1, :end],
+	# prefix can have any prefix under it
+	# prefix can have any infix of higher level under it
 
+	# infix can have any prefix of higher level to left of it
+	# infix can have any infix of higher level to left of it
+
+	# infix can have any prefix to right of it
+	# infix can have any infix of higher level to right of it
+
+	[:exp, :exp_, :end],
+
+	[:prefix_, :universal, :end],
+	[:prefix_, :for_at_most_one, :end],
+	[:prefix_, :no_existential, :end],
+	[:prefix_, :existential, :end],
+
+	# no infix at this level
+	[:exp_, :prefix_, :end],
+	[:exp_, :exp0, :end],
+
+	[:prefix0, :if, :end],
+
+	[:exp0, :prefix0, :end],
+	[:exp0, :exp1, :exp0a],
+	[:exp0a, /\s*(iff|if and only if)\b/i, :exp0b],
+	[:exp0a, /\s*implies( that)?\b/i, :exp0b],
+	[:exp0a, :else, :end],
+	[:exp0b, :exp1, :end],
+	[:exp0b, :prefix0, :end],
+	[:exp0b, :prefix_, :end],
+
+	[:prefix1, :not, :end],
+
+	[:exp1, :prefix1, :end],
 	[:exp1, :exp2, :exp1a],
 	[:exp1a, :and, :and1],
 		[:and, /\s*and\b/i, :end],
-		[:and1, :prefix, :end],
 		[:and1, :exp2, :and2],
+		[:and1, :else, :exp1c],
 		[:and2, :and, :and1],
 		[:and2, :else, :end],
-#	[:exp1a, [/\s*and\b/i, :exp2], :and],
-#		[:and, [/\s*and\b/i, :exp2], :and],
-#		[:and, :else, :end],
 	[:exp1a, :or, :or1],
 		[:or, /\s*or\b/i, :end],
-		[:or1, :prefix, :end],
 		[:or1, :exp2, :or2],
+		[:or1, :else, :exp1c],
 		[:or2, :or, :or1],
 		[:or2, :else, :end],
-#	[:exp1a, [/\s*or\b/i, :exp2], :or],
-#		[:or, [/\s*or\b/i, :exp2], :or],
-#		[:or, :else, :end],
-	[:exp1a, /\s*implies( that)?\b/i, :exp1b],
-	[:exp1a, /\s*(iff|if and only if)\b/i, :exp1b],
 	[:exp1a, :else, :end],
 	[:exp1b, :exp2, :end],
-	[:exp1b, :prefix, :end],
-	
-	[:exp2, :every, :end],
-	[:exp2, :some, :end],
-	[:exp2, :no, :end],
-	[:exp2, :at_most_one, :end],
+	[:exp1b, :else, :exp1c],
+	[:exp1c, :prefix1, :end],
+	[:exp1c, :prefix0, :end],
+	[:exp1c, :prefix_, :end],
 
+	[:prefix2, :every, :end],
+	[:prefix2, :no, :end],
+	[:prefix2, :some, :end],
+	[:prefix2, :at_most_one, :end],
+
+	[:exp2, :prefix2, :end],
 	[:exp2, :exp3, :exp2a],
 	[:exp2a, /\s*=/i, :exp2b],
 	[:exp2a, :not_equal, :exp2b],
@@ -139,11 +166,7 @@ def grammar_rules
 	[:exp2a, :is_not, :is_predicate],
 	[:exp2a, :is, :is_predicate],
 	[:exp2a, :set_relation, :exp2b],
-
-	# putting this here for now, not sure about it though.
-	# should it have a different precedence?  should it be removed entirely?
-	[:exp2a, :custom, :exp2b],
-
+	[:exp2a, :custom, :exp2b], # not sure about this, move or remove?
 	[:exp2a, :else, :end],
 	[:exp2b, :exp3, :end],
 
@@ -189,20 +212,9 @@ def grammar_rules
 
 	[:exp6, :operand, :end],
 
-	[:prefix, :not, :end],
-	[:prefix, :if, :end],
-	[:prefix, :universal, :end],
-	[:prefix, :for_at_most_one, :end],
-	[:prefix, :no_existential, :end],
-	[:prefix, :existential, :end],
+	[:if, [/\s*if\b/i, :exp, /\s*,?\s*then\b/i], :exp0b],
 
-	[:not, /\s*not\b/i, :not1],
-	[:not1, :prefix, :end],
-	[:not1, :exp2, :end],
-	
-	[:if, [/\s*if\b/i, :exp, /\s*,?\s*then\b/i], :if2],
-	[:if2, :prefix, :end],
-	[:if2, :exp2, :end],
+	[:not, /\s*not\b/i, :exp1b],
 
 	[:atom_list, :atom_list_adjacent, :atom_list2],
 	[:atom_list2, [/\s*and\b/i, :atom_list_adjacent], :atom_list2],

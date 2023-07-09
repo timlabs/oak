@@ -385,7 +385,7 @@ class Parser
 
 	def tree_from_grammar node, open_to_bind = false
 		case node.value
-			when :exp, :exp1, :exp2, :exp3, :exp4, :exp5, :exp6
+			when :exp, :exp_, :exp0, :exp1, :exp2, :exp3, :exp4, :exp5, :exp6
 				if node.branches.size == 1
 					return tree_from_grammar(node.branches[0], open_to_bind)
         elsif node.branches.size == 3 and [:is, :is_not].include? node.branches[1].value
@@ -405,8 +405,7 @@ class Parser
 						next unless subtree.subtrees.empty? and i > 0 # atom
 						prev = node.branches[(i-1)*2]
 						is = false
-						tags = [:every, :some, :no, :at_most_one]
-						is = true if tags.include? prev.branches[0].value
+						is = true if prev.branches[0].value == :prefix2
 						tags = [:is, :is_not, :is_in, :is_not_in]
 						if prev.branches.size >= 2 and tags.include? prev.branches[1].value
 							is = true
@@ -616,7 +615,7 @@ class Parser
 			when :thesis
 				operator = node.text
 				subtrees = []
-			when :prefix
+			when :prefix_, :prefix0, :prefix1, :prefix2
 				return tree_from_grammar(node.branches[0], open_to_bind)
 			when :not
 				operator = :not
