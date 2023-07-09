@@ -216,15 +216,23 @@ def grammar_rules
 
 	[:not, /\s*not\b/i, :exp1b],
 
-	[:atom_list, :atom_list_adjacent, :atom_list2],
-	[:atom_list2, [/\s*and\b/i, :atom_list_adjacent], :atom_list2],
+	[:atom_list, :atom_block, :atom_list2],
+	[:atom_list2, [/\s*and\b/i, :atom_block], :atom_list2],
 	[:atom_list2, :else, :end],
+
+	[:atom_block, :word, :atom_block2],
+	[:atom_block, :else, :atom_list_adjacent],
+	[:atom_block2, :word_same_line, :atom_block2],
+	[:atom_block2, :condition, :end, :catch],
+	[:atom_block2, :definable_same_line, :atom_list_adjacent2],
+	[:atom_block2, :else, :atom_list_adjacent2],
 
 	[:atom_list_adjacent, :definable, :atom_list_adjacent2],
 	[:atom_list_adjacent2, [/,/, :definable_raw,], :atom_list_adjacent2, :catch],
 	[:atom_list_adjacent2, :condition, :end],
 	[:atom_list_adjacent2, :else, :end],
 
+	[:universal, /\s*for (all|any|each|every) meta\b/i, :null],
 	[:universal, /\s*for (all|any|each|every)\b/i, :post_quantifier_exp],
 
 	[:universal_meta, /\s*for (all|any|each|every) meta\b/i, :universal_meta2],
@@ -291,7 +299,7 @@ def grammar_rules
 	[:is_not_in, /\s*is not in\b/i, :end],
 
 	[:preposition, /\s*(of|on)\b/i, :end],
-	
+
 	[:category, :word, :category2],
 	[:category2, [:preposition, :exp3], :end],
 	[:category2, :word_same_line, :category2],
@@ -402,6 +410,8 @@ def grammar_rules
 	[:label_name_same_line, [/[ \t]*/, :atom], :label_name2, :catch],
 
 	[:definable, [/\s*/, :definable_raw], :end, :catch],
+
+	[:definable_same_line, [/[ \t]*/, :definable_raw], :end, :catch],
 
   [:definable_raw, /\+|\-|\*|\÷|\/|\^|⊆|⊊|⊂|\|\||{}|\[\]|∪|∩|</, :end],
   [:definable_raw, :atom, :end],

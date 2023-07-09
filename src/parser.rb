@@ -176,55 +176,70 @@ class Parser
 		variables, conditions = [], []
 		node.branches.each {|branch|
 			next if branch.value.downcase == 'and'
-			new_variables, new_conditions = process_atom_list_adjacent branch
+			new_variables, new_conditions = process_atom_block branch
 			variables.concat new_variables
 			conditions.concat new_conditions
 		}
 		[variables, conditions]
 	end
 
-	def process_atom_list_adjacent node
-		raise unless node.value == :atom_list_adjacent
-		variable_trees, conditions = [], []
-		condition = nil # for scope
-		node.branches.each {|branch|
-			next if branch.value == ','
-			if branch.value == :definable or branch.value == :definable_raw
-				variable_trees << tree_from_grammar(branch)
-			elsif branch.value == :condition
-				raise if condition
-				condition = branch
-			else
-				raise "unknown branch value #{branch.value.inspect}"
+	def process_atom_block node
+		raise unless [:atom_block, :atom_list_adjacent].include? node.value
+		properties, variables = [], []
+		ids = [
+			:word, :word_same_line, :definable, :definable_same_line, :definable_raw
+		]
+		switched = false
+		node.branches.each_with_index {|branch, i|
+			if switched
+				variables << branch if ids.include? branch.value
+			elsif i+1 < node.branches.size and ids.include? node.branches[i+1].value
+				properties << branch
+			else # this is the last id, so switch from properties to variables
+				variables << branch
+				switched = true
 			end
 		}
-		conditions = if condition
-			right_side = tree_from_grammar condition.branches[1]
-			variable_trees.collect {|variable_tree|
-				if condition.branches[0].value == :inequality
-					relation = condition.branches[0].branches[0].value
-					convert_inequality relation, [variable_tree, right_side]
-				elsif condition.branches[0].value == :not_equal
-					subtrees = [Tree.new(:equals, [variable_tree, right_side])]
-					Tree.new :not, subtrees
-				elsif condition.branches[0].value.downcase == 'in'
-					subtrees = [Tree.new('in', []), variable_tree, right_side]
-					Tree.new :predicate, subtrees
-				elsif condition.branches[0].value.downcase == 'not in'
-					subtrees = [Tree.new('in', []), variable_tree, right_side]
-					Tree.new :not, [Tree.new(:predicate, subtrees)]
-				elsif condition.branches[0].value == :set_relation
-					relation = condition.branches[0].branches[0].value
-					convert_set relation, [variable_tree, right_side]
-				else
-					raise "unknown condition #{condition.branches[0].value.inspect}"
-				end
+		condition = node.branches.last if node.branches.last.value == :condition
+		process_conditions properties, variables, condition
+	end
+
+	def process_conditions properties, variables, condition
+		variable_trees = variables.collect {|node| tree_from_grammar node}
+		property_trees = properties.collect {|node| tree_from_grammar node}
+		right_side = tree_from_grammar condition.branches[1] if condition
+		conditions = variable_trees.collect {|variable_tree|
+			trees = property_trees.collect {|property_tree|
+				Tree.new :predicate, [property_tree, variable_tree]
 			}
-		else
-			variable_trees.collect {|variable_tree| nil}
-		end
+			if condition
+				trees << apply_condition(condition, right_side, variable_tree)
+			end
+			conjunction_tree trees
+		}
 		variables = variable_trees.collect {|tree| tree.operator}
 		[variables, conditions]
+	end
+
+	def apply_condition condition, right_side, variable_tree
+		if condition.branches[0].value == :inequality
+			relation = condition.branches[0].branches[0].value
+			convert_inequality relation, [variable_tree, right_side]
+		elsif condition.branches[0].value == :not_equal
+			subtrees = [Tree.new(:equals, [variable_tree, right_side])]
+			Tree.new :not, subtrees
+		elsif condition.branches[0].value.downcase == 'in'
+			subtrees = [Tree.new('in', []), variable_tree, right_side]
+			Tree.new :predicate, subtrees
+		elsif condition.branches[0].value.downcase == 'not in'
+			subtrees = [Tree.new('in', []), variable_tree, right_side]
+			Tree.new :not, [Tree.new(:predicate, subtrees)]
+		elsif condition.branches[0].value == :set_relation
+			relation = condition.branches[0].branches[0].value
+			convert_set relation, [variable_tree, right_side]
+		else
+			raise "unknown condition #{condition.branches[0].value.inspect}"
+		end
 	end
 
 	def process_list_with_such node
@@ -692,7 +707,7 @@ class Parser
 				body = tree_from_grammar node.branches[3]
 				metas = []
 				if node.branches[5]
-					metas, conditions = process_atom_list_adjacent node.branches[5]
+					metas, conditions = process_atom_block node.branches[5]
 					if not conditions.compact.empty?
 						raise ParseException, 'tie-in variables cannot have conditions'
 					end

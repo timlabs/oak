@@ -601,10 +601,10 @@ proof
 	end
 end
 
-card_add2: for all S in Set and c not in S where finite[S],
+card_add2: for all finite S in Set and c not in S,
   |S ∪ {c}| = |S| + 1
 proof
-  take any S in Set and c not in S with finite[S]
+  take any finite S in Set and c not in S
     so S = (S ∪ {c}) - {c} by set_add_drop
     c is in S ∪ {c}
     so |S ∪ {c}| = |S| + 1 by card_add
@@ -896,7 +896,7 @@ proof
 	so thesis by induction,P_def
 end
 
-subset_finite: for all S in Set where finite[S], for all A ⊆ S,
+subset_finite: for all finite S in Set and A ⊆ S,
 	finite[A] and |A| <= |S|
 proof
 	take any S in Set and A ⊆ S where finite[S]
@@ -917,7 +917,7 @@ proof
 	end
 end
 
-card_drop: for all S in Set where finite[S], for all x in S,
+card_drop: for all finite S in Set and x in S,
 	finite[S-{x}] and |S| = |S-{x}| + 1
 proof
 	take any S in Set and x in S where finite[S]
@@ -966,7 +966,7 @@ proof
 	end
 end
 
-set_induction: for all P and S in Set where finite[S],
+set_induction: for all P and finite S in Set,
 	if for all A ⊆ S,
 		   (for all B ⊂ A, P[B]) implies P[A],
 	then
@@ -1003,10 +1003,10 @@ proof
 	end
 end
 
-disjoint_card: for all A,B in Set where finite[A] and finite[B],
+disjoint_card: for all finite A,B in Set,
   if disjoint[A,B] then |A ∪ B| = |A| + |B|
 proof
-  take 1: any A,B in Set with finite[A] and finite[B] where disjoint[A,B]
+  take 1: any finite A,B in Set where disjoint[A,B]
 		P_def: for some P, for all S in Set, P[S] iff |A ∪ S| = |A| + |S|
       by property2a
 		# base case

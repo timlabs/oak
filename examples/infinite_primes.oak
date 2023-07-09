@@ -85,11 +85,11 @@ proof
 	so thesis by P_def
 end
 
-product_set_in_N: for all S in power[N] where finite[S], product[S] is in N
+product_set_in_N: for all finite S in power[N], product[S] is in N
 proof
 	P_def: for some P, for all S in power[N], P[S] iff product[S] is in N
 		by property2a
-	take any S in power[N] with finite[S]
+	take any finite S in power[N]
 		P[∅] by product_def,P_def,empty_subset,power_def
 		take any A != ∅ with A ⊆ S where for all B ⊂ A, P[B]
 			there is a d in A by empty_def,set_equality
@@ -105,10 +105,10 @@ proof
 	end
 end
 
-product_set_positive: for all S in power[N] where finite[S],
+product_set_positive: for all finite S in power[N],
   if for all d in S, d > 0, then product[S] > 0
 proof
-	take 1: any S in power[N] with finite[S] where for all d in S, d > 0
+	take 1: any finite S in power[N] where for all d in S, d > 0
 		P_def: for some P, for all S in power[N], P[S] iff product[S] > 0
 			by property2a
 		# base case
@@ -131,10 +131,10 @@ proof
 	end
 end
 
-divides_product: for all S in power[N] where finite[S],
+divides_product: for all finite S in power[N],
 	for all d in S, divides[d, product[S]]
 proof
-	take any S in power[N] and d in S with finite[S]
+	take any finite S in power[N] and d in S
 		1: let A = S - {d}
 		2: A ⊂ S by 1,setdiff_element
 		product[S] = d * product[A] by product_def,1

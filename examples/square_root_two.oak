@@ -663,7 +663,7 @@ proof
 	end
 end
 
-rational_simp: for all n in D, rational[n] implies
+rational_simp: for all rational n in D,
 	for some a,b in N such that b != 0,
 		n = a/b and simplified[a,b]
 proof

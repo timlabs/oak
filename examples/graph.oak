@@ -15,23 +15,23 @@ multigraph_def: define multigraph such that for all m,
 				for all n in r[e], n is in V
 					by property2
 
-nodes_def: define nodes such that for all m where multigraph[m],
+nodes_def: define nodes such that for all multigraph m,
 	nodes[m] = first[m]
 
-edges_def: define edges such that for all m where multigraph[m],
+edges_def: define edges such that for all multigraph m,
 	edges[m] = second[m]
 
 nodes_for_edge_def: define nodes_for_edge such that
-	for all m,e where multigraph[m] and e is in edges[m],
+	for all multigraph m and e in edges[m],
 		nodes_for_edge[m,e] is in Set and nodes_for_edge[m,e] = third[m][e]
 proof
-	for all m,e where multigraph[m] and e is in edges[m],
+	for all multigraph m and e in edges[m],
 		for at most one S in Set, S = third[m][e]
 	so op_def: for some op,
-		for all m,e,S where multigraph[m] and e is in edges[m] and S is in Set,
+		for all multigraph m and e in edges[m] and S in Set,
 			op[m,e] = S iff S = third[m][e]
 				by operation122
-	take any m,e with multigraph[m] and e is in edges[m]
+	take any multigraph m and e in edges[m]
 		for some V,E,r, m = [V,E,r] and for all e in E, r[e] is in Set
 			by multigraph_def
 		so op[m,e] is in Set by op_def,edges_def
@@ -39,11 +39,11 @@ proof
 	so thesis by op_def
 end
 
-nodes_for_edge: for all m where multigraph[m], for all e in edges[m],
+nodes_for_edge: for all multigraph m and e in edges[m],
 	nodes_for_edge[m,e] is in Set and |nodes_for_edge[m,e]| = 2 and
 		for all v in nodes_for_edge[m,e], v is in nodes[m]
 proof
-	take any m,e with multigraph[m] and e is in edges[m]
+	take any multigraph m and e in edges[m]
 		1: for some V,E,r, m = [V,E,r] and for all e in E, |r[e]| = 2 and
 			for all n in r[e], n is in V
 				by multigraph_def
@@ -62,24 +62,24 @@ tie-in `edges[m]` with
 		for all m
 			by edges_def,multigraph_def,list_literal,second_def,2_less_3
 
-edges_for_node: define edges_for_node such that for all m where multigraph[m],
+edges_for_node: define edges_for_node such that for all multigraph m,
 	for all v in nodes[m], edges_for_node[m,v] is in Set and
 		for all e, e is in edges_for_node[m,v] iff
 			e is in edges[m] and v is in nodes_for_edge[m,e]
 proof
 	p_def: for some p,
-		for all m,v,S where multigraph[m] and v is in nodes[m] and S is in Set,
+		for all multigraph m and v in nodes[m] and S in Set,
 			p[m,v,S] iff for all e, e is in S iff
 				e is in edges[m] and v is in nodes_for_edge[m,e]
 					by property122a
-	for all m,v where multigraph[m] and v is in nodes[m],
+	for all multigraph m and v in nodes[m],
 		for at most one S in Set, p[m,v,S]
 			by set_equality,p_def
 	so op_def: for some op,
-		for all m,v,S where multigraph[m] and v is in nodes[m] and S is in Set,
+		for all multigraph m and v in nodes[m] and S in Set,
 			op[m,v] = S iff p[m,v,S]
 				by operation122
-	take any m,v with multigraph[m] and v is in nodes[m]
+	take any multigraph m and v in nodes[m]
 		for some q, for all e in edges[m], q[e] iff v is in nodes_for_edge[m,e]
 			by property2a
 		so for some S in Set, p[m,v,S] by specify,p_def
@@ -87,10 +87,10 @@ proof
 	so thesis by p_def,op_def
 end
 
-edges_node_finite: for all m where multigraph[m], for all v in nodes[m],
+edges_node_finite: for all multigraph m and v in nodes[m],
 	edges_for_node[m,v] is finite
 proof
-	take any m,v with multigraph[m] and v is in nodes[m]
+	take any multigraph m and v in nodes[m]
 		so edges_for_node[m,v] ⊆ edges[m] by edges_for_node,subset_def
 	end
 	so thesis by subset_finite
@@ -102,17 +102,17 @@ tie-in `edges_for_node[m,v]` with
 			for all m,v
 				by edges_for_node,edges_node_finite
 
-degree_def: define degree such that for all m where multigraph[m],
-	for all v in nodes[m], degree[m,v] is in N and
-		degree[m,v] = |edges_for_node[m,v]|
+degree_def: define degree such that for all multigraph m and v in nodes[m],
+	degree[m,v] is in N and
+	degree[m,v] = |edges_for_node[m,v]|
 proof
-	for all m,v where multigraph[m] and v is in nodes[m],
+	for all multigraph m and v in nodes[m],
 		for at most one n in N, n = |edges_for_node[m,v]|
 	so for some op,
-		for all m,v,n where multigraph[m] and v is in nodes[m] and n is in N,
+		for all multigraph m and v in nodes[m] and n in N,
 			op[m,v] = n iff n = |edges_for_node[m,v]|
 				by operation122
-	take any m,v with multigraph[m] and v is in nodes[m]
+	take any multigraph m and v in nodes[m]
 		edges_for_node[m,v] is finite
 		so |edges_for_node[m,v]| is in N
 	end
@@ -124,19 +124,17 @@ tie-in `degree[m,v]` with
 			by degree_def
 
 odd_nodes_def: define nodes_of_odd_degree such that
-	for all m where multigraph[m], nodes_of_odd_degree[m] is in Set and for all x,
+	for all multigraph m, nodes_of_odd_degree[m] is in Set and for all x,
 		x is in nodes_of_odd_degree[m] iff x is in nodes[m] and degree[m,x] is odd
 proof
-	p_def: for some p, for all m,S where multigraph[m] and S is in Set,
+	p_def: for some p, for all multigraph m and S in Set,
 		p[m,S] iff for all x,
       x is in S iff x is in nodes[m] and degree[m,x] is odd
         by property12a
-	for all m where multigraph[m], for at most one S in Set, p[m,S]
-		by set_equality,p_def
-	so for some op, for all m,S where multigraph[m] and S is in Set,
-		op[m] = S iff p[m,S]
-			by operation12
-	take any m with multigraph[m]
+	for all multigraph m, for at most one S in Set, p[m,S] by set_equality,p_def
+	so for some op, for all multigraph m and S in Set, op[m] = S iff p[m,S]
+		by operation12
+	take any multigraph m
 		for some q, for all x, q[x] iff x is in nodes[m] and degree[m,x] is odd
 			by property2
 		so for some S in Set, p[m,S] by specify,p_def
@@ -149,14 +147,14 @@ tie-in `nodes_of_odd_degree[m]` with
 		for all m
 			by odd_nodes_def
 
-node_edge: for all m where multigraph[m],
+node_edge: for all multigraph m,
   (for all e in edges[m] and v in nodes_for_edge[m,e],
 		e is in edges_for_node[m,v]) and
 	(for all v in nodes[m] and e in edges_for_node[m,v],
 		v is in nodes_for_edge[m,e])
 			by nodes_for_edge,edges_for_node
 
-edges_node_graph: for all m where multigraph[m],
+edges_node_graph: for all multigraph m,
   for all v in nodes[m] and e in edges_for_node[m,v], e is in edges[m]
 		by edges_for_node
 
@@ -176,7 +174,7 @@ tie-in `path[p,m]` with `path[p,m] implies linked_list[p]` for all p,m
 	by path_def
 
 edges_path_def: define edges_in_path such that
-	for all m,p where multigraph[m] and path[p,m],
+	for all multigraph m and p where path[p,m],
 		for all e, e is in edges_in_path[m,p] iff
 			for some x in p where x != last[p],
 				e = out[x]
@@ -186,14 +184,14 @@ proof
 			q[m,p,S] iff
 				for all e, e is in S iff for some x in p where x != last[p], e = out[x]
 					by property122a
-	for all m,p where multigraph[m] and path[p,m],
+	for all multigraph m and p where path[p,m],
 		for at most one S in Set, q[m,p,S]
 			by q_def,set_equality
 	so for some op,
 		for all m,p,S where multigraph[m] and path[p,m] and S is in Set,
 			op[m,p] = S iff q[m,p,S]
 				by operation122
-	take any m,p with multigraph[m] and path[p,m]
+	take any multigraph m and p with path[p,m]
 		for some r, for all e, r[e] iff
 			e is in edges[m] and for some x in p where x != last[p], e = out[x]
 				by property2
@@ -206,43 +204,43 @@ proof
 	so thesis by q_def
 end
 
-start_def: define start such that for all m,p where multigraph[m] and path[p,m],
+start_def: define start such that for all multigraph m and p where path[p,m],
 	start[m,p] = node[first[p]]
 proof
-	for all m,p where multigraph[m] and path[p,m], for at most one v in nodes[m],
+	for all multigraph m and p where path[p,m], for at most one v in nodes[m],
 		v = node[first[p]]
 	so for some op,
 		for all m,p,v where multigraph[m] and path[p,m] and v is in nodes[m],
 			op[m,p] = v iff v = node[first[p]]
 				by operation122
-	take any m,p with multigraph[m] and path[p,m]
+	take any multigraph m and p with path[p,m]
 		so 1: length[p] >= 1 by path_def,nat_if_not_0
 		p[1] is in p by 1
 		so node[first[p]] is in nodes[m] by path_def,first_def,1
 	end
 end
 
-stop_def: define stop such that for all m,p where multigraph[m] and path[p,m],
+stop_def: define stop such that for all multigraph m and p where path[p,m],
 	stop[m,p] = node[last[p]]
 proof
-	for all m,p where multigraph[m] and path[p,m], for at most one v in nodes[m],
+	for all multigraph m and p where path[p,m], for at most one v in nodes[m],
 		v = node[last[p]]
 	so for some op,
 		for all m,p,v where multigraph[m] and path[p,m] and v is in nodes[m],
 			op[m,p] = v iff v = node[last[p]]
 				by operation122
-	take any m,p with multigraph[m] and path[p,m]
+	take any multigraph m and p with path[p,m]
 		so 1: length[p] >= 1 by path_def,nat_if_not_0
 		p[length[p]] is in p by 1
 		so node[last[p]] is in nodes[m] by path_def,last_def,1
 	end
 end
 
-start_stop: for all m,p where multigraph[m] and path[p,m],
+start_stop: for all multigraph m and p where path[p,m],
   start[m,p] = node[first[p]] and stop[m,p] = node[last[p]]
 		by start_def,stop_def
 
-first_last: for all m,p where multigraph[m] and path[p,m],
+first_last: for all multigraph m and p where path[p,m],
   for all x in p,
     (if x != first[p] then into[x] is in edges[m]) and
     (if x != last[p] then out[x] is in edges[m])
@@ -352,14 +350,14 @@ proof
 	so thesis by subset_finite,out_def,subset_def
 end
 
-path_edge_node: for all m,p where multigraph[m] and path[p,m],
+path_edge_node: for all multigraph m and p where path[p,m],
   for all e in edges_in_path[m,p] and v in nodes_for_edge[m,e],
     for some x in p, node[x] = v and
 			((x != first[p] and into[x] = e) or
 			 (x != last[p] and out[x] = e))
 proof
-	take any m,p with multigraph[m] and path[p,m]
-  	take any e in edges_in_path[m,p] and v in nodes_for_edge[m,e]
+	take any multigraph m and p with path[p,m]
+		take any e in edges_in_path[m,p] and v in nodes_for_edge[m,e]
 			1: for some x in p where x != last[p], e = out[x] by edges_path_def
 			2: for some y in p where y != first[p], succ[p,x,y]
 				by succ_exists,succ_not_first_last,1
@@ -368,12 +366,12 @@ proof
 	so thesis by 1,2,2_set,path_def
 end
 
-path_in_out: for all m,p where multigraph[m] and path[p,m],
+path_in_out: for all multigraph m and p where path[p,m],
   for all x in p,
 		(if x != first[p] then into[x] is in edges_for_node[m,node[x]]) and
 		(if x != last[p] then out[x] is in edges_for_node[m,node[x]])
 proof
-	take any m,p with multigraph[m] and path[p,m]
+	take any multigraph m and p with path[p,m]
 		for all x in p where x != first[p], into[x] is in edges_for_node[m,node[x]]
 			by pred_exists,path_def,node_edge,2_set
 		for all x in p where x != last[p], out[x] is in edges_for_node[m,node[x]]
@@ -395,11 +393,11 @@ tie-in `eulerian_path[p,m]` with `eulerian_path[p,m] implies path[p,m]`
 	for all p,m
 		by eulerian_def
 
-eulerian_succ: for all m,p where multigraph[m] and eulerian_path[p,m],
+eulerian_succ: for all multigraph m and p where eulerian_path[p,m],
 	for all x,y in p where x != last[p] and y != first[p],
 		if out[x] = into[y] then succ[p,x,y]
 proof
-	take any m,p with multigraph[m] and eulerian_path[p,m]
+	take any multigraph m and p with eulerian_path[p,m]
 		take any x,y in p with x != last[p] and y != first[p]
 			suppose out[x] = into[y]
 				1: for some z in p, succ[p,x,z] by succ_exists
@@ -412,8 +410,8 @@ proof
 end
 
 eulerian_in_out_disjoint:
-	for all m,p where multigraph[m] and eulerian_path[p,m],
-  	for all v in nodes[m], disjoint[incoming[m,p,v], outgoing[m,p,v]]
+	for all multigraph m and p where eulerian_path[p,m],
+		for all v in nodes[m], disjoint[incoming[m,p,v], outgoing[m,p,v]]
 proof
 	take any m,p,v with multigraph[m] and eulerian_path[p,m] and v is in nodes[m]
 		suppose not disjoint[incoming[m,p,v], outgoing[m,p,v]]
@@ -430,11 +428,11 @@ proof
 	end
 end
 
-internal_in_out_equal: for all m,p where multigraph[m] and eulerian_path[p,m],
+internal_in_out_equal: for all multigraph m and p where eulerian_path[p,m],
   for all v in nodes[m] where v != start[m,p] and v != stop[m,p],
     |incoming[m,p,v]| = |outgoing[m,p,v]|
 proof
-  take any m,p with multigraph[m] and eulerian_path[p,m]
+  take any multigraph m and p with eulerian_path[p,m]
     r_def: for some r, for all e1,e2 in edges[m],
       r[e1,e2] iff for some x in p where x != first[p] and x != last[p],
 				into[x] = e1 and out[x] = e2
@@ -499,11 +497,11 @@ proof
   end
 end
 
-internal_even: for all m,p where multigraph[m] and eulerian_path[p,m],
+internal_even: for all multigraph m and p where eulerian_path[p,m],
   for all v in nodes[m] where v != start[m,p] and v != stop[m,p],
     degree[m,v] is even
 proof
-  take any m,p with multigraph[m] and eulerian_path[p,m]
+  take any multigraph m and p with eulerian_path[p,m]
     take 1: any v in nodes[m] where v != start[m,p] and v != stop[m,p]
 			take any e in edges_for_node[m,v]
 			  so for some x in p, node[x] = v and
@@ -531,13 +529,13 @@ proof
   end
 end
 
-eulerian_path_odd_degree: for all m where multigraph[m],
+eulerian_path_odd_degree: for all multigraph m,
   if for some p, eulerian_path[p,m], then |nodes_of_odd_degree[m]| <= 2
 proof
-  take any m,p with multigraph[m] and eulerian_path[p,m]
+  take any multigraph m and p with eulerian_path[p,m]
 		take any v in nodes[m] where degree[m,v] is odd
       so v = start[m,p] or v = stop[m,p] by internal_even,not_even_and_odd
-		end	
+		end
     so for all x in nodes_of_odd_degree[m], x = start[m,p] or x = stop[m,p]
       by odd_nodes_def
     so |nodes_of_odd_degree[m]| <= 2 by card_of_two

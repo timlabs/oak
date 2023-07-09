@@ -143,13 +143,13 @@ linked_list_def: define linked_list such that for all l,
 tie-in `linked_list[l]` with `linked_list[l] implies l is in List` for all l
 	by linked_list_def
 
-linked_distinct: for all l where linked_list[l], for all i,j in indexes[l],
+linked_distinct: for all linked_list l and i,j in indexes[l],
 	if i != j then l[i] != l[j]
 proof
-	take any l with linked_list[l]
+	take any linked_list l
 		P_def: for some P, for all n in N,
 					   P[n] iff for all i,j in indexes[l] where i >= n and j >= n,
-						  	if i < j then l[i] != l[j]
+						   if i < j then l[i] != l[j]
 			by property2a
 		P[length[l]] by index_def,P_def,total_order
 		take t: any n in N where n < length[l]
@@ -182,10 +182,10 @@ proof
 	so thesis by P_def,index_def,total_order,0_less_1
 end
 
-next_exists: for all l where linked_list[l], for all x in l,
+next_exists: for all linked_list l and x in l,
 	if x != last[l] then next[x] is in l and next[x] != first[l]
 proof
-	take 0: any l and x in l with linked_list[l] where x != last[l]
+	take 0: any linked_list l and x in l where x != last[l]
 		1: for some i in indexes[l], l[i] = x by index_prop
 		1a: i >= 1 and i < length[l] by index_def,last_def,1,0
 		2: i+1 is in indexes[l] by index_def,nat_ineq_2,1a,less_equal_one
@@ -197,10 +197,10 @@ proof
 	end
 end
 
-prev_exists: for all l where linked_list[l], for all y in l,
- 	if y != first[l] then for some x in l, next[x] = y and x != last[l]
+prev_exists: for all linked_list l and y in l,
+	if y != first[l] then for some x in l, next[x] = y and x != last[l]
 proof
-	take any l and y in l with linked_list[l] where y != first[l]
+	take any linked_list l and y in l where y != first[l]
 		1: for some j in indexes[l], l[j] = y by index_prop
 		2: so j > 1 and j <= length[l] by index_def,first_def,1
 		3: for some i in N, j = i+1 by 2,0_less_1,nat_reduce
@@ -212,7 +212,7 @@ proof
 	end
 end
 
-succ_def: define succ such that for all l where linked_list[l], for all x,y,
+succ_def: define succ such that for all linked_list l and x,y,
 	succ[l,x,y] iff x is in l and x != last[l] and next[x] = y
 proof
 	for some p, for all l,x,y,
@@ -222,16 +222,16 @@ proof
 	so thesis by next_exists
 end
 
-succ_exists: for all l where linked_list[l],
+succ_exists: for all linked_list l,
 	for all x in l where x != last[l],
 		for some y in l, succ[l,x,y]
 			by succ_def,next_exists
 
-pred_exists: for all l where linked_list[l],
+pred_exists: for all linked_list l,
 	for all y in l where y != first[l],
 		for some x in l, succ[l,x,y]
 			by succ_def,prev_exists
 
-succ_not_first_last: for all l where linked_list[l],
+succ_not_first_last: for all linked_list l,
 	for all x,y in l where succ[l,x,y], x != last[l] and y != first[l]
 		by succ_def,next_exists
