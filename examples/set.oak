@@ -32,11 +32,6 @@ set_literal: axiom define {} such that for all x,a,b,c,d,e,f,g,
   (x is in {a,b,c,d,e,f} iff x=a or x=b or x=c or x=d or x=e or x=f) and
   (x is in {a,b,c,d,e,f,g} iff x=a or x=b or x=c or x=d or x=e or x=f or x=g)
 
-# Tao - Analysis I - Axiom 3.4
-union_def: axiom define ∪ such that for all A,B in Set,
-	A ∪ B is in Set and for all x,
-    x is in A ∪ B iff x is in A or x is in B
-
 # Tao - Analysis I - Axiom 3.5
 specify: axiom for all A in Set and p,
   for some S in Set, for all x, x is in S iff x is in A and p[x]
@@ -63,6 +58,10 @@ function3: axiom for all op and A,B in Set,
 	if for all a in A, op[a] is in B, then
 		for some f in Functions[A,B], for all a in A, f[a] = op[a]
 
+# Tao - Analysis I - Axiom 3.11
+union: axiom for all A in Set where for all x in A, x is in Set,
+  for some B in Set, for all x, x is in B iff for some C in A, x is in C
+
 ###############################################################################
 
 tie-in `N` with `N is in Set` by infinity
@@ -72,6 +71,14 @@ tie-in `f is in Functions[A,B]` with
 		f is in Function and domain[f] = A and range[f] = B`
 			for all f,A,B
 				by function2
+
+tie-in `domain[f]` with
+  `if f is in Function then domain[f] is in Set` for all f
+    by function1
+
+tie-in `range[f]` with
+  `if f is in Function then range[f] is in Set` for all f
+    by function1
 
 tie-in `{a}` with `{a} is in Set` for all a by set_literal
 tie-in `{a,b}` with `{a,b} is in Set` for all a,b by set_literal
@@ -166,6 +173,26 @@ disjoint_def: define disjoint such that for all A,B,
 	disjoint[A,B] iff A is in Set and B is in Set and
     for no x, x is in A and x is in B
       by property22
+
+union_def: define ∪ such that for all A,B in Set,
+	A ∪ B is in Set and for all x,
+    x is in A ∪ B iff x is in A or x is in B
+proof
+	q_def: for some q, for all A,B,C, q[A,B,C] iff
+		A is in Set and B is in Set and C is in Set and
+		for all x, x is in C iff x is in A or x is in B
+			by property222
+	take any A,B in Set
+    for all S in {A,B}, S is in Set by set_literal
+    so for some C in Set, for all x,
+      x is in C iff for some S in {A,B}, x is in S
+        by union
+		1: so for some C in Set, q[A,B,C] by q_def,set_literal
+		for at most one C in Set, q[A,B,C] by set_equality,q_def
+	end
+	so for some f, for all A,B,C in Set, f[A,B] = C iff q[A,B,C] by operation222
+	so thesis by q_def,1
+end
 
 tie-in `A ∪ B` with `if A is in Set and B is in Set then A ∪ B is in Set`
 	for all A,B
@@ -281,20 +308,20 @@ proof
   so thesis by set_equality
 end
 
-image_def: define image such that for all f in Function and S ⊆ domain[f],
+image_def: define image such that for all f in Function and S in Set,
 	image[f,S] is in Set and for all y,
 		y is in image[f,S] iff for some x in S, f[x] = y
 proof
 	q_def: for some q, for all f,S,T, q[f,S,T] iff
 		f is in Function and S is in Set and T is in Set and
-			(S ⊆ domain[f] and for all y, y is in T iff for some x in S, f[x] = y)
+			(S is in Set and for all y, y is in T iff for some x in S, f[x] = y)
 				by property222
 	for all f in Function and S in Set, for at most one T in Set, q[f,S,T]
 		by set_equality,q_def
 	so op_def: for some op, for all f in Function and S,T in Set,
 		op[f,S] = T iff q[f,S,T]
 			by operation222
-	take any f in Function and S ⊆ domain[f]
+	take any f in Function and S in Set
 		for some T in Set, for all y, y is in T iff for some x in S, f[x] = y
 			by replace
 		so q[f,S,T] by q_def
@@ -304,9 +331,13 @@ proof
 end
 
 tie-in `image[f,S]` with
-  `if f is in Function and S ⊆ domain[f], then image[f,S] is in Set`
+  `if f is in Function and S is in Set, then image[f,S] is in Set`
     for all f,S
       by image_def
+
+image_subset: for all f in Function and S in Set,
+  if S ⊆ domain[f] then image[f,S] ⊆ range[f]
+    by image_def,subset_def,function1
 
 one_to_one: define one_to_one such that for all f in Function and S in Set,
 	one_to_one[f,S] iff for all x,y in S where x != y, f[x] != f[y]

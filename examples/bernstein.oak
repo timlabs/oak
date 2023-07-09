@@ -1,0 +1,178 @@
+include "set.oak"
+
+for all A,B in Set and f in Functions[A,B] and g in Functions[B,A],
+  if one_to_one[f,A] and one_to_one[g,B] then
+    for some h in Function, bijection[h,A,B]
+proof
+  take any A,B in Set and f in Functions[A,B] and g in Functions[B,A]
+    suppose one: one_to_one[f,A] and one_to_one[g,B]
+
+      assume e_def: for some E,
+        E[0] = A - image[g,B] and for all k in N,
+        E[k+1] = image[g, image[f,E[k]]]
+
+      e_set: for all k in N, E[k] is in Set
+      proof
+        E[0] is in Set by e_def
+        take any k in N where E[k] is in Set
+          so image[g, image[f,E[k]]] is in Set
+          so E[k+1] is in Set by e_def
+        end
+        for some p, for all k in N, p[k] iff E[k] is in Set by property2a
+        so thesis by induction
+      end
+
+      tie-in `E[k]` with `if k is in N then E[k] is in Set` for all k by e_set
+
+      c_def: for some C in Set, for all x,
+        x is in C iff for some k in N, x is in E[k]
+      proof
+        1: for some F in Set, for all x, x is in F iff for some k in N, x = E[k]
+          by replace
+        for some C in Set, for all x, x is in C iff for some S in F, x is in S
+          by union,1,e_set
+        so thesis by 1
+      end
+
+      c_a: C ⊆ A
+      proof
+        q_def: for some q, for all k in N, q[k] iff E[k] ⊆ A by property2a
+        q[0] by e_def,q_def,subset_def,setdiff_def
+        take any k in N where q[k]
+          so E[k] ⊆ A by q_def
+          so image[f,E[k]] ⊆ B by image_subset
+          so image[g, image[f,E[k]]] ⊆ A by image_subset
+          so q[k+1] by e_def,q_def
+        end
+        so for all k in N, q[k] by induction
+        so thesis by subset_def,c_def,q_def
+      end
+
+      tie-in `x is in C` with `x is in C implies x is in A` for all x
+        by c_a,subset_def
+
+      d_def: for some D in Set, for all x,
+        x is in D iff for some k in N, x is in E[k+1]
+      proof
+        for some p, for all x in C, p[x] iff for some k in N, x is in E[k+1]
+          by property2a
+        so for some D in Set, for all x,
+          x is in D iff x is in C and for some k in N, x is in E[k+1]
+            by specify
+        take any k in N and x in E[k+1]
+          x is in C by c_def
+        end
+      end
+
+      d_c: D ⊆ C
+      proof
+        take any x in D
+          for some k in N, x is in E[k+1] by d_def
+          so x is in C by c_def
+        end
+        so thesis by subset_def
+      end
+
+      c_union: C = E[0] ∪ D
+        by nat_reduce,d_def,subset_def,c_def,d_c,set_equality,union_def
+
+      c_prop: image[g, image[f,C]] = D
+      proof
+        take any x in image[g, image[f,C]]
+          for some y in image[f,C], g[y] = x by image_def
+          for some k in N, y is in image[f,E[k]] by image_def,c_def
+          so x is in image[g, image[f,E[k]]] by image_def
+          so x is in E[k+1] by e_def
+          so x is in D by d_def
+        end
+        take any x in D
+          for some k in N, x is in E[k+1] by d_def
+          so x is in image[g, image[f,E[k]]] by e_def
+          so for some y in image[f,E[k]], g[y] = x by image_def
+          y is in image[f,C] by image_def,c_def
+          so x is in image[g, image[f,C]] by image_def
+        end
+        so thesis by set_equality
+      end
+
+      h_def: for some h in Functions[A,B], for all x in A,
+        (if x is in C then h[x] = f[x]) and
+        (if x is not in C then g[h[x]] = x)
+      proof
+        p_def: for some p, for all x in A and y in B, p[x,y] iff
+          (if x is in C then y = f[x]) and
+          (if x is not in C then g[y] = x)
+            by property22a
+        for all x in A, for at most one y in B, p[x,y] by p_def,one,one_to_one
+        op_def: so for some op, for all x in A and y in B, op[x] = y iff p[x,y]
+          by operation22
+        take any x in A
+          if x is in C, then op[x] is in B by op_def,p_def,function1
+          suppose 1: x is not in C
+            x is not in E[0] by c_def,1
+            so x is in image[g,B] by e_def,setdiff_def
+            so for some y in B, g[y] = x by image_def
+            so p[x,y] by p_def,1
+            so op[x] is in B by op_def
+          end
+        end
+        so thesis by function3,op_def,p_def
+      end
+
+      one_to_one[h,A]
+      proof
+        take 1: any x1,x2 in A where h[x1] = h[x2]
+          suppose x1 is in C and x2 is in C
+            so h[x1] = f[x1] and h[x2] = f[x2] by h_def
+            so f[x1] = f[x2] by 1
+            so x1 = x2 by one,one_to_one
+          end
+          suppose x1 is not in C and x2 is not in C
+            so g[h[x1]] = x1 and g[h[x2]] = x2 by h_def
+            g[h[x1]] = g[h[x2]] by 1
+            so x1 = x2
+          end
+          suppose 2: x1 is in C and x2 is not in C
+            h[x1] = f[x1] and g[h[x2]] = x2 by h_def,2
+            so g[f[x1]] = x2 by 1
+            g[f[x1]] is in image[g, image[f,C]] by 2,image_def
+            so x2 is in C by c_prop,d_c,subset_def
+            so contradiction by 2
+          end
+          suppose 3: x1 is not in C and x2 is in C
+            h[x2] = f[x2] and g[h[x1]] = x1 by h_def,3
+            so g[f[x2]] = x1 by 1
+            g[f[x2]] is in image[g, image[f,C]] by 3,image_def
+            so x1 is in C by c_prop,d_c,subset_def
+            so contradiction by 3
+          end
+        end
+        so thesis by one_to_one
+      end
+
+      for all y in B, for some x in A, h[x] = y # onto
+      proof
+        take any y in B
+          tie-in `g[y]` with `g[y] is in A` by function1
+          suppose y is in image[f,C]
+            so for some x in C, f[x] = y by image_def
+            so h[x] = y by h_def
+          end
+          suppose y is not in image[f,C]
+            take any y' in image[f,C] where g[y'] = g[y]
+              y' is in B by c_a,image_subset,subset_def
+              so y' = y by one,one_to_one
+            end
+            so g[y] is not in image[g, image[f,C]] by image_def
+            g[y] is not in E[0] by e_def,setdiff_def,image_def
+            so g[y] is not in C by c_prop,c_union,union_def
+            so g[h[g[y]]] = g[y] by h_def
+            so h[g[y]] = y by one,one_to_one,function1
+          end
+        end
+      end
+
+      so bijection[h,A,B] by biject_def,function1
+    end
+  end
+end
