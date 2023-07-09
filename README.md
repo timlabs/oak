@@ -28,6 +28,11 @@ oak [-v] [-c] [-w] [filename]
 
 ## Version history
 
+### v0.6 - 2023-07-09
+* added support for predicates in quantifiers, like `for all odd n`
+* gave `iff`, `if`, and `implies` lower precedence
+* new examples: `godel_disjunction.oak`, `product.oak`, `bernstein.oak`, `recursion.oak`
+
 ### v0.5 - 2022-04-19
 * new feature: parameterized tie-ins
 * new examples: `list.oak`, `graph.oak`, `konigsberg.oak`, `leibniz.oak`
