@@ -1,0 +1,19 @@
+# "Either mathematics is incompletable in this sense, that its evident axioms
+# can never be comprised in a finite rule, that is to say, the human mind (even
+# within the realm of pure mathematics) infinitely surpasses the powers of any
+# finite machine, or else there exist absolutely unsolvable diophantine
+# problems of the type specified" [Gödel, 1951]
+
+# T = mathematical truth, K = humanly knowable mathematical truth
+axiom every formal_system is computably_enumerable
+axiom T is not computably_enumerable
+axiom K ⊆ T
+
+# some basic set theory
+axiom for all A,B, A = B iff (A ⊆ B and B ⊆ A)
+axiom for all A,B, A ⊉ B iff not B ⊆ A
+axiom for all A,B, A ⊊ B iff (A ⊆ B and A != B)
+
+# Gödel's disjunction
+so for all F where formal_system[F] and F ⊆ T,
+  F ⊉ K or K ⊊ T
