@@ -71,7 +71,7 @@ def conjunction_tree trees
 end
 
 def contains_quantifiers? tree
-	tree.contains?(:for_all) or tree.contains?(:for_some)
+	Tree::Quantifiers.any? {|quantifier| tree.contains? quantifier}
 end
 
 def equal_up_to_variable_names? tree1, tree2, refs1 = {}, refs2 = {}, level = 0
@@ -82,7 +82,7 @@ def equal_up_to_variable_names? tree1, tree2, refs1 = {}, refs2 = {}, level = 0
 		return false unless tree1.subtrees.size == tree2.subtrees.size
 		pairs = [tree1.subtrees, tree2.subtrees].transpose
 		case tree1.operator
-			when :for_all, :for_some, :for_at_most_one
+			when *Tree::Quantifiers
 				last1, last2 = {}, {}
 				zipped = tree1.subtrees[0].operator.zip tree2.subtrees[0].operator
 				zipped.each_with_index {|(var1, var2), i|
@@ -230,7 +230,7 @@ def substitute tree, substitution, bound = [] # faster than Set for some reason
 	# performs substitution on tree, where substitution keys are strings and
 	# values are trees.  does not substitute again within the values.
   case tree.operator
-		when :for_all, :for_some, :for_at_most_one
+		when *Tree::Quantifiers
 			return tree if tree.subtrees.size == 1 # empty quantifier body
       variables = tree.subtrees[0].operator
 			subtree = substitute tree.subtrees[1], substitution, (bound + variables)

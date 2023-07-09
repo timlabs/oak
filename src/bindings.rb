@@ -345,7 +345,7 @@ class Bindings
 	end
 
 	def matches_in_internal tie_in, tree, quantified
-		if [:for_all, :for_some, :for_at_most_one].include? tree.operator
+		if Tree::Quantifiers.include? tree.operator
 			return [] if tree.subtrees.size == 1
 			# start = Time.now
 			vars = tree.subtrees[0].operator

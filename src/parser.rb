@@ -796,8 +796,7 @@ class Tree
 				end
 				sub_results = subtrees.collect {|subtree| subtree.free_variables}
 				result = sub_results.flatten.uniq
-				quantifiers = [:for_all, :for_some, :for_at_most_one]
-				result -= @subtrees[0].operator if quantifiers.include? @operator
+				result -= @subtrees[0].operator if Quantifiers.include? @operator
 				result
 		end
 	end
@@ -823,6 +822,8 @@ class Tree
 		end
 	end
 
+	Quantifiers = [:for_all, :for_some, :for_at_most_one]
+
   def to_s
 		return @to_s if @to_s
 		infixes = [:and, :or, :implies, :iff, :equals]
@@ -833,7 +834,7 @@ class Tree
 					operand = '(' + operand + ')'
 				end
 				'not ' + operand
-			when :for_all, :for_some, :for_at_most_one
+			when *Quantifiers
 				if @subtrees.size == 1
 					"there is a #{@subtrees[0]}"
 				else
