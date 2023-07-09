@@ -6,7 +6,7 @@ proof that the set of primes is infinite.
 #/
 
 ###############################################################################
-include "set.oak"
+include "product.oak"
 ###############################################################################
 
 divides_def: define divides such that for all a,b in N,
@@ -98,7 +98,7 @@ proof
 			3: A is in power[N] and B is in power[N] by 2,power_def,subset_def
 			so product[B] is in N by P_def,2,3
 			so d * product[B] is in N by power_def,subset_def
-			so product[A] is in N by product_def,1
+			so product[A] is in N by product_def,1,subset_finite,3
 			so P[A] by P_def,3
 		end
 		so product[S] is in N by set_induction,P_def
@@ -123,7 +123,7 @@ proof
 				so finite[B] and product[B] > 0 by subset_finite,P_def,3,4
 				d is in N and d > 0 by 1,subset_def,power_def
 				so d * product[B] > 0 by mult_positive,product_set_in_N,4
-				so product[A] > 0 by product_def,2
+				so product[A] > 0 by product_def,2,subset_finite,4
 				so P[A] by P_def,4
 			end
 		end

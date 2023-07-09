@@ -1,0 +1,317 @@
+/#
+
+Recursive definition of the product of a finite set of natural numbers.  This is
+long because inside it, we are effectively proving a recursion theorem.
+
+Once we need other recursive definitions, should abstract out the recursion
+theorem from here so that it can be used for those as well.
+
+#/
+
+include "set.oak"
+
+product_def: define product such that for all finite S in power[N],
+	product[∅] = 1 and for all x in S,
+	product[S] = x * product[S - {x}]
+proof
+	/# Proving that recursive operations exist seems like a magic trick, but is
+	actually possible.  See Tao - Analysis I, Proposition 2.1.16 and Exercise
+	3.5.12.  The proof idea is first to prove that for each cardinality, a
+	recursive function exists that "handles" sets up to that cardinality.  Then
+	make an operation that "combines" all of those functions into one. #/
+
+	PN_def: for some PN, for all n in N, PN[n] is in Set and for all S,
+		S is in PN[n] iff S is in power[N] and S is finite and |S| <= n
+	proof
+		pn_def: for some pn, for all S,n,
+			pn[S,n] iff S is in power[N] and n is in N and (S is finite and |S| <= n)
+				by property22
+		for all n in N, for at most one S in Set, for all S',
+			S' is in S iff pn[S',n]
+				by set_equality
+		so op_def: for some op, for all n in N and S in Set,
+			op[n] = S iff for all S', S' is in S iff pn[S',n]
+				by operation22
+		take any n in N
+			for some r, for all x,
+				r[x] iff x is in power[N] and (x is finite and |x| <= n)
+					by property2
+			for some S in Set, for all S', S' is in S iff S' is in power[N] and r[S']
+				by specify
+			so op[n] is in Set by op_def,pn_def
+		end
+		so thesis by op_def,pn_def
+	end
+	
+	tie-in `S is in PN[n]` with `if n is in N and S is in PN[n] then S is in Set`
+		for all S,n
+			by PN_def,power_def,subset_def
+
+	PN_subset: for all n in N and S in PN[n] and A ⊆ S, A is in PN[n]
+	proof
+		take any n in N and S in PN[n] and A ⊆ S
+			S is in power[N] and S is finite and |S| <= n by PN_def
+			so A is in power[N] and A is finite and |A| <= n
+				by power_subset,subset_finite,total_order
+			so A is in PN[n] by PN_def
+		end
+	end
+
+	PN_proper_subset: for all n in N and S in PN[n+1] and A ⊂ S, A is in PN[n]
+	proof
+		take any n in N and S in PN[n+1] and A ⊂ S
+			1: S is in power[N] and S is finite and |S| <= n+1 by PN_def
+			2: A is in power[N] and A is finite by 1,power_subset,subset_finite
+			|A| < |S| by 1,proper_card 
+			so |A| <= n by 1,2,nat_ineq_2,total_order
+			so A is in PN[n] by 2,PN_def
+		end
+	end
+
+	p_def: for some p, for all f,n,
+		p[f,n] iff f is in Function and n is in N and
+			(f[∅] = 1 and for all S in PN[n] and x in S, f[S] = x * f[S-{x}])
+		by property22
+
+	p_prop: for all f,n where p[f,n], for all S in PN[n], f[S] is in N
+	proof
+		take 1: any f,n and S in PN[n] where p[f,n]
+			tie-in `n` with `n is in N` by 1,p_def
+			q_def: for some q, for all A in Set, q[A] iff f[A] is in N
+				by property2a
+			take hyp: any A ⊆ S where for all B ⊂ A, q[B]
+				q[∅] by 1,p_def,q_def
+				suppose A != ∅
+					so there is an x in A by set_not_empty
+					tie-in `x` with `x is in N` by power_def,subset_def,PN_def
+					A-{x} ⊂ A by setdiff_element
+					so f[A-{x}] is in N by hyp,q_def
+					so x * f[A-{x}] is in N
+					so f[A] is in N by 1,p_def,PN_subset
+					so q[A] by q_def
+				end
+			end
+			so q[S] by set_induction,PN_def
+			so f[S] is in N by q_def
+		end
+	end
+
+	p_less: for all f,n where p[f,n], for all m in N where m <= n, p[f,m]
+	proof
+		take 1: any f,n where p[f,n]
+			tie-in `n` with `n is in N` by 1,p_def
+			take 2: any m in N where m <= n
+				take any S in PN[m]
+					S is in PN[n] by PN_def,total_order,finite_def,2
+				end
+				so p[f,m] by p_def,1
+			end
+		end
+	end
+
+	part1: for all n in N, for some f, p[f,n]
+	proof
+		/# Here we do a proof by induction: first make a function that handles the
+		empty set, then show that for any function handling a given cardinality, we
+		can build the next one. #/
+		
+		q_def: for some q, for all n in N, q[n] iff for some f, p[f,n] by property2a
+
+		q[0]
+		proof
+			for some op, for all S in PN[0], op[S] = 1 by operation2
+			∅ is in PN[0] by PN_def,card_0,empty_power
+			so for some f in Functions[PN[0],N], f[∅] = 1 by function3,PN_def
+			take any S in PN[0]
+				so S is in power[N] and S is finite and |S| <= 0 by PN_def
+				so S = ∅ by card_at_most_zero
+			end
+			so p[f,0] by p_def,empty_def,PN_def
+			so q[0] by q_def
+		end
+
+    take any n in N where q[n]
+			so f_def_orig: for some f, p[f,n] by q_def
+			f_def: f[∅] = 1 and
+				for all S in PN[n] and x in S, f[S] = x * f[S-{x}]
+					by p_def,f_def_orig
+
+			r_def: for some r, for all S in PN[n+1] and m in N, r[S,m] iff
+        (if |S| < n+1 then m = f[S]) and
+        (if |S| = n+1 then for all x in S, m = x * f[S-{x}])
+          by property22a
+
+			take any S in PN[n+1] and x in S
+				t0: S-{x} is in PN[n] by setdiff_element,PN_proper_subset
+				t1: f[S - {x}] is in N by t0,p_prop,f_def_orig
+			end
+			t2: |∅| < n+1 by card_0,nat_greater_eq_0,nat_ineq_2
+
+			r_prop: r[∅,1] and for all S in PN[n+1] and x in S,
+				r[S, x * f[S-{x}]]
+			proof
+				r[∅,1] by f_def,r_def,t2,PN_def,empty_power
+				take any S in PN[n+1] and x in S
+					tie-in `x` with `x is in N` by power_element,PN_def
+					tie-in `|S|` with `|S| is in N` by finite_def,PN_def
+
+					suppose |S| < n+1
+						so S is in PN[n] by nat_ineq_2,PN_def
+						so f[S] = x * f[S-{x}] by f_def
+					end
+
+					suppose |S| = n+1
+						take 1: any y in S where y != x
+							tie-in `y` with `y is in N` by power_element,PN_def
+
+							2: f[S-{x}] = y * f[S-{x,y}]
+							proof
+								y is in S-{x} by setdiff_def,1,1_set
+								S-{x} is finite and S-{x} is in power[N] and |S-{x}| <= n
+									by t0,PN_def
+								so f[S-{x}] = y * f[(S-{x})-{y}] by f_def,PN_def
+								(S-{x})-{y} = S-{x,y} by set_drop_two
+								so thesis
+							end
+				
+							3: f[S-{y}] = x * f[S-{x,y}]
+							proof
+								x is in S-{y} by setdiff_def,1,1_set
+								S-{y} is in PN[n] by setdiff_element,PN_proper_subset
+								so f[S-{y}] = x * f[(S-{y})-{x}] by f_def
+								(S-{y})-{x} = S-{y,x} by set_drop_two
+								so thesis by set_equality,2_set
+							end
+							
+							4: f[S-{x,y}] is in N
+							proof
+								S-{x,y} ⊂ S by setdiff_proper,2_set
+								so S-{x,y} is in PN[n] by PN_proper_subset
+								so thesis by p_prop,f_def_orig
+							end
+
+							5: let z = y * f[S-{y}]
+							z = y * (x * f[S-{x,y}]) by 3,5
+							so z = x * (y * f[S-{x,y}]) by 4,mult_assoc,mult_commute
+							so z = x * f[S-{x}] by 2
+							so x * f[S-{x}] = y * f[S-{y}] by 5
+						end
+					end
+
+					so r[S, x * f[S-{x}]] by r_def,t1
+				end
+			end
+
+			take any S in PN[n+1]
+				for at most one m in N, r[S,m] by r_def,t2,PN_def,set_not_empty
+			end
+
+     	so op2_def: for some op2, for all S in PN[n+1] and m in N,
+			 	op2[S] = m iff r[S,m]
+					by operation22
+
+			take any S in PN[n+1]
+				r[∅,1] by r_prop
+				take any x in S
+					x is in N by power_element,PN_def
+					f[S-{x}] is in N by t1
+					so x * f[S-{x}] is in N
+					r[S, x * f[S-{x}]] by r_prop
+				end
+				so for some m in N, r[S,m] by set_not_empty
+				so op2[S] is in N by op2_def
+			end
+
+			PN[n+1] is in Set by PN_def
+			
+			so f2_def: for some f2 in Functions[PN[n+1],N],
+				for all S in PN[n+1], f2[S] = op2[S]
+					by function3
+
+			f2_prop: f2[∅] = 1 and for all S in PN[n+1] and x in S,
+				f2[S] = x * f[S-{x}]
+			proof
+				r[∅,1] by r_prop
+				so f2[∅] = 1 by f2_def,op2_def,PN_def,t2,empty_power
+				take any S in PN[n+1] and x in S
+					r[S, x * f[S-{x}]] by r_prop
+					so f2[S] = x * f[S-{x}] by f2_def,op2_def,t1
+				end
+			end
+			
+			f2_prop2: for all S in PN[n], f2[S] = f[S]
+			proof
+				take any S in PN[n]
+					if S = ∅ then f2[S] = f[S] by f_def,f2_prop
+					take any x in S
+						S is in power[N] and S is finite and |S| <= n by PN_def
+						so S is in PN[n+1] by nat_ineq_2,PN_def
+						f[S] = x * f[S-{x}] by f_def
+						so f2[S] = f[S] by f2_prop
+					end
+					so f2[S] = f[S] by set_not_empty
+				end
+			end
+			
+			for all S in PN[n+1] and x in S, f2[S] = x * f2[S - {x}]
+				by f2_prop,f2_prop2,t0
+
+			so p[f2,n+1] by p_def,f2_prop,PN_def
+      so q[n+1] by q_def
+    end
+		
+    so for all n in N, q[n] by induction
+    so thesis by q_def
+  end
+
+	/# Now that we have a separate recursive function for each cardinality, we
+	will "combine" them into a single operation. #/
+	
+	for all S in power[N], for at most one m in N,
+		for some f where p[f,|S|], f[S] = m
+	proof
+		take 1: any S in power[N] and f,g where p[f,|S|] and p[g,|S|]
+			tie-in `S` with `S is finite` by p_def,finite_def,1
+			q_def: for some q, for all T ⊆ S, q[T] iff f[T] = g[T] by property2a
+			take hyp: any A ⊆ S where for all B ⊂ A, q[B]
+				if A = ∅ then f[A] = g[A] by p_def,1
+				take any x in A
+					2: A is in PN[|S|] by PN_def,power_subset,subset_finite
+					f[A] = x * f[A-{x}] by p_def,1,2
+					now
+						A-{x} ⊂ A by setdiff_element
+						so q[A-{x}] by hyp
+					end
+					so f[A] = x * g[A-{x}] by q_def,setdiff_subset
+					so f[A] = g[A] by p_def,1,2
+				end
+				so q[A] by q_def,set_not_empty
+			end
+			so q[S] by set_induction
+			so f[S] = g[S] by q_def,subset_def
+		end
+	end
+
+	so op_def: for some op, for all S in power[N] and m in N,
+		op[S] = m iff for some f where p[f,|S|], f[S] = m
+			by operation22
+
+	op[∅] = 1 by op_def,part1,p_def,empty_power
+
+	for all finite S in power[N] and x in S, op[S] = x * op[S - {x}]
+	proof
+		take any finite S in power[N]
+			1: for some f, p[f,|S|] by part1
+			take any x in S
+				op[S] = x * f[S-{x}] by 1,p_def,PN_def,op_def,p_prop
+				now
+					2: S-{x} is in power[N] by power_def,setdiff_def,subset_def
+					3: S-{x} is finite and |S-{x}| <= |S| by card_drop,ineq_less_equal
+					p[f,|S-{x}|] by p_less,1,3
+					so op[S-{x}] = f[S-{x}] by op_def,2,p_prop,3,PN_def
+				end
+				so op[S] = x * op[S-{x}]
+			end
+		end
+	end
+end

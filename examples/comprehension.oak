@@ -61,6 +61,10 @@ property1222a: axiom schema
 		`for some p, for all w,x,y,z where q[w] and r[x,a] and s[y,b] and t[z,c],
 			p[w,x,y,z] iff φ`
 
+operation2: axiom
+	for all p,a,c,
+		for some f, for all x where p[x,a], f[x] = c
+
 operation12: axiom schema
 	for all meta x,y,p,q,a,f,φ such that not free[f,φ],
 		`if for all x where p[x], for at most one y where q[y,a], φ then

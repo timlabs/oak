@@ -159,6 +159,9 @@ tie-in `A ⊂ B` with `A ⊂ B implies A ⊆ B` for all A,B
 
 empty_subset: for all S in Set, ∅ ⊆ S by subset_def,empty_def
 
+subset_transitive: for all A,B,C in Set, if A ⊆ B and B ⊆ C, then A ⊆ C
+  by subset_def
+
 disjoint_def: define disjoint such that for all A,B,
 	disjoint[A,B] iff A is in Set and B is in Set and
     for no x, x is in A and x is in B
@@ -207,11 +210,6 @@ tie-in `A-B` with `if A is in Set and B is in Set then A-B is in Set`
   for all A,B
     by setdiff_def
 
-# TO DO: prove this from a recursion theorem
-product_def: axiom define product such that for all S in Set,
-	product[∅] = 1 and for all x in S,
-	product[S] = x * product[S - {x}]
-
 setdiff_element: for all S in Set, for all d in S, S-{d} ⊂ S
 proof
 	take any S in Set and d in S
@@ -219,6 +217,48 @@ proof
 		d is not in S-{d} by setdiff_def,1_set
 		so S-{d} ⊂ S by proper_subset_def
 	end
+end
+
+setdiff_self: for all A,B in Set, A-B ⊆ A
+  by setdiff_def,subset_def
+
+setdiff_proper: for all A,B in Set where for some x in B, x is in A, A-B ⊂ A
+proof
+  take any A,B in Set
+    suppose for some x in B, x is in A
+      A-B ⊆ A by setdiff_self
+      x is not in A-B by setdiff_def
+      so A-B ⊂ A by proper_subset_def
+    end
+  end
+end
+
+setdiff_subset: for all A,B,C in Set, if A ⊆ B, then A-C ⊆ B
+  by setdiff_def,setdiff_self,subset_transitive
+
+subset_diff: for all A,B,C in Set, if A ⊆ B, then A-C ⊆ B-C
+proof
+	take 1: any A,B,C in Set where A ⊆ B
+		take any x in A-C
+			so x is in A and x is not in C by setdiff_def
+			so x is in B and x is not in C by 1,subset_def
+			so x is in B-C by setdiff_def
+		end
+		so A-C ⊆ B-C by subset_def
+	end
+end
+
+set_drop_two: for all S in Set and x,y, (S-{x})-{y} = S-{x,y}
+proof
+  take any S in Set and x,y
+		take any d in (S-{x})-{y}
+			so d is in S-{x,y} by setdiff_def,1_set,2_set
+		end
+		take any d in S-{x,y}
+			so d is in (S-{x})-{y} by setdiff_def,1_set,2_set
+		end
+		so (S-{x})-{y} = S-{x,y} by set_equality
+  end
 end
 
 set_add_drop: for all S in Set and c where c is not in S,
@@ -239,18 +279,6 @@ proof
       by 1_set,setdiff_def,union_def
   end
   so thesis by set_equality
-end
-
-subset_diff: for all A,B,C in Set, if A ⊆ B, then A-C ⊆ B-C
-proof
-	take 1: any A,B,C in Set where A ⊆ B
-		take any x in A-C
-			so x is in A and x is not in C by setdiff_def
-			so x is in B and x is not in C by 1,subset_def
-			so x is in B-C by setdiff_def
-		end
-		so A-C ⊆ B-C by subset_def
-	end
 end
 
 image_def: define image such that for all f in Function and S ⊆ domain[f],
@@ -957,6 +985,9 @@ proof
 	so thesis by card_0,set_equality
 end
 
+card_at_most_zero: for all finite S in Set, if |S| <= 0 then S = ∅
+  by total_order,nat_greater_eq_0,card_empty,finite_def
+
 card_of_two: for all S in Set and a,b,
   if for all x in S, x = a or x = b, then |S| <= 2
 proof
@@ -1091,3 +1122,14 @@ tie-in `A is in power[S]` with
 	`if S is in Set and A is in power[S] then A is in Set`
 		for all A,S
 			by power_def,subset_def
+
+power_subset: for all A,B,S in Set,
+  if A is in power[S] and B ⊆ A, then B is in power[S]
+    by power_def,subset_def
+
+power_element: for all A,B in Set where A is in power[B],
+  for all x in A, x is in B
+    by power_def,subset_def
+
+empty_power: for all S in Set, ∅ is in power[S]
+  by power_def,empty_def,subset_def
