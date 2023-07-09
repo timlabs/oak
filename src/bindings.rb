@@ -407,11 +407,13 @@ class Bindings
 	def tied_in_for tree, tie_in_nodes, used = [], calls = {}
 		# find all tie-ins for the tree
 		calls[tree] = [] if not calls[tree]
-		return [] if calls[tree].find {|call| (used - call).empty?}
+		# skip if we already made this call with fewer restrictions
+		return [] if calls[tree].find {|call| (call - used).empty?}
 		calls[tree] << used
 		results = []
 		tie_in_nodes.each_with_index {|node, i|
 			node.line.tie_ins.each_with_index {|tie_in, j|
+				# skip tie-ins used in making the tree
 				next if used.include? [i,j]
 				matches_in(tie_in, tree).each {|match|
 					new_used = used + [[i,j]]
