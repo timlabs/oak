@@ -28,6 +28,9 @@ oak [-v] [-c] [-w] [filename]
 
 ## Version history
 
+### v0.6.1 - 2023-08-10
+* improved cross-platform portability
+
 ### v0.6 - 2023-07-09
 * added support for predicates in quantifiers, like `for all odd n`
 * gave `iff`, `if`, and `implies` lower precedence
