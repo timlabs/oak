@@ -59,16 +59,16 @@ class Proof
 		end
 		begin
 			tracker.begin_file filename, include_line if tracker
-			wrapper = WordWrapper.new ' ', 2
+			wrapper = WordWrapper.new
 			line_number = nil # external scope, for error reporting
 			from_include = false
 			exited = false
-			wrapper.print "#{filename}: processing line "
+			wrapper.print "#{filename}: processing line"
 			Parser.new.parse_each(input) {|sentence, action, content, reasons, label,
 																		 fileline|
 				next if action == :empty
 				line_number = fileline
-				wrapper.print "#{line_number} "
+				wrapper.print " #{line_number}"
 				if action == :exit
 					wrapper.puts
 					wrapper.puts "exit at line #{line_number}: skipping remaining lines"
@@ -90,7 +90,7 @@ class Proof
 																			fileline
 						from_include = false
 						break if exited
-						wrapper.print "#{filename}: processing line "
+						wrapper.print "#{filename}: processing line"
 					when :suppose then proof.suppose content, id
 					when :now then proof.now
 					when :end then proof.end_block
@@ -118,7 +118,7 @@ class Proof
 					wrapper.puts; wrapper.puts
 					wrapper.puts "line #{line_number}: #{result}"
 					wrapper.puts
-					wrapper.print "#{filename}: processing line "
+					wrapper.print "#{filename}: processing line"
 				end
 			}
 			tracker.end_file if tracker
@@ -131,7 +131,7 @@ class Proof
 				else "error at line #{line_number}: #{e}"
 			end
 			if not from_include # already done otherwise
-				wrapper.puts e.line_number if e.is_a? ParseException
+				wrapper.puts " #{e.line_number}" if e.is_a? ParseException
 				wrapper.puts if not e.is_a? ParseException
 				wrapper.puts message
 				if e.is_a? DeriveException and e.result == :unknown and
@@ -158,7 +158,7 @@ class Proof
 
 	def self.print_assumptions tracker
 		# assumption locations
-		wrapper = WordWrapper.new ',', 2
+		wrapper = WordWrapper.new
 		tracker.assumptions.each {|filename, assumptions|
 			if assumptions.size == 1 and assumptions[0].is_a? Numeric
 				wrapper.print "#{filename}: assumption on line "

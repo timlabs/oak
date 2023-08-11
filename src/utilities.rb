@@ -1,19 +1,20 @@
 require 'io/console'
 
 class WordWrapper
-	def initialize flag = ' ', indent = 0
-		@flag, @indent = flag, indent
+	def initialize
+    @indent = 2
 		@width = IO.console.winsize[1]
 		@position = 0
 	end
 
 	def print s
-#		word_wrap s.to_s
-		s = s.to_s
-		return if s.empty?
-		lines = s.split "\n"
-		lines[0...-1].each {|line| puts line}
-		word_wrap lines[-1]
+    s.to_s.each_line {|line|
+      if line.end_with? "\n"
+        puts line.chomp
+      else
+        word_wrap line
+      end
+    }
 	end
 
 	def puts s = ''
@@ -23,24 +24,29 @@ class WordWrapper
 	end
 
 	def word_wrap s
-		while s.length > @width-@position
-			line = s[0...@width-@position]
-			i = line.rindex @flag
-			if i # break it after the flag
-				$stdout.puts line[0...i+@flag.length]
-				s = s[i+@flag.length..-1].lstrip
-			elsif @position > 0 # try to fit it on the next line
-				$stdout.puts
-			else # no choice but to truncate it
-				$stdout.puts line
-				s = s[@width-@position..-1].lstrip
-			end
-			s = ' ' * @indent + s
-			@position = 0
-		end
-		$stdout.print s
-		@position += s.length
-	end
+    if @position == :wrapping # waiting to go to next line and indent
+      s = s.lstrip
+      return if s.empty?
+      $stdout.puts
+      $stdout.print ' ' * @indent
+      @position = @indent
+      word_wrap s
+    elsif s.length <= @width-@position # fits on this line
+      $stdout.print s
+      @position += s.length
+    else # wrap to next line
+			i = s.rindex ' ', @width-@position
+			if i # break it at the space
+				$stdout.print s[0...i].rstrip
+        s = s[i..-1]
+      elsif @position <= @indent # no choice but to truncate it
+				$stdout.print s[0...@width-@position]
+        s = s[@width-@position..-1]
+      end
+      @position = :wrapping
+			word_wrap s
+    end
+  end
 end
 
 def bind_variables variables, body, quantifier
