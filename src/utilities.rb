@@ -3,7 +3,7 @@ require 'io/console'
 class WordWrapper
 	def initialize
     @indent = 2
-		@width = IO.console.winsize[1]
+		@width = IO.console.winsize[1] - 1 # subtract 1 for portability
 		@position = 0
 	end
 
