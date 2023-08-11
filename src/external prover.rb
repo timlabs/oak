@@ -8,7 +8,6 @@ def valid_e? tree, wait_forever = false
 	valid_tptp?(tree) {|file_path|
 		settings = []
 		settings << "--tb-insert-limit=#{tb_insert_limit}" unless wait_forever
-		settings << '-m 128' # memory limit for safety
 		settings << '--detsort-rw --detsort-new' # make it deterministic
 		settings << '--print-statistics' if wait_forever
 
