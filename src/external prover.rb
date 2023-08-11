@@ -11,11 +11,7 @@ def valid_e? tree, wait_forever = false
 		settings << '--detsort-rw --detsort-new' # make it deterministic
 		settings << '--print-statistics' if wait_forever
 
-		# use local copy if there is one, otherwise call it without a path
-		local = File.expand_path '../eprover/PROVER/eprover', File.dirname(__FILE__)
-		location = File.exist?(local) ? local : 'eprover'
-
-		command = %{"#{location}" #{settings.join ' '} --auto --tptp3-format } +
+		command = %{"#{find_e}" #{settings.join ' '} --auto --tptp3-format } +
 							%{-s #{file_path} 2>&1}
 		output = `#{command}`
 
@@ -30,8 +26,9 @@ def valid_e? tree, wait_forever = false
 		next :unknown if output.include? '# Failure: Out of unprocessed clauses!'
 
 		message = "unexpected output when calling eprover:\n  #{output.strip}\n"
-		if $?.exitstatus == 127 or 					# command not found
-			 output.include? 'Unknown Option' # happens with version < 2.0
+		if $?.exitstatus == 127 or # command not found
+			 output.include? 'Unknown Option' or # happens with version < 2.0
+			 output.include? 'not recognized as an internal or external command'
 			message << "check that E Theorem Prover version >= 2.0 is installed"
 			raise ProofException, message
 		end
@@ -40,6 +37,16 @@ def valid_e? tree, wait_forever = false
 end
 
 private #######################################################################
+
+def find_e
+	# use local copy if there is one, otherwise call it without a path
+	src_dir = File.dirname __FILE__
+	location = File.expand_path '../eprover/PROVER/eprover', src_dir
+	return location if File.exist? location
+	location = File.expand_path '../eprover/PROVER/eprover.exe', src_dir
+	return location if File.exist? location
+	'eprover'
+end
 
 def make_booleans_explicit tree, booleanize_now = true
 	case tree.operator
