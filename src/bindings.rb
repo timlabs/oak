@@ -96,9 +96,18 @@ class Bindings
 		# Tie-ins that are part of bindings only apply to the variables being bound,
 		# so their position in the tree is handled by the "uses" logic above.  For
 		# other tie-ins, we cannot easily tell (due to their mutually recursive
-		# nature) whether they apply to the line being added or not.  So we have to
-		# assume they do, and call shift_under_node to put the line in their scope.
-		if line and line.binds.empty?
+		# nature) whether they apply to the line being added or not.  If they do, we
+    # need to call shift_under_node to put the line in their scope.  If they
+    # don't, we should leave the line out of their scope, so that it will not be
+    # deactivated along with the tie-in.  We use the following heuristic to make
+    # this decision:
+    #   * If the line is a schema, it doesn't need tie-ins, and also it can't be
+    #     cited if it is inactive, so we had better not deactivate it too soon.
+    #     So we leave it out of the tie-in scope.
+    #   * Otherwise, if the line doesn't bind anything, then hopefully it won't
+    #     matter if it gets deactivated early, so we shift it under the tie-in.
+    #   * Otherwise, we leave it out of the tie-in scope.
+		if line and line.binds.empty? and not line.schema
 			@tie_ins.each {|starter, tie_ins|
 				tie_ins.each {|tie_in| shift_under_node tie_in}
 			}
