@@ -33,7 +33,7 @@ if ARGV.size != 1 or ARGV[0].start_with? '-'
 end
 
 begin
-	Proof.process ARGV[0], :is_filename, options
+	Proof.process_file ARGV[0], options
 rescue ProofException
 	# already printed
 rescue Interrupt

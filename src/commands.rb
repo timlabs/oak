@@ -138,8 +138,8 @@ class Proof
   def marker
     case @marker
       when :waiting then @marker = :seen
-      when :seen then raise ProofException, 'duplicate "marker"'
-      when nil then raise ProofException, '"marker" used without -m option'
+      when :seen then raise ProofException, 'duplicate marker'
+      when nil then raise ProofException, 'marker used without -m option'
       else raise
     end
   end
@@ -250,7 +250,8 @@ class Proof
 				when :unknown then 'could not determine validity of derivation'
 				else raise
 			end
-			raise DeriveException.new message, content.sentence, result, checked
+      message << " \"#{content.sentence}\""
+			raise DeriveException.new message, result, checked
 		end
 
 		if @options[:reduce]
@@ -302,12 +303,9 @@ class ProofException < StandardError; end
 class DeriveException < ProofException
 	attr_reader :result, :checked
 
-	def initialize message, sentence, result, checked
-		@message, @sentence, @result, @checked = message, sentence, result, checked
-	end
-
-	def message line_number
-		"line #{line_number}: #{@message} \"#{@sentence}\""
+	def initialize message, result, checked
+		@result, @checked = result, checked
+    super message
 	end
 end
 
@@ -319,6 +317,10 @@ class ParseException < ProofException
 		super message
 	end
 end
+
+class BaseException < ProofException; end
+
+class EndException < ProofException; end
 
 class SubstituteException < ProofException; end
 

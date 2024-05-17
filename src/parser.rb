@@ -22,7 +22,7 @@ class Parser
 				nested += 1
 				position = opening + 2
 			elsif (closing and nested == 0) or (not closing and nested > 0)
-				raise ParseException, 'parse failed: mismatched block comments'
+				raise ParseException, 'parse failed due to mismatched block comments'
 			elsif closing # closing is next
 				nested -= 1
 				position = closing + 2
@@ -140,11 +140,7 @@ class Parser
 				begin
 					action, content, reasons, label = process_statement grammar_tree
 				rescue ParseException => e
-					# The exceptions being caught here should perhaps be
-					# thrown as ProofExceptions, so that ParseExceptions are reserved for
-					# actual exceptions from the grammar parser.  Problem is giving
-					# ProofExceptions a line number.
-					raise ParseException.new "parse failed at line #{line}: #{e}", line
+					raise ParseException.new e.message, line # add line number
 				end
 =begin
 				if content.is_a? Tree
@@ -167,7 +163,7 @@ class Parser
 			newline = text.index "\n", p
 			stop = (newline ? [e.position, newline].max : text.size)
 			context = text[p...stop].strip.gsub /\s+/, ' '
-			raise ParseException.new "parse failed at line #{line}: \"#{context}\"", line
+			raise ParseException.new "\"#{context}\"", line
 		end
 	end
 
@@ -931,13 +927,13 @@ class TieIn
 
 	def initialize metas, pattern, body
 		if pattern.boolean?
-			raise ParseException.new 'tie-in pattern must be a term'
+			raise ParseException, 'tie-in pattern must be a term'
 		end
 		if not (metas - pattern.free_variables).empty?
-			raise ParseException.new 'tie-in variables must appear in pattern'
+			raise ParseException, 'tie-in variables must appear in pattern'
 		end
 		if contains_quantifiers? body
-			raise ParseException.new 'tie-in cannot contain quantifiers'
+			raise ParseException, 'tie-in cannot contain quantifiers'
 		end
 		@metas, @pattern, @body = metas, pattern, body
 	end

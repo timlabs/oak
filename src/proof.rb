@@ -3,207 +3,159 @@ require_relative 'commands.rb'
 require_relative 'utilities.rb'
 
 class Proof
-	def self.process input, is_filename = false, options = {}
+  def self.process_file input, options = {}
+    process input, :file, options
+  end
+
+  def self.process_text input, options = {}
+    process input, :text, options
+  end
+
+	def self.process input, type, options
 		instance_options = options.select {|k,v| k == :marker or k == :reduce}
 		proof = Proof.new instance_options
-		tracker = Tracker.new
-    tracker.begin_assume nil if options[:marker]
-		include_options = {:tracker => tracker, :wait_on_unknown => options[:wait]}
+    addons = {printer: Printer.new, tracker: Tracker.new}
+    addons[:tracker].begin_assume nil if options[:marker]
+    begin
+	    status = include proof, input, type, nil, addons
+      finalize proof, status, addons, {marker: options[:marker]}
+    rescue ProofException => e
+      error = e
+    end
+    if error
+      handle_exception error, addons, {wait_on_unknown: options[:wait]}
+    end
+  end
 
-		exited = include proof, input, is_filename, include_options, nil
+	def self.include proof, input, type, include_line, addons
+		printer, tracker = addons.values_at :printer, :tracker
+    case type
+      when :file
+        dirname = File.dirname input
+        filename = File.basename input
+        begin
+          input = File.read input
+        rescue
+          exception = (include_line ? ProofException : BaseException)
+          raise exception, "could not open file \"#{input}\""
+        end
+      when :text
+        filename = ''
+      else raise
+    end
+    printer.begin_file filename
+		tracker.begin_file filename, include_line
+		status = :ok
+		Parser.new.parse_each(input) {|sentence, action, content, reasons, label,
+																	 fileline|
+			next if action == :empty
+      printer.line fileline
+			if action == :exit
+        printer.exit
+				status = :exited
+				break
+			end
+			if content.is_a? Content
+				content = process_content content, proof.theses[-1]
+			end
+			# puts "content for line #{fileline} is: #{content.inspect}"
+			id = {label: label, filename: filename, fileline: fileline}
+			result = case action
+				when :include then
+					# include relative to path of current proof file
+					content = File.expand_path content, dirname if type == :file
+					status = include proof, content, :file, fileline, addons
+					break if status != :ok
+				when :suppose then proof.suppose content, id
+				when :now then proof.now
+				when :end then proof.end_block
+				when :assume
+					proof.assume content, id
+					tracker.assume fileline
+				when :axiom
+					proof.axiom content, id
+					tracker.axiom
+				when :derive then proof.derive content, reasons, id
+				when :so then proof.so content, reasons, id
+				when :so_assume
+					proof.so_assume content, id
+					tracker.assume fileline
+				when :proof then proof.proof content, id
+				when :begin_assume
+					proof.begin_assume
+					tracker.begin_assume fileline
+				when :end_assume
+					proof.end_assume
+					tracker.end_assume fileline
+        when :marker
+          proof.marker
+          tracker.end_assume fileline
+				else raise "unrecognized action #{action}"
+			end
+      printer.line_message_block result if result.is_a? InfoException
+		}
+    printer.end_file
+		tracker.end_file
+		status
+  end
+
+  def self.finalize proof, status, addons, options
+		printer, tracker = addons.values_at :printer, :tracker
 
     if not proof.scopes.empty?
       message = case proof.scopes.last
-        when :suppose then 'error at end of input: active supposition'
-        when :now then 'error at end of input: active "now" block'
-        when Array then 'error at end of input: active "proof" block'
-        when :assume then 'error at end of input: active assume block'
+        when :suppose then 'active supposition'
+        when :now then 'active "now" block'
+        when Array then 'active "proof" block'
+        when :assume then 'active assume block'
       end
 		elsif options[:marker] and proof.assuming?
-      message = 'error at end of input: -m option used without "marker"'
+      message = '-m option used without marker'
     end
-    if message
-      puts message
-			raise ProofException, message
-    end
+    raise EndException, message if message
 
-		if exited
-			puts "all lines accepted prior to exit"
-		else
-			puts "all lines accepted"
-		end
-
+    printer.accepted status
 		if not tracker.assumptions.empty?
-			print_assumptions tracker
+      printer.assumptions tracker.assumptions, options[:marker]
 		else
-			print_axioms tracker
-			if exited
-				puts 'proof incomplete due to exit'
-			else
-				puts 'proof successful!'
-			end
-		end
+      printer.axioms tracker.axioms
+      printer.conclude status
+    end
 	end
 
-	def self.include proof, input, is_path, options, include_line
-		tracker = options[:tracker]
-		if is_path
-			dirname = File.dirname input
-			filename = File.basename input
-			begin
-				input = File.read input
-			rescue
-				puts "error: could not open file \"#{input}\""
-				raise ProofException
-			end
-		else
-			filename = ''
-		end
-		begin
-			tracker.begin_file filename, include_line if tracker
-			wrapper = WordWrapper.new
-			line_number = nil # external scope, for error reporting
-			from_include = false
-			exited = false
-			Parser.new.parse_each(input) {|sentence, action, content, reasons, label,
-																		 fileline|
-				next if action == :empty
-				line_number = fileline
-        wrapper.print "#{filename}: processing line" if wrapper.clear?
-				wrapper.print " #{line_number}"
-				if action == :exit
-					wrapper.puts
-					wrapper.puts "exit at line #{line_number}: skipping remaining lines"
-					exited = true
-					break
-				end
-				if content.is_a? Content
-					content = process_content content, proof.theses[-1]
-				end
-				# puts "content for line #{fileline} is: #{content.inspect}"
-				id = {:label => label, :filename => filename, :fileline => fileline}
-				result = case action
-					when :include then
-						# include relative to path of current proof file
-						content = File.expand_path content, dirname if is_path
-						wrapper.puts
-						from_include = true
-						exited = include proof, content, :is_filename, options, fileline
-						from_include = false
-						break if exited
-					when :suppose then proof.suppose content, id
-					when :now then proof.now
-					when :end then proof.end_block
-					when :assume
-						proof.assume content, id
-						tracker.assume fileline if tracker
-					when :axiom
-						proof.axiom content, id
-						tracker.axiom if tracker
-					when :derive then proof.derive content, reasons, id
-					when :so then proof.so content, reasons, id
-					when :so_assume
-						proof.so_assume content, id
-						tracker.assume fileline if tracker
-					when :proof then proof.proof content, id
-					when :begin_assume
-						proof.begin_assume
-						tracker.begin_assume fileline if tracker
-					when :end_assume
-						proof.end_assume
-						tracker.end_assume fileline if tracker
-          when :marker
-            proof.marker
-            tracker.end_assume fileline if tracker
-					else raise "unrecognized action #{action}"
-				end
-				if result.is_a? InfoException
-					wrapper.puts; wrapper.puts
-					wrapper.puts "line #{line_number}: #{result}"
-					wrapper.puts
-				end
-			}
-      if line_number
-        wrapper.puts unless wrapper.clear?
-      else
-        wrapper.puts "#{filename}: no lines to process"
-      end
-			tracker.end_file if tracker
-			exited
-		rescue ProofException => e
-			message = case e # update the message (but don't print it)
-				when ParseException then e.message
-				when DeriveException then e.message line_number
-				else "error at line #{line_number}: #{e}"
-			end
-			if not from_include # already done otherwise
-        if e.is_a? ParseException
-          wrapper.print "#{filename}: processing line" if wrapper.clear?
-				  wrapper.puts " #{e.line_number}"
+  def self.handle_exception e, addons, options
+    printer = addons[:printer]
+    case e
+      when ParseException
+        if e.line_number
+          printer.line e.line_number
+          printer.parse_error e.message
         else
-          wrapper.puts
+          printer.file_message e.message
         end
-				wrapper.puts message
-				if e.is_a? DeriveException and e.result == :unknown and
-					 options[:wait_on_unknown]
-					wrapper.puts "line #{line_number}: -w option: checking validity " \
-											 "without work limit (may never finish, press ctrl-c " \
-											 "to abort)"
-					result = ExternalProver.valid_e? e.checked, true
-					message = case result
-						when :invalid then 'invalid derivation'
-						# use ceil rather than round to avoid "1.0 times the work limit"
-						when Numeric then "valid derivation, but took #{result.ceil 1} " \
-															"times the work limit"
-						when :unknown then 'eprover gave up'
-						else raise '' # new exception
-					end
-					wrapper.puts "line #{line_number}: -w option: #{message}"
-					wrapper.puts 'proof unsuccessful'
-				end
+      when DeriveException then printer.derive_error e.message
+      when BaseException then printer.base_error e.message
+      when EndException then printer.end_error e.message
+      else printer.line_error e.message
+    end
+
+		if e.is_a? DeriveException and e.result == :unknown and
+			 options[:wait_on_unknown]
+      printer.wait_on_unknown
+			result = ExternalProver.valid_e? e.checked, true
+			message = case result
+				when :invalid then 'invalid derivation'
+				# use ceil rather than round to avoid "1.0 times the work limit"
+				when Numeric then "valid derivation, but took #{result.ceil 1} " \
+													"times the work limit"
+				when :unknown then 'eprover gave up'
+				else raise
 			end
-			raise e, message # preserve exception class
+      printer.waited message
 		end
-	end
 
-	def self.print_assumptions tracker
-		# assumption locations
-		wrapper = WordWrapper.new
-		tracker.assumptions.each {|filename, assumptions|
-			if assumptions.size == 1 and assumptions[0].is_a? Numeric
-				wrapper.print "#{filename}: assumption on line "
-			else
-				wrapper.print "#{filename}: assumptions on lines "
-			end
-			values = assumptions.collect {|x| x.is_a?(Numeric) ? x : x.join('-')}
-			wrapper.puts values.join ', '
-		}
-		# assumption counts
-		blocks, lines = 0, 0
-		tracker.assumptions.values.each {|assumptions|
-			assumptions.each {|x|
-				if x.is_a? Numeric
-					lines += 1
-				elsif x.first.is_a? Numeric # to skip :start
-					blocks += 1
-				end
-			}
-		}
-		counts = []
-		counts << "#{blocks} assume block" if blocks == 1
-		counts << "#{blocks} assume blocks" if blocks > 1
-		counts << "#{lines} assumption" if lines == 1
-		counts << "#{lines} assumptions" if lines > 1
-		return if counts.empty?
-		wrapper.puts "proof incomplete due to #{counts.join ' and '}"
-	end
-
-	def self.print_axioms tracker
-		tracker.axioms.each {|filename, axiom_count|
-			s = (axiom_count == 1 ? 'axiom' : 'axioms')
-			puts "#{axiom_count} #{s} in #{filename}"
-		}
-	end
+    raise e
+  end
 
 	def self.process_content content, thesis
 		if not thesis
@@ -231,7 +183,171 @@ class Proof
 		end
 	end
 
-	private_class_method :include, :process_content
+	private_class_method :process, :include, :finalize, :handle_exception,
+    :process_content
+end
+
+class Printer
+  # maintains the invariant: if @stack is empty, @wrapper is clear
+
+  def initialize
+		@wrapper = WordWrapper.new
+    @stack = []
+  end
+
+  def accepted status
+    raise if not @stack.empty?
+    case status
+      when :exited then @wrapper.puts 'all lines accepted prior to exit'
+      when :ok then @wrapper.puts 'all lines accepted'
+      else raise
+    end
+  end
+
+  def assumptions assumptions, marker
+    raise if not @stack.empty?
+		# assumption locations
+		assumptions.each {|filename, assumptions|
+			if assumptions.size == 1 and assumptions[0].is_a? Numeric
+				@wrapper.print "#{filename}: assumption on line "
+			else
+				@wrapper.print "#{filename}: assumptions on lines "
+			end
+			values = assumptions.collect {|x| x.is_a?(Numeric) ? x : x.join('-')}
+			@wrapper.puts values.join ', '
+		}
+		# assumption counts
+		blocks, lines = 0, 0
+		assumptions.values.each {|assumptions|
+			assumptions.each {|x|
+				if x.is_a? Numeric
+					lines += 1
+        elsif x.first != :start and x.last != :end
+					blocks += 1
+				end
+			}
+		}
+		counts = []
+    counts << 'marker' if marker
+		counts << "#{blocks} assume block" if blocks == 1
+		counts << "#{blocks} assume blocks" if blocks > 1
+		counts << "#{lines} assumption" if lines == 1
+		counts << "#{lines} assumptions" if lines > 1
+		raise if counts.empty?
+		@wrapper.puts "proof incomplete due to #{counts.join ' and '}"
+	end
+
+  def axioms axioms
+    raise if not @stack.empty?
+		axioms.each {|filename, axiom_count|
+			s = (axiom_count == 1 ? 'axiom' : 'axioms')
+			@wrapper.puts "#{axiom_count} #{s} in #{filename}"
+		}
+	end
+
+  def base_error message
+    raise if not @stack.empty?
+    @wrapper.puts "error: #{message}"
+  end
+
+  def begin_file filename
+    @wrapper.puts if not @wrapper.clear?
+		@stack << {file: filename, line: nil}
+  end
+
+  def conclude status
+    raise if not @stack.empty?
+    case status
+      when :exited then @wrapper.puts 'proof incomplete due to exit'
+      when :ok then @wrapper.puts 'proof successful!'
+      else raise
+    end
+  end
+
+  def derive_error message
+    line_message message
+  end
+
+  def end_error message
+    raise if not @stack.empty?
+    @wrapper.puts "error at end of input: #{message}"
+  end
+
+  def end_file
+    raise if @stack.empty?
+    if not @stack[-1][:line]
+      @wrapper.puts "#{@stack[-1][:file]}: no lines to process"
+    elsif not @wrapper.clear?
+      @wrapper.puts
+    end
+    @stack.pop
+  end
+
+  def exit
+    line = current_line
+		@wrapper.puts if not @wrapper.clear?
+		@wrapper.puts "exit at line #{line}: skipping remaining lines"
+  end
+
+  def file_message message
+    raise if @stack.empty?
+    @wrapper.puts if not @wrapper.clear?
+		@wrapper.puts "#{@stack[-1][:file]}: #{message}"
+  end
+
+  def line i
+    raise if @stack.empty?
+    @wrapper.print "#{@stack[-1][:file]}: processing line" if @wrapper.clear?
+		@wrapper.print " #{i}"
+    @stack[-1][:line] = i
+  end
+
+  def line_error message
+    line = current_line
+    @wrapper.puts if not @wrapper.clear?
+		@wrapper.puts "error at line #{line}: #{message}"
+  end
+
+  def line_message message
+    line = current_line
+    @wrapper.puts if not @wrapper.clear?
+		@wrapper.puts "line #{line}: #{message}"
+  end
+
+  def line_message_block message
+    line = current_line
+    @wrapper.puts if not @wrapper.clear?
+    @wrapper.puts
+		@wrapper.puts "line #{line}: #{message}"
+		@wrapper.puts
+	end
+
+  def parse_error message
+    line = current_line
+    @wrapper.puts if not @wrapper.clear?
+    @wrapper.puts "parse failed at line #{line}: #{message}"
+  end
+
+  def wait_on_unknown
+    line = current_line
+    @wrapper.puts if not @wrapper.clear?
+		@wrapper.puts "line #{line}: -w option: checking validity " \
+      "without work limit (may never finish, press ctrl-c to abort)" \
+  end
+
+  def waited message
+    line = current_line
+    @wrapper.puts if not @wrapper.clear?
+		@wrapper.puts "line #{line}: -w option: #{message}"
+		@wrapper.puts 'proof unsuccessful'
+  end
+
+	private #####################################################################
+
+  def current_line
+    raise if @stack.empty?
+    @stack[-1][:line] or raise
+  end
 end
 
 class Tracker
