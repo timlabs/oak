@@ -134,6 +134,8 @@ end
 
 # LINKED LISTS ################################################################
 
+define next # make it a variable rather than a constant
+
 linked_list_def: define linked_list such that for all l,
 	linked_list[l] iff l is in List and for all i in indexes[l],
 		(if i != length[l] then next[l[i]] = l[i+1]) and

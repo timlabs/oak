@@ -1,12 +1,10 @@
 /#
 
-A recursion theorem for functions from natural numbers to sets.
+A recursion theorem for functions from natural numbers to elements of a set.
+
+To be included from set.oak.
 
 #/
-
-###############################################################################
-include "set.oak"
-###############################################################################
 
 recursion: for all S in Set and base in S and next in Functions[S,S],
   for some f in Functions[N,S],

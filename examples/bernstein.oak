@@ -6,7 +6,7 @@ injection from B to A, then there is a bijection between A and B.
 #/
 
 ###############################################################################
-include "recursion.oak"
+include "set.oak"
 ###############################################################################
 
 for all A,B in Set and f in Functions[A,B] and g in Functions[B,A],

@@ -166,6 +166,8 @@ tie-in `A ⊂ B` with `A ⊂ B implies A ⊆ B` for all A,B
 
 empty_subset: for all S in Set, ∅ ⊆ S by subset_def,empty_def
 
+subset_empty: for all x ⊆ ∅, x = ∅ by subset_def,empty_def,set_not_empty
+
 subset_transitive: for all A,B,C in Set, if A ⊆ B and B ⊆ C, then A ⊆ C
   by subset_def
 
@@ -214,6 +216,9 @@ proof
     so (A ∪ B) ∪ C = A ∪ (B ∪ C) by set_equality
   end
 end
+
+subset_union: for all A,B,C in Set, if A ⊆ C and B ⊆ C then A ∪ B ⊆ C
+  by subset_def,union,union_def,union_assoc
 
 setdiff_def: define - such that for all A,B in Set,
 	A - B is in Set and for all x,
@@ -1170,6 +1175,9 @@ power_subset: for all A,B,S in Set,
   if A is in power[S] and B ⊆ A, then B is in power[S]
     by power_def,subset_def
 
+subset_power: for all A,B in Set where A ⊆ B, power[A] ⊆ power[B]
+  by power_def,subset_def
+
 power_element: for all A,B in Set where A is in power[B],
   for all x in A, x is in B
     by power_def,subset_def
@@ -1179,3 +1187,167 @@ power_diff: for all A,B in Set, A - B is in power[A]
 
 empty_power: for all S in Set, ∅ is in power[S]
   by power_def,empty_def,subset_def
+
+power_empty: power[∅] = {∅}
+proof
+  for all x, x is in {∅} iff x ⊆ ∅ by subset_def,subset_empty,set_literal
+  so thesis by set_equality,power_def
+end
+
+power_union: for all A,B,C in Set,
+  if A is in power[C] and B is in power[C] then A ∪ B is in power[C]
+    by subset_union,power_def
+
+###############################################################################
+include "recursion.oak"
+###############################################################################
+
+exp_def: define ^ such that for all m,n in N, m^n is in N and
+  m^0 = 1 and
+  m^(n+1) = m * m^n
+proof
+  q_def: for some q, for all f in Functions[N,N] and m in N, q[f,m] iff
+    f[0] = 1 and for all n in N,
+    f[n+1] = m * f[n]
+      by property22a
+
+  take any m in N
+    lemma: for some f in Functions[N,N], q[f,m] proof
+      p_def: for some p, for all n,r in N, p[n,r] iff m * n = r by property22a
+      for all n in N, for at most one r in N, p[n,r] by p_def
+      so for some mult, for all n,r in N, mult[n] = r iff p[n,r] by operation22
+      so for all n in N, mult[n] = m * n by p_def,nat_closed_mult
+      so for some mult in Functions[N,N], for all n in N, mult[n] = m * n
+        by function3,nat_closed_mult
+      so for some f in Functions[N,N],
+        f[0] = 1 and for all n in N,
+        f[n+1] = m * f[n]
+          by recursion,function1
+      so thesis by q_def
+    end
+  end
+
+  for all m,n in N, for at most one r in N,
+    for some f in Functions[N,N] where q[f,m], f[n] = r
+  proof
+    take 1: any m,n in N and f,g in Functions[N,N] where q[f,m] and q[g,m]
+      p_def: for some p, for all i in N, p[i] iff f[i] = g[i] by property2a
+      p[0] by p_def,1,q_def
+      take hyp: any i in N where i < n and p[i]
+        f[i+1] = m * f[i] by 1,q_def
+        g[i+1] = m * g[i] by 1,q_def
+        so p[i+1] by p_def,hyp
+      end
+      so for all i in N where i <= n, p[i] by bounded_induction
+      so f[n] = g[n] by p_def
+    end
+  end
+
+  so op_def: for some op, for all m,n,r in N,
+    op[m,n] = r iff for some f in Functions[N,N] where q[f,m], f[n] = r
+      by operation222
+
+  take any m,n in N
+    op[m,0] = 1 by lemma,q_def,op_def
+    op[m,n+1] = m * op[m,n] by lemma,q_def,op_def,function1
+    op[m,n] is in N by lemma,op_def,function1
+  end
+end
+
+exp_2_add: for all n in N, 2^n + 2^n = 2^(n+1)
+  by exp_def,double
+
+power_card: for all finite S in Set, |power[S]| = 2^|S|
+proof
+  take any finite A in Set
+		P_def: for some P, for all S in Set, P[S] iff |power[S]| = 2^|S|
+      by property2a
+		# base case
+    P[∅] by P_def,card_empty,power_empty,card_1,exp_def
+		# induction
+		take any B != ∅ with B ⊆ A
+      tie-in `B` with `B is in Set and B is finite` by subset_finite
+			suppose hyp: for all C ⊂ B, P[C] # induction hypothesis
+				there is a b in B by empty_def,set_equality
+        op: for some op, for all S,T in power[B], op[S] = T iff T = S ∪ {b}
+        proof
+          for all S in power[B], for at most one T in power[B], T = S ∪ {b}
+          so thesis by operation22
+        end
+
+        # C definition and facts
+				C_def: let C = B - {b}
+        tie-in `C` with `C is in Set and C is finite` by C_def,card_drop
+        c1: b is not in C by C_def,setdiff_def,1_set
+        c2: B = C ∪ {b} by C_def,set_drop_add
+        c3: C ⊂ B by C_def,setdiff_element
+
+        # D definition and facts
+        D_def: let D = power[C]
+        d1: |D| = 2^|C| by P_def,hyp,D_def,c3
+        tie-in `D` with `D is in Set and D is finite`
+          by D_def,d1,exp_def,finite_def
+        take any S in D
+          tie-in `S` with `S is in Set` by D_def,power_element_set
+          d2: S is in power[B] by D_def,subset_power,c3,subset_def
+          {b} ⊆ B by subset_def,set_literal
+          so {b} is in power[B] by power_def
+          so d3: S ∪ {b} is in power[B] by d2,power_union
+          d4: b is not in S by D_def,power_element,c1
+          d5: op[S] = S ∪ {b} by op,d2,d3
+        end
+
+        # E definition and facts
+        E_def: for some E in Set, for all x,
+          x is in E iff for some S in D, op[S] = x
+            by replace
+        take any T in E
+          e1: for some S in D, T = S ∪ {b} by E_def,d5
+          e2: for no S in D, T = S by d4,e1,union_def,1_set
+        end
+
+        l1: E is finite and |E| = |D|
+        proof
+          for all S in D, S ∪ {b} is in E by E_def,op,d2,d3
+          f_def: so for some f in Functions[D,E], for all S in D, f[S] = S ∪ {b}
+            by function3,d5,biject_def
+          take any S1,S2 in D where S1 != S2
+            f[S1] = S1 ∪ {b} and f[S2] = S2 ∪ {b} by f_def
+            b is not in S1 and b is not in S2 by d4
+            so f[S1] != f[S2] by set_add_drop,d2
+          end
+          for all T in E, for some S in D, f[S] = T by f_def,e1
+          so bijection[f,D,E] by biject_def,one_to_one,function1
+          so thesis by finite_biject
+        end
+
+        l2: power[B] = D ∪ E
+        proof
+          take any x in power[B]
+            1: x ⊆ B by power_def
+            suppose b is not in x
+              so x ⊆ C by C_def,setdiff_def,subset_def,set_literal,1
+              so x is in D by D_def,power_def
+            end
+            suppose b is in x
+              so for some S ⊆ C, x = S ∪ {b} by C_def,subset_diff,set_drop_add,1
+              so for some S in D, x = S ∪ {b} by D_def,power_def
+              so x is in E by E_def,op,d2
+            end
+          end
+          for all x in D ∪ E, x is in power[B] by d2,d3,e1,union_def
+          so thesis by set_equality,union_def
+        end
+
+        disjoint[D, E] by disjoint_def,e2
+        so |D ∪ E| = |D| + |E| by disjoint_card,l1
+        so |power[B]| = 2^|C| + 2^|C| by d1,l1,l2
+        so |power[B]| = 2^(|C|+1) by exp_2_add
+        so |power[B]| = 2^|B| by c2,card_add2,c1
+        so P[B] by P_def
+      end
+    end
+    so P[A] by set_induction
+  end
+  so thesis by P_def
+end
