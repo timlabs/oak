@@ -20,14 +20,22 @@ For downloads and more information, including a tutorial, go to [oakproof.org](h
 Oak is a command-line application which takes a proof file as input, and tells you whether or not the proof is correct.  See [oakproof.org](https://oakproof.org) for more information.
 
 ```
-oak [-v] [-c] [-m] [-w] [filename]
+oak [-v] [-c] [-f] [-m] [-w] <filename>
   -v  print the version number of Oak
   -c  check for unneeded citations
+  -f  look for a fix
   -m  assume until marker
   -w  wait for validity (does not change proof outcome)
 ```
 
 ## Version history
+
+### v0.7 - 2024-??-??
+* `-m` option to assume until marker
+* `-f` option to fix the proof by adding citations
+* added `?` syntax to find a missing citation
+* added proof of number of subsets of a set to `set.oak`
+* new example: `descartes.oak`
 
 ### v0.6.1 - 2023-08-10
 * improved cross-platform portability
