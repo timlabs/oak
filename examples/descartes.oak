@@ -1,0 +1,55 @@
+/#
+
+In 1641, Descartes published his Meditations on First Philosophy, together with
+a series of Objections and Replies.  At the end of his Reply to the second set
+of Objections, he gives several arguments "drawn up in geometrical fashion",
+with numbered premises and conclusions.  Among these are three proofs of the
+existence of God.  Below we formalize the second, along with his accompanying
+proof that mind and body are distinct.
+
+#/
+
+# PREMISES ####################################################################
+
+axiom d2: supremely_perfect is an idea
+
+axiom d6: mind is a substance
+
+axiom d7: body is a substance
+
+axiom d8: for all x, if supremely_perfect[x] then God[x]
+
+axiom d10: for all substance x,y,
+  if can_exist_apart[x,y] then really_distinct[x,y]
+
+axiom p2: can_be_clearly_conceived_to_exist_apart[mind, body]
+
+axiom a3: for all x, for some c, causes[c,x]
+
+axiom a5: for all c and idea i,
+  if causes[c,i] then not reality[c] < objective_reality[i]
+
+axiom a6: for all x where not supremely_perfect[x],
+  reality[x] < objective_reality[supremely_perfect]
+
+axiom c: for all x,y,
+  if can_be_clearly_conceived_to_exist_apart[x,y] then can_exist_apart[x,y]
+
+# PROOFS ######################################################################
+
+for some x, God[x]
+proof
+  for some idea i, i = supremely_perfect by d2
+  for all x, causes[x,i] implies not reality[x] < objective_reality[i] by a5
+  so for all x, causes[x,i] implies supremely_perfect[x] by a6
+  so for all x, causes[x,i] implies God[x] by d8
+  so thesis by a3
+end
+
+really_distinct[mind, body]
+proof
+  can_be_clearly_conceived_to_exist_apart[mind, body] by p2
+  so can_exist_apart[mind, body] by c
+  substance[mind] and substance[body] by d6,d7
+  so thesis by d10
+end
