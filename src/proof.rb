@@ -178,6 +178,7 @@ class DerivationManager
       if result == :valid
         @printer.line_message 'derivation is already valid, no need for ?'
       else
+        @printer.line_message 'trying to resolve ?'
         results = proof.resolve_question_mark content, line_numbers
         if results.empty?
           @printer.line_message 'could not resolve ?'
