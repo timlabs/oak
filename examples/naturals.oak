@@ -149,6 +149,9 @@ proof
 	end
 end
 
+ineq_add_before: for all a,b,c in N, if a < b, then c+a < c+b
+  by ineq_add,add_commute
+
 ineq_cancel: for all a,b,c in N, if a+c < b+c then a < b
 proof
 	take any a,b,c in N where a+c < b+c
