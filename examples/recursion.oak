@@ -72,25 +72,25 @@ proof
           t2: so f[m] is in S by t1
   			end
 
-  			r_prop: r[0,base] and for all m in before[n+1], r[m+1, next[f[m]]]
-  			proof
+        r_prop: r[0,base] and for all m in before[n+1], r[m+1, next[f[m]]]
+        proof
           0 < n+1 by nat_greater_eq_0,nat_ineq_2
-  				so r[0,base] by f_def,r_def
+          so r[0,base] by f_def,r_def
 
-  				take any m in before[n+1]
-  					suppose 1: m < n
-  						f[m+1] = next[f[m]] by f_def,1
+          take any m in before[n+1]
+            suppose 1: m < n
+              f[m+1] = next[f[m]] by f_def,1
               m+1 < n+1 by ineq_add,1
-              so r[m+1, next[f[m]]] by r_def,t1
-  					end
-  					suppose 2: m = n
+              so r[m+1, next[f[m]]] by r_def,t1,function1
+            end
+            suppose 2: m = n
               next[f[m]] is in S by t1,function1
               m+1 = n+1 by 2
               so r[m+1, next[f[m]]] by r_def,2,total_order
-  					end
-  					so r[m+1, next[f[m]]] by nat_ineq_2,before_def
-  				end
-  			end
+            end
+            so r[m+1, next[f[m]]] by nat_ineq_2,before_def
+          end
+        end
 
   			take any m in before[n+2]
           m <= n+1 by before_def,add_assoc,2_def,nat_ineq_2
@@ -101,19 +101,19 @@ proof
   			 	op2[m] = x iff r[m,x]
   					by operation22
 
-  			f2_def: for some f2 in Functions[before[n+2], S],
+        f2_def: for some f2 in Functions[before[n+2], S],
           for all m in before[n+2], f2[m] = op2[m]
         proof
-    			take any m in before[n+2]
-    				r[0,base] by r_prop
+          take any m in before[n+2]
+            r[0,base] by r_prop
             suppose m != 0
               so 1: for some m' in N, m = m'+1 by nat_reduce
               m' < n+1 by before_def,1,ineq_plus_one_two
               so r[m, next[f[m']]] by r_prop,before_def,1
             end
-    				so for some x in S, r[m,x] by t2,function1
-    				so op2[m] is in S by op2_def
-    			end
+            so for some x in S, r[m,x] by t2,function1,1
+            so op2[m] is in S by op2_def
+          end
           so thesis by function3
         end
 

@@ -200,7 +200,8 @@ proof
 						end
 					end
 
-					so r[S, x * f[S-{x}]] by r_def,t1
+          x * f[S-{x}] is in N by t1
+					so r[S, x * f[S-{x}]] by r_def
 				end
 			end
 
@@ -237,7 +238,7 @@ proof
 				so f2[∅] = 1 by f2_def,op2_def,PN_def,t2,empty_power
 				take any S in PN[n+1] and x in S
 					r[S, x * f[S-{x}]] by r_prop
-					so f2[S] = x * f[S-{x}] by f2_def,op2_def,t1
+					so f2[S] = x * f[S-{x}] by f2_def,op2_def,t1,power_element,PN_def
 				end
 			end
 
