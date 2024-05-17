@@ -126,41 +126,6 @@ def equal_up_to_variable_names? tree1, tree2, refs1 = {}, refs2 = {}, level = 0
 	end
 end
 
-def find_minimal_subsets_from_results array, results = {}
-	# find the minimal subsets of array which are true in results, assuming that
-	# if a given set is false, all of its subsets are false
-	set = array.to_set
-	raise unless results.has_key? set
-	result = results[set]
-	return [] if result == false
-	subarrays = array.combination array.size-1
-	minimal = subarrays.collect {|subarray|
-		find_minimal_subsets_from_results subarray, results
-	}.flatten(1).uniq
-	(minimal.empty? and result == true) ? [array] : minimal
-end
-
-def find_minimal_subsets input_array
-	# find the minimal subsets for which yield returns true, assuming that if it
-	# returns false for a given set, it will return false for all of its subsets,
-	# and that order and duplicates do not matter
-	input_array = input_array.uniq
-	pending, results = [input_array], {}
-	until pending.empty?
-		array = pending.shift
-		set = array.to_set
-		next if results.has_key? set
-		if results.any? {|key, result| result == false and set.subset? key}
-			results[set] = false
-		else
-			results[set] = yield array
-		end
-		next if results[set] == false
-		array.combination(array.size-1).each {|subarray| pending << subarray}
-	end
-	find_minimal_subsets_from_results input_array, results
-end
-
 def first_orderize tree, by_arity = false
 	subtrees = tree.subtrees.collect {|subtree| first_orderize subtree, by_arity}
 	if tree.operator == :predicate
@@ -283,4 +248,114 @@ def tree_for_true
 		Tree.new('true', []),
 		Tree.new(:not, [Tree.new('true', [])])
 	]
+end
+
+def find_minimal_subsets_from_results array, results = {}
+	# find the minimal subsets of array which are true in results, assuming that
+	# if a given set is false, all of its subsets are false
+	set = array.to_set
+	raise unless results.has_key? set
+	result = results[set]
+	return [] if result == false
+	subarrays = array.combination array.size-1
+	minimal = subarrays.collect {|subarray|
+		find_minimal_subsets_from_results subarray, results
+	}.flatten(1).uniq
+	(minimal.empty? and result == true) ? [array] : minimal
+end
+
+def find_minimal_subsets input_array
+	# find the minimal subsets for which yield returns true, assuming that if it
+	# returns false for a given set, it will return false for all of its subsets,
+	# and that order and duplicates do not matter
+	input_array = input_array.uniq
+	pending, results = [input_array], {}
+	until pending.empty?
+		array = pending.shift
+		set = array.to_set
+		next if results.has_key? set
+		if results.any? {|key, result| result == false and set.subset? key}
+			results[set] = false
+		else
+			results[set] = yield array
+		end
+		next if results[set] == false
+		array.combination(array.size-1).each {|subarray| pending << subarray}
+	end
+	find_minimal_subsets_from_results input_array, results
+end
+
+def find_valid_elements array
+  # find all elements for which the block returns :valid, assuming that if it
+  # returns :invalid on a subset, then no element in that subset is valid
+  result = yield array
+  return [] if result == :invalid
+  if array.size == 1
+    case result
+      when :valid then return array
+      when :unknown then return []
+      else raise
+    end
+  end
+  part1, part2 = array[0...array.size/2], array[array.size/2..-1]
+  results1 = find_valid_elements(part1) {|subset| yield subset}
+  results2 = find_valid_elements(part2) {|subset| yield subset}
+  results1 + results2
+end
+
+def seek_valid_subset array
+  # try to find a subset for which the block returns :valid, assuming that if it
+  # returns :invalid on a subset, then no subset of that subset is valid.  if
+  # unsuccessful, guarantees that there is no valid single-element subset.
+  queue = [array]
+  until queue.empty?
+    subset = queue.shift
+    result = yield subset
+    return subset if result == :valid
+    next if result == :invalid
+    next if subset.size == 1
+    queue << subset[0...subset.size/2]
+    queue << subset[subset.size/2..-1]
+  end
+  nil
+end
+
+def reduce_subset array
+  # assuming that the block is truthy for the array, finds a subset for which
+  # the block is still truthy, such that no element can be removed from the
+  # subset without losing the truthiness of the block.
+  targets = 1 # start by assuming there is one target
+  target_ratio = 1 / Math::E
+  hits, tries = 0, 0
+  while true
+    sample_fraction = 1 / Math::E ** (1.0 / targets)
+    sample_size = (sample_fraction * array.size).round
+    # print "hits, tries = #{hits},#{tries}  targets = #{targets}  "
+    # puts "array size = #{array.size}  sample size = #{sample_size}"
+    if sample_size >= array.size - 1
+      sample = array.combination(array.size-1).find {|sample|
+        tries += 1
+        if yield sample
+          hits += 1
+          targets -= 1 if hits / tries.to_f > target_ratio and targets > 1
+          sample
+        else
+          targets += 1 if hits / tries.to_f < target_ratio
+          nil
+        end
+      }
+      return array if not sample
+      array = sample
+    else
+      sample = array.sample sample_size
+      tries += 1
+      if yield sample
+        array = sample
+        hits += 1
+        targets -= 1 if hits / tries.to_f > target_ratio and targets > 1
+      else
+        targets += 1 if hits / tries.to_f < target_ratio
+      end
+    end
+  end
 end

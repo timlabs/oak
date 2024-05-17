@@ -25,8 +25,7 @@ end
 class Proof
 	attr_reader :scopes, :theses
 
-	def initialize options = {}
-		@options = options
+	def initialize manager, options = {}
 		@lines = []
 		@active_suppositions = []
 		@active_contexts = [[]]
@@ -36,6 +35,7 @@ class Proof
     @line_numbers_by_label = {}
 		@inactive_labels = Set[]
 		@bindings = Bindings.new
+    @manager = manager
     @marker = :waiting if options[:marker]
 	end
 
@@ -84,8 +84,8 @@ class Proof
 
 	def derive content, reasons = [], id = nil
     return assume content, id if assuming?
-		line_numbers = process_reasons reasons
-		derive_internal content, line_numbers, id
+		line_numbers, question_mark = process_reasons reasons
+		derive_internal content, line_numbers, question_mark, id
 	end
 
 	def end_assume
@@ -124,7 +124,7 @@ class Proof
       if assuming? then
         assume content, id
       else
-        derive_internal content, last_context, id
+        derive_internal content, last_context, false, id
       end
 		else
 			if last_scope == :suppose
@@ -164,10 +164,10 @@ class Proof
 		if @active_contexts[-1].empty?
 			raise ProofException, 'nothing for "so" to use'
 		end
-		line_numbers = process_reasons reasons
+		line_numbers, question_mark = process_reasons reasons
 		line_numbers.concat @active_contexts[-1]
 		@active_contexts[-1] = []
-		derive_internal content, line_numbers, id
+		derive_internal content, line_numbers, question_mark, id
 	end
 
 	def so_assume content, id = nil
@@ -186,27 +186,6 @@ class Proof
 		@active_suppositions << @lines.size
 		add content, :supposition, id
 	end
-
-	private #####################################################################
-
-	def add content, type, id
-		line = Line.new content, type, id
-		@bindings.begin_block if type == :axiom or type == :supposition
-		@bindings.admit line
-		label = id[:label]
-    if @line_numbers_by_label[label]
-      raise ProofException, "label #{label} already in scope"
-    end
-		@lines << line
-    n = @lines.size - 1
-		if label
-			@label_stack[-1] << label
-			@line_numbers_by_label[label] = n
-		elsif content.tie_ins.empty? or not content.binds.empty?
-			@active_contexts[-1] << n
-		end
-    n
-  end
 
 	def check content, line_numbers
 		to_check = @bindings.to_check content, @lines.values_at(*line_numbers)
@@ -233,81 +212,124 @@ class Proof
 	  [result, tree]
 	end
 
+  def check_wait_forever tree
+    ExternalProver.valid_e? tree, true
+  end
+
+  def reduce content, line_numbers
+    # find the minimal subsets of the line numbers which make the content valid
+		labeled = line_numbers.select {|i| @lines[i].label}
+		unlabeled = line_numbers - labeled
+		minimal = find_minimal_subsets(labeled) {|subset|
+			begin
+				# note: order and duplicates do not matter to check
+				result, checked = check content, unlabeled + subset
+				{:valid => true, :invalid => false}[result]
+			rescue ProofException # e.g. "could not instantiate schema"
+				false
+			end
+		}
+    return nil if minimal == [labeled]
+    [labeled, minimal]
+  end
+
+  def fix content, line_numbers
+    # look for additional line numbers that make the content valid
+    originals = line_numbers
+    lines_with_label_not_schema = @line_numbers_by_label.values.select {|i|
+      not @lines[i].schema
+    }
+    additions = lines_with_label_not_schema - originals
+    return nil if additions.empty?
+    seek_valid_subset(additions) {|subset|
+      result, checked = check content, originals + subset
+      result
+    }
+  end
+
+  def reduce_fix fix_line_numbers, content, original_line_numbers
+    # look for a subset of the fix line numbers that makes the content valid
+    reduce_subset(fix_line_numbers) {|subset|
+      result, checked = check content, original_line_numbers + subset
+      result == :valid
+    }
+  end
+
+  def resolve_question_mark content, line_numbers
+    # look for a single additional line number that makes the content valid
+    originals = line_numbers
+    lines_with_label_not_schema = @line_numbers_by_label.values.select {|i|
+      not @lines[i].schema
+    }
+    additions = lines_with_label_not_schema - originals
+    return [] if additions.empty?
+    find_valid_elements(additions) {|subset|
+      result, checked = check content, originals + subset
+      result
+    }
+  end
+
 	def citation_string line_numbers
 		line_numbers.collect {|i|
 			@lines[i].label or "line #{@lines[i].fileline}"
 		}.join ', '
 	end
 
-	def derive_internal content, line_numbers, id
+	private #####################################################################
+
+	def add content, type, id
+		line = Line.new content, type, id
+		@bindings.begin_block if type == :axiom or type == :supposition
+		@bindings.admit line
+		label = id[:label]
+    if @line_numbers_by_label[label]
+      raise ProofException, "label #{label} already in scope"
+    end
+		@lines << line
+    n = @lines.size - 1
+		if label
+			@label_stack[-1] << label
+			@line_numbers_by_label[label] = n
+		elsif content.tie_ins.empty? or not content.binds.empty?
+			@active_contexts[-1] << n
+		end
+    n
+  end
+
+	def derive_internal content, line_numbers, question_mark, id
 		check_admission content
-
-		result, checked = check content, line_numbers
-
-		if result != :valid
-			message = case result
-				when :invalid then 'invalid derivation'
-				when :unknown then 'could not determine validity of derivation'
-				else raise
-			end
-      message << " \"#{content.sentence}\""
-			raise DeriveException.new message, result, checked
-		end
-
-		if @options[:reduce]
-			labeled = line_numbers.select {|i| @lines[i].label}
-			unlabeled = line_numbers - labeled
-			minimal = find_minimal_subsets(labeled) {|subset|
-				begin
-					# note: order and duplicates do not matter to check
-					result, checked = check content, unlabeled + subset
-					{:valid => true, :invalid => false}[result]
-				rescue ProofException # e.g. "could not instantiate schema"
-					false
-				end
-			}
-			if minimal != [labeled]
-				from = citation_string labeled
-				to = minimal.collect {|set| citation_string set}.join "\n  "
-				message = "citation can be reduced from:\n  #{from}\nto:\n  #{to}"
-				info = InfoException.new message
-			end
-		end
-
+    @manager.derive self, content, line_numbers, question_mark
 		add content, :derivation, id
-		info
 	end
 
 	def process_reasons reasons
-		reasons.collect {|reason|
-			i = @line_numbers_by_label[reason]
-			if not i
-				if @inactive_labels.include? reason
-					raise ProofException, "label #{reason} is no longer in scope"
-				else				
-					raise ProofException, "unknown label #{reason}" 
-				end
-			end
-			if @lines[i].supposition? and not @active_suppositions.include? i
-				raise ProofException, "supposition cited outside itself"
-			end
-			i
+    line_numbers, question_mark = [], false, false
+    reasons.each {|reason|
+      if reason == :question_mark
+        raise ProofException, 'cannot use ? twice in "by"' if question_mark
+        question_mark = true
+      else
+        i = @line_numbers_by_label[reason]
+        if not i
+          if @inactive_labels.include? reason
+            raise ProofException, "label #{reason} is no longer in scope"
+          else
+            raise ProofException, "unknown label #{reason}"
+          end
+        end
+        if @lines[i].supposition? and not @active_suppositions.include? i
+          raise ProofException, "supposition cited outside itself"
+        end
+        line_numbers << i
+      end
 		}
+    [line_numbers, question_mark]
 	end
 end
 
 ### end of Proof class ###################################################
 
 class ProofException < StandardError; end
-
-class DeriveException < ProofException
-	attr_reader :result, :checked
-
-	def initialize message, result, checked
-		@result, @checked = result, checked
-    super message
-	end
-end
 
 class ParseException < ProofException
 	attr_reader :line_number
@@ -318,10 +340,10 @@ class ParseException < ProofException
 	end
 end
 
+class DeriveException < ProofException; end
+
 class BaseException < ProofException; end
 
 class EndException < ProofException; end
 
 class SubstituteException < ProofException; end
-
-class InfoException < ProofException; end

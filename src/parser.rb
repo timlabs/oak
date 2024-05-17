@@ -337,9 +337,13 @@ class Parser
 		by_branch = tree.root.branches.find {|branch| branch.value == :by}
 		if by_branch
 			raise ParseException, 'cannot use "by" with schema' if content.schema
-			branches = by_branch.branches.select {|branch| branch.value == :label_name}
-      raise if branches.empty?
-			reasons.concat branches.collect {|branch| label_from_branch branch}
+      by_branch.branches.each {|branch|
+        case branch.value
+          when :label_name then reasons << label_from_branch(branch)
+          when :question_mark then reasons << :question_mark
+          when Symbol then raise "unknown reason #{branch.value.inspect}"
+        end
+      }
 		end
 
 		if not content.schema

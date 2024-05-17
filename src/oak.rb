@@ -19,6 +19,10 @@ if ARGV.delete '-c'
 	options[:reduce] = true
 end
 
+if ARGV.delete '-f'
+	options[:fix] = true
+end
+
 if ARGV.delete '-m'
 	options[:marker] = true
 end
@@ -27,8 +31,13 @@ if ARGV.delete '-w'
 	options[:wait] = true
 end
 
+if options[:fix] and options[:wait]
+  puts 'error: options -f and -w cannot be used together'
+  exit
+end
+
 if ARGV.size != 1 or ARGV[0].start_with? '-'
-	puts "usage: oak [-v] [-c] [-m] [-w] [filename]"
+	puts 'usage: oak [-v] [-c] [-f] [-m] [-w] [filename]'
 	exit
 end
 

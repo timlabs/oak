@@ -88,10 +88,13 @@ def grammar_rules
 	[:exit, /\s*exit\b/i, :end],
 
 	[:by, /\s*(by|from)\b/i, :by2],
+  [:by2, :question_mark, :by3],
 	[:by2, :label_name, :by3],
 	[:by3, /\s*,/, :by2],
 	[:by3, /\s*and\b/i, :by2],
 	[:by3, :else, :end],
+
+  [:question_mark, /\s*\?/, :end],
 
 	[:proof, /\s*proof\b/i, :end],
 	

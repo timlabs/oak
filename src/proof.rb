@@ -12,18 +12,16 @@ class Proof
   end
 
 	def self.process input, type, options
-		instance_options = options.select {|k,v| k == :marker or k == :reduce}
-		proof = Proof.new instance_options
     addons = {printer: Printer.new, tracker: Tracker.new}
     addons[:tracker].begin_assume nil if options[:marker]
+    manager = DerivationManager.new addons[:printer], options
+		proof = Proof.new manager, {marker: options[:marker]}
     begin
 	    status = include proof, input, type, nil, addons
       finalize proof, status, addons, {marker: options[:marker]}
     rescue ProofException => e
-      error = e
-    end
-    if error
-      handle_exception error, addons, {wait_on_unknown: options[:wait]}
+      print_exception e, addons[:printer]
+      raise
     end
   end
 
@@ -60,7 +58,7 @@ class Proof
 			end
 			# puts "content for line #{fileline} is: #{content.inspect}"
 			id = {label: label, filename: filename, fileline: fileline}
-			result = case action
+			case action
 				when :include then
 					# include relative to path of current proof file
 					content = File.expand_path content, dirname if type == :file
@@ -92,7 +90,6 @@ class Proof
           tracker.end_assume fileline
 				else raise "unrecognized action #{action}"
 			end
-      printer.line_message_block result if result.is_a? InfoException
 		}
     printer.end_file
 		tracker.end_file
@@ -123,8 +120,7 @@ class Proof
     end
 	end
 
-  def self.handle_exception e, addons, options
-    printer = addons[:printer]
+  def self.print_exception e, printer
     case e
       when ParseException
         if e.line_number
@@ -133,28 +129,11 @@ class Proof
         else
           printer.file_message e.message
         end
-      when DeriveException then printer.derive_error e.message
+      when DeriveException # already printed
       when BaseException then printer.base_error e.message
       when EndException then printer.end_error e.message
       else printer.line_error e.message
     end
-
-		if e.is_a? DeriveException and e.result == :unknown and
-			 options[:wait_on_unknown]
-      printer.wait_on_unknown
-			result = ExternalProver.valid_e? e.checked, true
-			message = case result
-				when :invalid then 'invalid derivation'
-				# use ceil rather than round to avoid "1.0 times the work limit"
-				when Numeric then "valid derivation, but took #{result.ceil 1} " \
-													"times the work limit"
-				when :unknown then 'eprover gave up'
-				else raise
-			end
-      printer.waited message
-		end
-
-    raise e
   end
 
 	def self.process_content content, thesis
@@ -183,8 +162,82 @@ class Proof
 		end
 	end
 
-	private_class_method :process, :include, :finalize, :handle_exception,
+	private_class_method :process, :include, :finalize, :print_exception,
     :process_content
+end
+
+class DerivationManager
+  def initialize printer, options
+    @printer = printer
+    @fix, @reduce, @wait_on_unknown = options.values_at :fix, :reduce, :wait
+  end
+
+  def derive proof, content, line_numbers, question_mark
+		result, checked = proof.check content, line_numbers
+    if question_mark
+      if result == :valid
+        @printer.line_message 'derivation is already valid, no need for ?'
+      else
+        results = proof.resolve_question_mark content, line_numbers
+        if results.empty?
+          @printer.line_message 'could not resolve ?'
+        else
+          to = results.collect {|i| proof.citation_string [i]}.join "\n  "
+          @printer.line_message_block "resolved ? into:\n  #{to}"
+          @printer.message 'proof incomplete due to ?'
+        end
+      end
+      raise DeriveException
+    end
+    if result == :valid
+      if @reduce
+        reduction = proof.reduce content, line_numbers
+        if reduction
+          from_lines, to_sets = reduction
+          from = proof.citation_string from_lines
+          to = to_sets.collect {|set| proof.citation_string set}.join "\n  "
+          message = "citation can be reduced from:\n  #{from}\nto:\n  #{to}"
+          @printer.line_message_block message
+        end
+      end
+    else
+			message = case result
+				when :invalid then 'invalid derivation'
+				when :unknown then 'could not determine validity of derivation'
+				else raise
+			end
+      @printer.line_message message + " \"#{content.sentence}\""
+      if @fix
+        @printer.option_message '-f', 'looking for a fix'
+        result = proof.fix content, line_numbers
+        if result
+          @printer.option_message '-f', 'found a fix, reducing'
+          result = proof.reduce_fix result, content, line_numbers
+          to = proof.citation_string result
+          @printer.option_message '-f',
+            "derivation will work if you add:\n  #{to}"
+        else
+          @printer.option_message '-f', 'no fix found'
+        end
+      elsif result == :unknown and @wait_on_unknown
+        @printer.option_message '-w', 'checking validity without work limit'
+        @printer.option_message '-w',
+          '(may never finish, press ctrl-c to abort)'
+        result = proof.check_wait_forever checked
+        message = case result
+          when :invalid then 'invalid derivation'
+          # use ceil rather than round to avoid "1.0 times the work limit"
+          when Numeric then "valid derivation, but took #{result.ceil 1} " \
+                            "times the work limit"
+          when :unknown then 'eprover gave up'
+          else raise result.inspect
+        end
+        @printer.option_message '-w', message
+        @printer.message 'proof unsuccessful'
+      end
+			raise DeriveException
+    end
+  end
 end
 
 class Printer
@@ -264,10 +317,6 @@ class Printer
     end
   end
 
-  def derive_error message
-    line_message message
-  end
-
   def end_error message
     raise if not @stack.empty?
     @wrapper.puts "error at end of input: #{message}"
@@ -322,24 +371,21 @@ class Printer
 		@wrapper.puts
 	end
 
+  def message message
+    @wrapper.puts if not @wrapper.clear?
+		@wrapper.puts message
+  end
+
+  def option_message option, message
+    line = current_line
+    @wrapper.puts if not @wrapper.clear?
+		@wrapper.puts "line #{line}: #{option} option: #{message}"
+  end
+
   def parse_error message
     line = current_line
     @wrapper.puts if not @wrapper.clear?
     @wrapper.puts "parse failed at line #{line}: #{message}"
-  end
-
-  def wait_on_unknown
-    line = current_line
-    @wrapper.puts if not @wrapper.clear?
-		@wrapper.puts "line #{line}: -w option: checking validity " \
-      "without work limit (may never finish, press ctrl-c to abort)" \
-  end
-
-  def waited message
-    line = current_line
-    @wrapper.puts if not @wrapper.clear?
-		@wrapper.puts "line #{line}: -w option: #{message}"
-		@wrapper.puts 'proof unsuccessful'
   end
 
 	private #####################################################################
