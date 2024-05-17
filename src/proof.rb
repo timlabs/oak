@@ -10,7 +10,7 @@ class Proof
     tracker.begin_assume nil if options[:marker]
 		include_options = {:tracker => tracker, :wait_on_unknown => options[:wait]}
 
-		exited = include proof, input, is_filename, include_options
+		exited = include proof, input, is_filename, include_options, nil
 
     if not proof.scopes.empty?
       message = case proof.scopes.last
@@ -45,11 +45,7 @@ class Proof
 		end
 	end
 
-	def self.include proof, input, is_path = false, options = {}
-		include_internal proof, input, is_path, options, nil
-	end
-
-	def self.include_internal proof, input, is_path, options, include_line
+	def self.include proof, input, is_path, options, include_line
 		tracker = options[:tracker]
 		if is_path
 			dirname = File.dirname input
@@ -92,8 +88,7 @@ class Proof
 						content = File.expand_path content, dirname if is_path
 						wrapper.puts
 						from_include = true
-						exited = include_internal proof, content, :is_filename, options,
-																			fileline
+						exited = include proof, content, :is_filename, options, fileline
 						from_include = false
 						break if exited
 					when :suppose then proof.suppose content, id
@@ -236,7 +231,7 @@ class Proof
 		end
 	end
 
-	private_class_method :include_internal, :process_content
+	private_class_method :include, :process_content
 end
 
 class Tracker
