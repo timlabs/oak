@@ -7,6 +7,10 @@ class WordWrapper
 		@position = 0
 	end
 
+  def clear?
+    @position == 0
+  end
+
 	def print s
     s.to_s.each_line {|line|
       if line.end_with? "\n"

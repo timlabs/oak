@@ -63,11 +63,11 @@ class Proof
 			line_number = nil # external scope, for error reporting
 			from_include = false
 			exited = false
-			wrapper.print "#{filename}: processing line"
 			Parser.new.parse_each(input) {|sentence, action, content, reasons, label,
 																		 fileline|
 				next if action == :empty
 				line_number = fileline
+        wrapper.print "#{filename}: processing line" if wrapper.clear?
 				wrapper.print " #{line_number}"
 				if action == :exit
 					wrapper.puts
@@ -90,7 +90,6 @@ class Proof
 																			fileline
 						from_include = false
 						break if exited
-						wrapper.print "#{filename}: processing line"
 					when :suppose then proof.suppose content, id
 					when :now then proof.now
 					when :end then proof.end_block
@@ -118,11 +117,14 @@ class Proof
 					wrapper.puts; wrapper.puts
 					wrapper.puts "line #{line_number}: #{result}"
 					wrapper.puts
-					wrapper.print "#{filename}: processing line"
 				end
 			}
+      if line_number
+        wrapper.puts unless wrapper.clear?
+      else
+        wrapper.puts "#{filename}: no lines to process"
+      end
 			tracker.end_file if tracker
-			wrapper.puts unless exited
 			exited
 		rescue ProofException => e
 			message = case e # update the message (but don't print it)
@@ -131,8 +133,12 @@ class Proof
 				else "error at line #{line_number}: #{e}"
 			end
 			if not from_include # already done otherwise
-				wrapper.puts " #{e.line_number}" if e.is_a? ParseException
-				wrapper.puts if not e.is_a? ParseException
+        if e.is_a? ParseException
+          wrapper.print "#{filename}: processing line" if wrapper.clear?
+				  wrapper.puts " #{e.line_number}"
+        else
+          wrapper.puts
+        end
 				wrapper.puts message
 				if e.is_a? DeriveException and e.result == :unknown and
 					 options[:wait_on_unknown]
