@@ -88,7 +88,7 @@ class Bindings
 
 		# set tie-ins to start retroactively, as far back as possible
 		if line and not line.tie_ins.empty?
-			starter = most_recent_binding uses
+			starter = most_recent_binding uses + binds
 			@tie_ins[starter] = [] if not @tie_ins[starter]
 			@tie_ins[starter] << node
 		end
@@ -386,7 +386,8 @@ class Bindings
 
 	def most_recent_binding vars
 		# assumes bound vars are on same root-to-leaf path
-		nodes = vars.collect {|v| @bound[v] or @root}
+    nodes = vars.map {|v| @bound[v]}.compact
+    return @root if nodes.empty?
 		nodes.max_by {|node| node.depth}
 	end
 
