@@ -30,7 +30,7 @@ oak [-v] [-c] [-f] [-m] [-w] <filename>
 
 ## Version history
 
-### v0.7 - 2024-??-??
+### v0.7 - 2024-05-16
 * `-m` option to assume until marker
 * `-f` option to fix the proof by adding citations
 * added `?` syntax to find a missing citation
