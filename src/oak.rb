@@ -37,7 +37,12 @@ if options[:fix] and options[:wait]
 end
 
 if ARGV.size != 1 or ARGV[0].start_with? '-'
-	puts 'usage: oak [-v] [-c] [-f] [-m] [-w] [filename]'
+	puts 'usage: oak [-v] [-c] [-f] [-m] [-w] <filename>'
+  puts '  -v  print the version number of Oak'
+  puts '  -c  check for unneeded citations'
+  puts '  -f  look for a fix'
+  puts '  -m  assume until marker'
+  puts '  -w  wait for validity (does not change proof outcome)'
 	exit
 end
 
