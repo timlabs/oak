@@ -275,7 +275,7 @@ class Parser
 
 		actions = [
 			:include, :assume, :axiom, :suppose, :take, :derive, :so, :tie_in,
-			:begin_assume, :end_assume
+			:begin_assume, :end_assume, :marker
 		]
 		action_branch = tree.root.branches.find {|branch|
 			actions.include? branch.value
@@ -283,7 +283,7 @@ class Parser
 		raise 'could not find an action!' if not action_branch
 		action = action_branch.value
 
-		return action if action == :begin_assume or action == :end_assume
+		return action if [:begin_assume, :end_assume, :marker].include? action
 
 		if action == :include
 			raise unless action_branch.branches.size == 4 # command, quotes around content

@@ -36,6 +36,7 @@ class Proof
     @line_numbers_by_label = {}
 		@inactive_labels = Set[]
 		@bindings = Bindings.new
+    @marker = :waiting if options[:marker]
 	end
 
 	def assume content, id = nil
@@ -45,6 +46,10 @@ class Proof
 		check_admission content
 		add content, :assumption, id
 	end
+
+  def assuming?
+    @scopes.include? :assume or @marker == :waiting
+  end
 
 	def axiom content, id = nil
 		message = case @scopes.last
@@ -78,7 +83,7 @@ class Proof
 	end
 
 	def derive content, reasons = [], id = nil
-    return assume content, id if @scopes.include? :assume # assume block
+    return assume content, id if assuming?
 		line_numbers = process_reasons reasons
 		derive_internal content, line_numbers, id
 	end
@@ -116,8 +121,11 @@ class Proof
 			@bindings.end_block
 
 			content, id = last_scope
-      if @scopes.include? :assume then assume content, id # assume block
-      else derive_internal content, last_context, id end
+      if assuming? then
+        assume content, id
+      else
+        derive_internal content, last_context, id
+      end
 		else
 			if last_scope == :suppose
 				@active_suppositions.pop
@@ -126,6 +134,15 @@ class Proof
 			@active_contexts.last.concat last_context
 		end
 	end
+
+  def marker
+    case @marker
+      when :waiting then @marker = :seen
+      when :seen then raise ProofException, 'duplicate "marker"'
+      when nil then raise ProofException, '"marker" used without -m option'
+      else raise
+    end
+  end
 
 	def now
 		@scopes << :now
@@ -143,7 +160,7 @@ class Proof
 	end
 
 	def so content, reasons = [], id = nil
-    return so_assume content, id if @scopes.include? :assume # assume block
+    return so_assume content, id if assuming?
 		if @active_contexts[-1].empty?
 			raise ProofException, 'nothing for "so" to use'
 		end

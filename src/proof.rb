@@ -4,22 +4,28 @@ require_relative 'utilities.rb'
 
 class Proof
 	def self.process input, is_filename = false, options = {}
-		instance_options = options.select {|k,v| k != :wait}
+		instance_options = options.select {|k,v| k == :marker or k == :reduce}
 		proof = Proof.new instance_options
 		tracker = Tracker.new
-		my_options = {:tracker => tracker, :wait_on_unknown => options[:wait]}
-		exited = include proof, input, is_filename, my_options
+    tracker.begin_assume nil if options[:marker]
+		include_options = {:tracker => tracker, :wait_on_unknown => options[:wait]}
 
-		message = case proof.scopes.last
-			when :suppose then 'error at end of input: active supposition'
-			when :now then 'error at end of input: active "now" block'
-			when Array then 'error at end of input: active "proof" block'
-			when :assume then 'error at end of input: active assume block'
-		end
-		if message
-			puts message
+		exited = include proof, input, is_filename, include_options
+
+    if not proof.scopes.empty?
+      message = case proof.scopes.last
+        when :suppose then 'error at end of input: active supposition'
+        when :now then 'error at end of input: active "now" block'
+        when Array then 'error at end of input: active "proof" block'
+        when :assume then 'error at end of input: active assume block'
+      end
+		elsif options[:marker] and proof.assuming?
+      message = 'error at end of input: -m option used without "marker"'
+    end
+    if message
+      puts message
 			raise ProofException, message
-		end
+    end
 
 		if exited
 			puts "all lines accepted prior to exit"
@@ -95,15 +101,15 @@ class Proof
 					when :end then proof.end_block
 					when :assume
 						proof.assume content, id
-						tracker.assume filename, fileline if tracker
+						tracker.assume fileline if tracker
 					when :axiom
 						proof.axiom content, id
-						tracker.axiom filename if tracker
+						tracker.axiom if tracker
 					when :derive then proof.derive content, reasons, id
 					when :so then proof.so content, reasons, id
 					when :so_assume
 						proof.so_assume content, id
-						tracker.assume filename, fileline if tracker
+						tracker.assume fileline if tracker
 					when :proof then proof.proof content, id
 					when :begin_assume
 						proof.begin_assume
@@ -111,6 +117,9 @@ class Proof
 					when :end_assume
 						proof.end_assume
 						tracker.end_assume fileline if tracker
+          when :marker
+            proof.marker
+            tracker.end_assume fileline if tracker
 					else raise "unrecognized action #{action}"
 				end
 				if result.is_a? InfoException
@@ -243,25 +252,31 @@ class Tracker
 		@assume_stack = []
 	end
 
-	def assume filename, fileline
-		@assumptions[filename] << fileline if @assume_stack.empty?
+	def assume fileline
+		@assumptions[current_file] << fileline if @assume_stack.empty?
 	end
 
-	def axiom filename
-		@axioms[filename] += 1
+	def axiom
+		@axioms[current_file] += 1
 	end
 
 	def begin_assume fileline
-		if @assume_stack.empty?
-			@assume_stack << [@file_stack.last[0], fileline]
-		else
+    if not @assume_stack.empty?
 			@assume_stack << :nested
-		end
+    elsif not @file_stack.empty?
+			@assume_stack << [current_file, fileline]
+    else
+			@assume_stack << [nil, nil]
+    end
 	end
 
 	def begin_file filename, include_line
 		@file_stack << [filename, include_line]
 	end
+
+  def current_file
+    @file_stack.last[0]
+  end
 
 	def end_file
 		raise if @file_stack.empty? # nothing to end
@@ -270,7 +285,7 @@ class Tracker
 		if @assume_stack[0][0] == filename # assume began in or under this file
 			@assumptions[filename] << [@assume_stack[0][1], :end]
 			# make the assume begin at the include line in the file above
-			@assume_stack[0] = [@file_stack.last[0], line] unless @file_stack.empty?
+			@assume_stack[0] = [current_file, line] unless @file_stack.empty?
 		else # assume began before this file
 			@assumptions[filename] << [:start, :end]
 		end

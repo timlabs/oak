@@ -19,12 +19,16 @@ if ARGV.delete '-c'
 	options[:reduce] = true
 end
 
+if ARGV.delete '-m'
+	options[:marker] = true
+end
+
 if ARGV.delete '-w'
 	options[:wait] = true
 end
 
 if ARGV.size != 1 or ARGV[0].start_with? '-'
-	puts "usage: oak [-v] [-c] [-w] [filename]"
+	puts "usage: oak [-v] [-c] [-m] [-w] [filename]"
 	exit
 end
 

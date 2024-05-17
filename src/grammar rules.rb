@@ -3,6 +3,7 @@ def grammar_rules
 	[:start, :ending, :end], # needed to preserve line numbers
 	[:start, :begin_assume, :start5],
 	[:start, :end_assume, :start5],
+	[:start, :marker, :start5],
 	[:start, :include, :start5],
 	[:start, :now, :start5],
 	[:start, :end, :start5],
@@ -35,6 +36,8 @@ def grammar_rules
 	[:begin_assume, /\s*begin assume\b/i, :end],
 
 	[:end_assume, /\s*end assume\b/i, :end],
+
+	[:marker, /\s*marker\b/i, :end],
 
 	[:filename, [/\s*"/, /[^"\n]+/, /"/], :end],
 
@@ -422,8 +425,8 @@ def grammar_rules
 	[:atom, /(at least one|at most one|every|some|no)\b/i, :null],
 	[:atom, /(and|any|define|if|iff|implies|in|is|let|not|of|on|or)\b/i, :null],
 	[:atom, /(such that|then|where|with)\b/i, :null],
-	[:atom, /(assume|axiom|begin assume|by|end|exit|from|include|now)\b/i, :null],
-	[:atom, /(proof|schema|so|suppose|take)\b/i, :null],
+	[:atom, /(assume|axiom|begin assume|by|end|exit|from|include)\b/i, :null],
+	[:atom, /(marker|now|proof|schema|so|suppose|take)\b/i, :null],
 	[:atom, /(contradiction|false|thesis|true)\b/i, :null],
 	[:atom, /((?!
 			\(|\)|\[|\]|,|;|\.\s|\.\z|=|!=|≠|\+|\-|\*|÷|\^
