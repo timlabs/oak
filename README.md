@@ -37,6 +37,9 @@ oak [-v] [-c] [-f] [-m] [-w] <filename>
 
 ## Version history
 
+### v0.7.2 - 2024-06-22
+* fix issue with gemspec
+
 ### v0.7.1 - 2024-06-21
 * converted to a gem, for ease of installation and upgrade
 
