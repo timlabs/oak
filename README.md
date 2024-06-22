@@ -18,7 +18,7 @@ The gem includes [E](https://eprover.org/), the external theorem prover used by 
 
 ## Usage
 
-Oak is a command-line application which takes a proof file as input, and tells you whether or not the proof is correct.  See [oakproof.org](https://oakproof.org) for more information, including a tutorial.
+Oak is a command-line application which takes a proof file as input, and tells you whether or not the proof is correct.  See [oakproof.org](https://oakproof.org) for examples and a tutorial.
 
 ```
 oak [-v] [-c] [-f] [-m] [-w] <filename>
@@ -37,8 +37,8 @@ oak [-v] [-c] [-f] [-m] [-w] <filename>
 
 ## Version history
 
-### v0.7.1 - 2024-??-??
-* converted to a gem, for ease of install and upgrade
+### v0.7.1 - 2024-06-21
+* converted to a gem, for ease of installation and upgrade
 
 ### v0.7 - 2024-05-16
 * `-m` option to assume until marker

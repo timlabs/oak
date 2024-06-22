@@ -1,7 +1,7 @@
 Gem::Specification.new {|s|
   s.name        = 'oakproof'
-  s.version     = '?'
-  s.date        = '????-??-??'
+  s.version     = '0.7.1'
+  s.date        = '2024-06-21'
   s.summary     = 'A proof checker focused on simplicity, readability, and ' +
                   'ease of use.'
   s.author      = 'Tim Smith'
