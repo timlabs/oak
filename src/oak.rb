@@ -1,11 +1,6 @@
-if RUBY_VERSION < '2'
-	puts "Oak requires Ruby version >= 2.0.  (You have Ruby #{RUBY_VERSION}.)"
-	exit
-end
-
 require_relative 'proof.rb'
 
-name_version = 'Oak version 0.7'
+name_version = 'Oak version 0.7post'
 issues_url = 'https://github.com/timlabs/oak/issues'
 
 options = {}

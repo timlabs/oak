@@ -29,7 +29,8 @@ def valid_e? tree, wait_forever = false
 		if $?.exitstatus == 127 or # command not found
 			 output.include? 'Unknown Option' or # happens with version < 2.0
 			 output.include? 'not recognized as an internal or external command'
-			message << "check that E Theorem Prover version >= 2.0 is installed"
+			message << "check that E Theorem Prover version 2.3 exists at:\n"
+      message << "  #{find_e}"
 			raise ProofException, message
 		end
 		raise message # no idea what happened, so treat it as a bug
@@ -39,13 +40,16 @@ end
 private #######################################################################
 
 def find_e
-	# use local copy if there is one, otherwise call it without a path
+  # https://stackoverflow.com/a/171011/
+  if (/cygwin|mswin|mingw|bccwin|wince|emx/ =~ RUBY_PLATFORM) != nil
+    filename = 'eprover-2.3-windows.exe'
+  elsif (/darwin/ =~ RUBY_PLATFORM) != nil
+    filename = 'eprover-2.3-mac'
+  else
+    filename = 'eprover-2.3-linux'
+  end
 	src_dir = File.dirname __FILE__
-	location = File.expand_path '../eprover/PROVER/eprover', src_dir
-	return location if File.exist? location
-	location = File.expand_path '../eprover/PROVER/eprover.exe', src_dir
-	return location if File.exist? location
-	'eprover'
+  File.expand_path "../eprover/#{filename}", src_dir
 end
 
 def make_booleans_explicit tree, booleanize_now = true

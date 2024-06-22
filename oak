@@ -1,8 +1,3 @@
-DIR=$(dirname "$0")
+#!/usr/bin/env ruby
 
-if hash ruby 2>/dev/null; then
-  ruby "$DIR/src/oak.rb" "$@"
-else
-  echo "error: could not find \"ruby\""
-	echo "Oak requires the Ruby programming language to be installed."
-fi
+require_relative 'src/oak.rb'
