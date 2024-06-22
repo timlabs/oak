@@ -2,22 +2,23 @@
 
 Oak is a proof checker focused on simplicity, readability, and ease of use.
 
-For downloads and more information, including a tutorial, go to [oakproof.org](https://oakproof.org/).
+For more information, go to [oakproof.org](https://oakproof.org/).
 
 ## Requirements
 
   * [Ruby programming language](http://ruby-lang.org/) version ≥ 2.0
-  * [E theorem prover](https://eprover.org/) version 2.3.  E is included in the prepackaged Oak downloads available at [oakproof.org](https://oakproof.org/).  If you prefer to install E yourself, be sure to add E's PROVER directory to your system's PATH variable so that Oak will detect it.
 
-## Editor support
+## Installation
 
-  * The [Pulsar](https://pulsar-edit.dev/) text editor (formerly Atom) has a package [language-oak](https://web.pulsar-edit.dev/packages/language-oak) which provides syntax highlighting, automatic indentation, and comment toggling for Oak.
-  * For syntax highlighting on web pages, there is a [highlight.js language definition](https://github.com/timlabs/highlightjs-oak) for Oak.
-  * Similar packages for other editors would be welcome.
+```
+gem install oakproof
+```
+
+The gem includes [E](https://eprover.org/), the external theorem prover used by Oak.
 
 ## Usage
 
-Oak is a command-line application which takes a proof file as input, and tells you whether or not the proof is correct.  See [oakproof.org](https://oakproof.org) for more information.
+Oak is a command-line application which takes a proof file as input, and tells you whether or not the proof is correct.  See [oakproof.org](https://oakproof.org) for more information, including a tutorial.
 
 ```
 oak [-v] [-c] [-f] [-m] [-w] <filename>
@@ -28,7 +29,16 @@ oak [-v] [-c] [-f] [-m] [-w] <filename>
   -w  wait for validity (does not change proof outcome)
 ```
 
+## Editor support
+
+  * The [Pulsar](https://pulsar-edit.dev/) text editor (formerly Atom) has a package [language-oak](https://web.pulsar-edit.dev/packages/language-oak) which provides syntax highlighting, automatic indentation, and comment toggling for Oak.
+  * For syntax highlighting on web pages, there is a [highlight.js language definition](https://github.com/timlabs/highlightjs-oak) for Oak.
+  * Similar packages for other editors would be welcome.
+
 ## Version history
+
+### v0.7.1 - 2024-??-??
+* converted to a gem, for ease of install and upgrade
 
 ### v0.7 - 2024-05-16
 * `-m` option to assume until marker
