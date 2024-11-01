@@ -1,5 +1,11 @@
-# A formalization of Leibniz's proof of the existence of God in his Dissertatio
-# de Arte Combinatoria, published in 1666.
+/#
+
+A formalization of Leibniz's proof of the existence of God in his Dissertatio
+de Arte Combinatoria, published in 1666.
+
+For more on this formalization, see: https://timlabs.org/leibniz/
+
+#/
 
 # Leibniz's original nine premises
 axiom p1: for all x,
