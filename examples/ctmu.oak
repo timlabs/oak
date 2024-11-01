@@ -1,0 +1,137 @@
+/#
+
+A formalization of some key ideas from Chris Langan's Cognitive-Theoretic Model
+of the Universe (CTMU).  In the comments below, ANKORT refers to the following
+paper:
+
+Langan, Christopher M. (2002). "The Cognitive-Theoretic Model of the Universe:
+A New Kind of Reality Theory". Progress in Complexity, Information, and Design
+1.2–1.3.
+
+#/
+
+# DEFINITIONS #################################################################
+
+# We begin with the Reality Principle, a mutual definition of "real" and
+# "reality" in terms of relevance.
+
+# reality contains all and only that which is real
+d1: axiom for all x, x is in reality iff x is real
+# real means relevant to reality
+d2: axiom for all x, x is real iff relevant_to[x, reality]
+
+# self-contained means containing just what is relevant to it
+d3: axiom for all S, self_contained[S] iff for all x, x is in S iff relevant_to[x,S]
+
+# absolutely different means they have no property in common
+d4: axiom for all x,y, absolutely_different[x,y] iff for no p, p[x] and p[y]
+
+# syndiffeonic means exhibiting "difference-in-sameness"
+d5: axiom for all S, syndiffeonic[S] iff for all x,y in S, not absolutely_different[x,y]
+
+# closure of a system S under a binary predicate p
+d6: axiom for all S,p, closed[S,p] iff for all x,y where p[x,y], x is in S iff y is in S
+
+d7: axiom for all x, self_reading[x] iff closed[x, reads]
+d8: axiom for all x, self_writing[x] iff closed[x, writes]
+d9: axiom for all x, self_configuring[x] iff closed[x, configures]
+d10: axiom for all x, self_processing[x] iff self_reading[x] and self_writing[x]
+
+# self-distributed means distributed over itself
+d11: axiom for all x, self_distributed[x] iff distributed[x,x]
+
+d12: axiom for all x, infocognition[x] iff information[x] and self_processing[x]
+
+d13: axiom for all x, SCSPL[x] iff x is a self_configuring self_processing language
+
+d14: axiom for all x, omnipresent[x] iff self_distributed[x]
+d15: axiom for all x, omniscient[x] iff self_reading[x]
+d16: axiom for all x, omnipotent[x] iff self_configuring[x] and self_processing[x]
+
+d17: axiom for all x, God[x] iff omnipresent[x] and omniscient[x] and omnipotent[x]
+ 
+# PRINCIPLES ##################################################################
+
+# Some of these principles could be broken down into more basic ones, or
+# derived from definitions.  A number have justifications in the ANKORT paper
+# that could be formalized.  This would be a good direction for future work.
+
+# reality is all-inclusive (contains everything that exists) - ANKORT p. 16
+p1: axiom for all x, x is in reality
+
+# the syntax of a language is distributed over it - ANKORT p. 18
+p2: axiom for all language l, distributed[syntax[l], l]
+
+# Principle of Linguistic Reducibility - ANKORT p. 18
+p3: axiom reality is a language
+
+# reality comprises its own syntax - ANKORT p. 24
+p4: axiom syntax[reality] = reality
+
+# language consists of information - ANKORT p. 33
+p5: axiom for all language l and x in l, x is information
+
+# in a self-contained language, information is self-processing - ANKORT p. 33
+p6: axiom for all self_contained language l and information x in l, x is self_processing
+
+# PROOFS ######################################################################
+
+t1: reality is self_contained
+proof
+  for all x, x is in reality iff relevant_to[x, reality] by d1,d2
+  so thesis by d3
+end
+
+syndiffeonesis: for all x,y, not absolutely_different[x,y]
+proof
+  for all x,y, real[x] and real[y] by p1,d1
+  so thesis by d4
+end
+
+# Metaphysical Autology Principle (MAP)
+map: for all p, closed[reality, p] by p1,d6
+
+# Mind Equals Reality Principle (M=R)
+mr: not absolutely_different[mind, reality] by syndiffeonesis
+
+# Multiplex Unity Principle (MU)
+mu: reality is syndiffeonic by syndiffeonesis,d5
+
+# some consequences of MAP
+t2: reality is self_configuring by map,d9
+t3: reality is self_reading by map,d7
+t4: reality is self_writing by map,d8
+t5: reality is self_processing by t3,t4,d10
+
+hology: reality is self_distributed
+proof
+  for all language x, distributed[syntax[x], x] by p2
+  syntax[reality] = reality by p4
+  so distributed[reality, reality] by p3
+  so thesis by d11
+end
+
+# Principle of Infocognitive Monism
+for all x, infocognition[x]
+proof
+  1: reality is a self_contained language by t1,p3
+  for all x in reality, x is information by 1,p5
+  for all information x in reality, x is self_processing by 1,p6
+  so thesis by p1,d12
+end
+
+scspl: reality is an SCSPL
+proof
+  reality is self_configuring by t2
+  reality is self_processing by t5
+  reality is a language by p3
+  so thesis by d13
+end
+
+for some x, God[x]
+proof
+  reality is omnipresent by hology,d14
+  reality is omniscient by t3,d15
+  reality is omnipotent by scspl,d13,d16
+  so thesis by d17
+end
