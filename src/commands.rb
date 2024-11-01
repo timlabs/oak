@@ -28,7 +28,7 @@ class Proof
 	def initialize manager, options = {}
 		@lines = []
 		@active_suppositions = []
-		@active_contexts = [[]]
+		@active_buffers = [[]]
 		@scopes = []
 		@theses = []
 		@label_stack = [[]]
@@ -109,7 +109,7 @@ class Proof
 			raise ProofException, '"begin assume" must end with "end assume"'
 		end
 		last_scope = @scopes.pop
-		last_context = @active_contexts.pop
+		last_buffer = @active_buffers.pop
 		last_thesis = @theses.pop
 		if last_scope.is_a? Array # end of proof block
 			@label_stack[-1].each {|label|
@@ -124,14 +124,14 @@ class Proof
       if assuming? then
         assume content, id
       else
-        derive_internal content, last_context, false, id
+        derive_internal content, last_buffer, false, id
       end
 		else
 			if last_scope == :suppose
 				@active_suppositions.pop
 				@bindings.end_block
 			end
-			@active_contexts.last.concat last_context
+			@active_buffers.last.concat last_buffer
 		end
 	end
 
@@ -146,13 +146,13 @@ class Proof
 
 	def now
 		@scopes << :now
-		@active_contexts << []
+		@active_buffers << []
 		@theses << @theses[-1] # inherit thesis if it exists
 	end
 
 	def proof content, id = nil
 		@scopes << [content, id]
-		@active_contexts << []
+		@active_buffers << []
 		@theses << content
 		@label_stack << []
 
@@ -161,26 +161,26 @@ class Proof
 
 	def so content, reasons = [], id = nil
     return so_assume content, id if assuming?
-		if @active_contexts[-1].empty?
+		if @active_buffers[-1].empty?
 			raise ProofException, 'nothing for "so" to use'
 		end
 		line_numbers, question_mark = process_reasons reasons
-		line_numbers.concat @active_contexts[-1]
-		@active_contexts[-1] = []
+		line_numbers.concat @active_buffers[-1]
+		@active_buffers[-1] = []
 		derive_internal content, line_numbers, question_mark, id
 	end
 
 	def so_assume content, id = nil
-		if @active_contexts[-1].empty?
+		if @active_buffers[-1].empty?
 			raise ProofException, 'nothing for "so" to use'
 		end
-		@active_contexts[-1] = []
+		@active_buffers[-1] = []
 		assume content, id
 	end
 
 	def suppose content, id = nil
 		@scopes << :suppose
-		@active_contexts << []
+		@active_buffers << []
 		@theses << @theses[-1] # inherit thesis if it exists
 		check_admission content
 		@active_suppositions << @lines.size
@@ -291,7 +291,7 @@ class Proof
 			@label_stack[-1] << label
 			@line_numbers_by_label[label] = n
 		elsif content.tie_ins.empty? or not content.binds.empty?
-			@active_contexts[-1] << n
+			@active_buffers[-1] << n
 		end
     n
   end
