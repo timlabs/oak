@@ -52,9 +52,9 @@ d17: axiom for all x, God[x] iff omnipresent[x] and omniscient[x] and omnipotent
  
 # PRINCIPLES ##################################################################
 
-# Some of these principles could be broken down into more basic ones, or
-# derived from definitions.  A number have justifications in the ANKORT paper
-# that could be formalized.  This would be a good direction for future work.
+# We take these principles as axioms for convenience, but a number of them have
+# justifications in the ANKORT paper that could be formalized.  This would be a
+# good direction for future work.
 
 # reality is all-inclusive (contains everything that exists) - ANKORT p. 16
 p1: axiom for all x, x is in reality
