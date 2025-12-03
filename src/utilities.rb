@@ -1,9 +1,11 @@
 require 'io/console'
 
+ConsoleWidth = IO.console.winsize[1] - 1 # subtract 1 for portability
+
 class WordWrapper
 	def initialize
     @indent = 2
-		@width = IO.console.winsize[1] - 1 # subtract 1 for portability
+		@width = ConsoleWidth
 		@position = 0
 	end
 

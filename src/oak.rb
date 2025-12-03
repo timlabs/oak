@@ -22,6 +22,10 @@ if ARGV.delete '-m'
 	options[:marker] = true
 end
 
+if ARGV.delete '-p'
+	options[:print_failed_tree] = true
+end
+
 if ARGV.delete '-w'
 	options[:wait] = true
 end
@@ -37,6 +41,7 @@ if ARGV.size != 1 or ARGV[0].start_with? '-'
   puts '  -c  check for unneeded citations'
   puts '  -f  look for a fix'
   puts '  -m  assume until marker'
+  puts '  -p  if a derivation fails, print its full tree'
   puts '  -w  wait for validity (does not change proof outcome)'
 	exit
 end

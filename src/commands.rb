@@ -200,8 +200,7 @@ class Proof
 			end
 		end
 
-		# puts 'checking tree:'
-		# tree.pretty_print
+		# puts "\nchecking tree:\n#{tree.pretty_to_s}"
 
 		result = ExternalProver.valid_e? tree
 

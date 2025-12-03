@@ -827,14 +827,12 @@ class Tree
 		result
 	end
 
-	def pretty_print level = 0
+	def pretty_to_s level = 0
 		s = '  ' * level + to_s
-		if s.length < 80
-			puts s
-		else
-			puts '  ' * level << @operator.to_s
-			@subtrees.each {|subtree|	subtree.pretty_print level+1}
-		end
+    return s if s.length < ConsoleWidth
+		s = '  ' * level + @operator.to_s
+		parts = @subtrees.map {|subtree| subtree.pretty_to_s level+1}
+    [s, *parts].join "\n"
 	end
 
 	Quantifiers = [:for_all, :for_some, :for_at_most_one]

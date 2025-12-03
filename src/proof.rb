@@ -169,7 +169,8 @@ end
 class DerivationManager
   def initialize printer, options
     @printer = printer
-    @fix, @reduce, @wait_on_unknown = options.values_at :fix, :reduce, :wait
+    @fix, @reduce, @wait_on_unknown, @print_failed_tree =
+      options.values_at :fix, :reduce, :wait, :print_failed_tree
   end
 
   def derive proof, content, line_numbers, question_mark
@@ -202,6 +203,10 @@ class DerivationManager
         end
       end
     else
+      if @print_failed_tree
+        message = "full tree below\n\n#{checked.pretty_to_s}\n"
+        @printer.option_message '-p', message
+      end
 			message = case result
 				when :invalid then 'invalid derivation'
 				when :unknown then 'could not determine validity of derivation'
