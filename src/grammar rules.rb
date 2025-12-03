@@ -439,7 +439,7 @@ def grammar_rules
 
 	[:definable_same_line, [/[ \t]*/, :definable_raw], :end, :catch],
 
-  [:definable_raw, /\+|\-|\*|\÷|\/|\^|⊆|⊊|⊂|\|\||{}|\[\]|∪|∩|</, :end],
+  [:definable_raw, /in|\+|\-|\*|\÷|\/|\^|⊆|⊊|⊂|\|\||{}|\[\]|∪|∩|</, :end],
   [:definable_raw, :atom, :end],
 
 	[:atom, /for (all|any|at least one|at most one)\b/i, :null],
