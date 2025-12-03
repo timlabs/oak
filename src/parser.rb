@@ -420,7 +420,10 @@ class Parser
 						next unless subtree.subtrees.empty? and i > 0 # atom
 						prev = node.branches[(i-1)*2]
 						is = false
-						is = true if prev.branches[0].value == :prefix2
+            tags = [:every, :no, :some, :at_most_one]
+            if tags.include? prev.branches[0].branches[0].value
+              is = true
+            end
 						tags = [:is, :is_not, :is_in, :is_not_in]
 						if prev.branches.size >= 2 and tags.include? prev.branches[1].value
 							is = true

@@ -134,9 +134,7 @@ def grammar_rules
 	[:exp0b, :prefix0, :end],
 	[:exp0b, :prefix_, :end],
 
-	[:prefix1, :not, :end],
-
-	[:exp1, :prefix1, :end],
+	# [:exp1, :prefix1, :end],
 	[:exp1, :exp2, :exp1a],
 	[:exp1a, :and, :and1],
 		[:and, /\s*and\b/i, :end],
@@ -153,10 +151,11 @@ def grammar_rules
 	[:exp1a, :else, :end],
 	[:exp1b, :exp2, :end],
 	[:exp1b, :else, :exp1c],
-	[:exp1c, :prefix1, :end],
+	# [:exp1c, :prefix1, :end],
 	[:exp1c, :prefix0, :end],
 	[:exp1c, :prefix_, :end],
 
+	[:prefix2, :not, :end],
 	[:prefix2, :every, :end],
 	[:prefix2, :no, :end],
 	[:prefix2, :some, :end],
