@@ -26,6 +26,9 @@ d3: axiom for all S, self_contained[S] iff for all x, x is in S iff relevant_to[
 # absolutely different means they have no property in common
 d4: axiom for all x,y, absolutely_different[x,y] iff for no p, p[x] and p[y]
 
+d18: axiom for all x, has_linguistic_structure[x] iff can_be_described[x]
+d19: axiom for all x, language[x] iff has_linguistic_structure[x]
+
 # syndiffeonic means exhibiting "difference-in-sameness"
 d5: axiom for all S, syndiffeonic[S] iff for all x,y in S, not absolutely_different[x,y]
 
@@ -36,6 +39,9 @@ d7: axiom for all x, self_reading[x] iff closed[x, reads]
 d8: axiom for all x, self_writing[x] iff closed[x, writes]
 d9: axiom for all x, self_configuring[x] iff closed[x, configures]
 d10: axiom for all x, self_processing[x] iff self_reading[x] and self_writing[x]
+
+# distribution of a predicate over a system
+d20: axiom for all p,S, distributed[p,S] iff for all x in S, p[x]
 
 # self-distributed means distributed over itself
 d11: axiom for all x, self_distributed[x] iff distributed[x,x]
@@ -49,7 +55,7 @@ d15: axiom for all x, omniscient[x] iff self_reading[x]
 d16: axiom for all x, omnipotent[x] iff self_configuring[x] and self_processing[x]
 
 d17: axiom for all x, God[x] iff omnipresent[x] and omniscient[x] and omnipotent[x]
- 
+
 # PRINCIPLES ##################################################################
 
 # We take these principles as axioms for convenience, but a number of them have
@@ -59,14 +65,11 @@ d17: axiom for all x, God[x] iff omnipresent[x] and omniscient[x] and omnipotent
 # reality is all-inclusive (contains everything that exists) - ANKORT p. 16
 p1: axiom for all x, x is in reality
 
-# the syntax of a language is distributed over it - ANKORT p. 18
-p2: axiom for all language l, distributed[syntax[l], l]
+# reality can be (linguistically) described - ANKORT p. 19
+p3: axiom can_be_described[reality]
 
-# Principle of Linguistic Reducibility - ANKORT p. 18
-p3: axiom reality is a language
-
-# reality comprises its own syntax - ANKORT p. 24
-p4: axiom syntax[reality] = reality
+# topological-descriptive duality - ANKORT p. 25
+p4: axiom for all S,x, x is in S iff S[x]
 
 # language consists of information - ANKORT p. 33
 p5: axiom for all language l and x in l, x is information
@@ -88,6 +91,14 @@ proof
   so thesis by d4
 end
 
+# Principle of Linguistic Reducibility
+linguistic: reality is a language
+proof
+  can_be_described[reality] by p3
+  so has_linguistic_structure[reality] by d18
+  so thesis by d19
+end
+
 # Metaphysical Autology Principle (MAP)
 map: for all p, closed[reality, p] by p1,d6
 
@@ -105,16 +116,15 @@ t5: reality is self_processing by t3,t4,d10
 
 hology: reality is self_distributed
 proof
-  for all language x, distributed[syntax[x], x] by p2
-  syntax[reality] = reality by p4
-  so distributed[reality, reality] by p3
+  for all x in reality, x is reality by p4
+  so distributed[reality, reality] by d20
   so thesis by d11
 end
 
 # Principle of Infocognitive Monism
 for all x, infocognition[x]
 proof
-  1: reality is a self_contained language by t1,p3
+  1: reality is a self_contained language by t1,linguistic
   for all x in reality, x is information by 1,p5
   for all information x in reality, x is self_processing by 1,p6
   so thesis by p1,d12
@@ -124,7 +134,7 @@ scspl: reality is an SCSPL
 proof
   reality is self_configuring by t2
   reality is self_processing by t5
-  reality is a language by p3
+  reality is a language by linguistic
   so thesis by d13
 end
 
