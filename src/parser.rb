@@ -196,20 +196,25 @@ class Parser
 				switched = true
 			end
 		}
-		condition = node.branches.last if node.branches.last.value == :condition
-		process_conditions properties, variables, condition
+    preposition = node.branches.find {|branch| branch.value == :preposition}
+    condition = node.branches.find {|branch| branch.value == :condition}
+		process_atom_block_parts properties, variables, preposition, condition
 	end
 
-	def process_conditions properties, variables, condition
+	def process_atom_block_parts properties, variables, preposition, condition
 		variable_trees = variables.collect {|node| tree_from_grammar node}
 		property_trees = properties.collect {|node| tree_from_grammar node}
-		right_side = tree_from_grammar condition.branches[1] if condition
+		preposition_right_side = tree_from_grammar preposition.branches[1] if preposition
+		condition_right_side = tree_from_grammar condition.branches[1] if condition
 		conditions = variable_trees.collect {|variable_tree|
 			trees = property_trees.collect {|property_tree|
 				Tree.new :predicate, [property_tree, variable_tree]
 			}
+      if preposition
+        trees[-1] = Tree.new :predicate, [*trees[-1].subtrees, preposition_right_side]
+      end
 			if condition
-				trees << apply_condition(condition, right_side, variable_tree)
+				trees << apply_condition(condition, condition_right_side, variable_tree)
 			end
 			conjunction_tree trees
 		}
@@ -382,13 +387,11 @@ class Parser
 			when :quantified then node.branches[1].branches
 			when :word then [node]
 		end
-		if subtrees.length >= 2 and subtrees[-2].value == :preposition
-			predicate = tree_from_grammar subtrees[-3]
-			other = tree_from_grammar subtrees[-1]
-			preposition_tree = Tree.new :predicate, [
-				predicate, subject, other
-			]
-			subtrees = subtrees[0...-3]
+		if subtrees[-1].value == :preposition
+			predicate = tree_from_grammar subtrees[-2]
+			other = tree_from_grammar subtrees[-1].branches[1]
+			preposition_tree = Tree.new :predicate, [predicate, subject, other]
+			subtrees = subtrees[0...-2]
 		end
 		subtrees = subtrees.collect {|subtree|
 			predicate = tree_from_grammar subtree
@@ -711,9 +714,7 @@ class Parser
 				metas = []
 				if node.branches[5]
 					metas, conditions = process_atom_block node.branches[5]
-					if not conditions.compact.empty?
-						raise ParseException, 'tie-in variables cannot have conditions'
-					end
+          raise if not conditions.compact.empty?
 				end
 				return TieIn.new metas, pattern, body
 		end

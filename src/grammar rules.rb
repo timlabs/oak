@@ -225,16 +225,37 @@ def grammar_rules
 	[:atom_list2, [/\s*and\b/i, :atom_block], :atom_list2],
 	[:atom_list2, :else, :end],
 
+  # this is a bit tricky:
+  #   there is a prefix of zero or more words (space-separated)
+  #   followed by one or more definables (comma-separated)
+  #   then a preposition is allowed if the prefix was non-empty
+  #   then an optional condition
+
 	[:atom_block, :word, :atom_block2],
-	[:atom_block, :else, :atom_list_adjacent],
-	[:atom_block2, :word_same_line, :atom_block2],
+	[:atom_block, :definable, :atom_block2a],
+
+	[:atom_block2, :word_same_line, :atom_block3],
 	[:atom_block2, :condition, :end, :catch],
-	[:atom_block2, :definable_same_line, :atom_list_adjacent2],
-	[:atom_block2, :else, :atom_list_adjacent2],
+	[:atom_block2, :definable_same_line, :atom_block3a],
+	[:atom_block2, :else, :atom_block2a],
+
+	[:atom_block2a, [/,/, :definable_raw,], :atom_block2a, :catch],
+	[:atom_block2a, :else, :atom_block4],
+
+	[:atom_block3, :word_same_line, :atom_block3],
+	[:atom_block3, :condition, :end, :catch],
+	[:atom_block3, :definable_same_line, :atom_block3a],
+	[:atom_block3, :else, :atom_block3a],
+
+	[:atom_block3a, [/,/, :definable_raw,], :atom_block3a, :catch],
+	[:atom_block3a, :preposition, :atom_block4],
+	[:atom_block3a, :else, :atom_block4],
+
+	[:atom_block4, :condition, :end],
+	[:atom_block4, :else, :end],
 
 	[:atom_list_adjacent, :definable, :atom_list_adjacent2],
 	[:atom_list_adjacent2, [/,/, :definable_raw,], :atom_list_adjacent2, :catch],
-	[:atom_list_adjacent2, :condition, :end],
 	[:atom_list_adjacent2, :else, :end],
 
 	[:universal, /\s*for (all|any|each|every) meta\b/i, :null],
@@ -303,10 +324,10 @@ def grammar_rules
 	[:is_in, /\s*is in\b/i, :end],
 	[:is_not_in, /\s*is not in\b/i, :end],
 
-	[:preposition, /\s*(of|on)\b/i, :end],
+	[:preposition, [/\s*(of|on)\b/i, :exp3], :end],
 
 	[:category, :word, :category2],
-	[:category2, [:preposition, :exp3], :end],
+	[:category2, :preposition, :end],
 	[:category2, :word_same_line, :category2],
 	[:category2, :else, :end],
 
