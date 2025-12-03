@@ -269,14 +269,16 @@ end
 def find_minimal_subsets input_array
 	# find the minimal subsets for which yield returns true, assuming that if it
 	# returns false for a given set, it will return false for all of its subsets,
-	# and that order and duplicates do not matter
+	# that order and duplicates do not matter, and that the input yields true
 	input_array = input_array.uniq
 	pending, results = [input_array], {}
 	until pending.empty?
 		array = pending.shift
 		set = array.to_set
 		next if results.has_key? set
-		if results.any? {|key, result| result == false and set.subset? key}
+    if results.empty?
+      results[set] = true # input array is assumed to yield true
+		elsif results.any? {|key, result| result == false and set.subset? key}
 			results[set] = false
 		else
 			results[set] = yield array
