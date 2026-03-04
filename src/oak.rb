@@ -1,6 +1,6 @@
 require_relative 'proof.rb'
 
-name_version = 'Oak version 0.7.2post'
+name_version = 'Oak version 0.8'
 issues_url = 'https://github.com/timlabs/oak/issues'
 
 options = {}
@@ -36,7 +36,7 @@ if options[:fix] and options[:wait]
 end
 
 if ARGV.size != 1 or ARGV[0].start_with? '-'
-	puts 'usage: oak [-v] [-c] [-f] [-m] [-w] <filename>'
+	puts 'usage: oak [-v] [-c] [-f] [-m] [-p] [-w] <filename>'
   puts '  -v  print the version number of Oak'
   puts '  -c  check for unneeded citations'
   puts '  -f  look for a fix'

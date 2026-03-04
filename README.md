@@ -21,11 +21,12 @@ The gem includes [E](https://eprover.org/), the external theorem prover used by 
 Oak is a command-line application which takes a proof file as input, and tells you whether or not the proof is correct.  See [oakproof.org](https://oakproof.org) for examples and a tutorial.
 
 ```
-oak [-v] [-c] [-f] [-m] [-w] <filename>
+oak [-v] [-c] [-f] [-m] [-p] [-w] <filename>
   -v  print the version number of Oak
   -c  check for unneeded citations
   -f  look for a fix
   -m  assume until marker
+  -p  if a derivation fails, print its full tree
   -w  wait for validity (does not change proof outcome)
 ```
 
@@ -36,6 +37,13 @@ oak [-v] [-c] [-f] [-m] [-w] <filename>
   * Similar packages for other editors would be welcome.
 
 ## Version history
+
+### v0.8 - 2026-03-03
+* `-p` option to print full tree of failed derivation
+* made `not` bind more tightly than `and`/`or`
+* added support for prepositions in quantifiers, like `for all path p of m`
+* extra check to ensure `if for all x, A(x) then A(c)` always succeeds
+* new example: `ctmu.oak`
 
 ### v0.7.2 - 2024-06-22
 * fix issue with gemspec
