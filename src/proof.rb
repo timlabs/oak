@@ -99,15 +99,15 @@ class Proof
   def self.finalize proof, status, addons, options
 		printer, tracker = addons.values_at :printer, :tracker
 
-    if not proof.scopes.empty?
+		if options[:marker] and proof.assuming?
+      message = '-m option used without marker'
+    elsif not proof.scopes.empty?
       message = case proof.scopes.last
         when :suppose then 'active supposition'
         when :now then 'active "now" block'
         when Array then 'active "proof" block'
         when :assume then 'active assume block'
       end
-		elsif options[:marker] and proof.assuming?
-      message = '-m option used without marker'
     end
     raise EndException, message if message
 
