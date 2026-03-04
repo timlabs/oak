@@ -85,7 +85,9 @@ class Proof
 	def derive content, reasons = [], id = nil
     return assume content, id if assuming?
 		line_numbers, question_mark = process_reasons reasons
-		derive_internal content, line_numbers, question_mark, id
+		check_admission content
+		derive_internal content, line_numbers, question_mark
+		add content, :derivation, id
 	end
 
 	def end_assume
@@ -118,13 +120,19 @@ class Proof
 			}
 			@label_stack.pop
 
-			@bindings.end_block
-
 			content, id = last_scope
       if assuming? then
+			  @bindings.end_block
         assume content, id
       else
-        derive_internal content, last_buffer, false, id
+        # check content without bindings while in proof block
+		    check_admission Content.new content.sentence
+        # derive before ending block, to use active variables
+        derive_internal content, last_buffer, false
+        # now end the block and re-check content with bindings
+			  @bindings.end_block
+		    check_admission content
+		    add content, :derivation, id
       end
 		else
 			if last_scope == :suppose
@@ -167,7 +175,9 @@ class Proof
 		line_numbers, question_mark = process_reasons reasons
 		line_numbers.concat @active_buffers[-1]
 		@active_buffers[-1] = []
-		derive_internal content, line_numbers, question_mark, id
+		check_admission content
+		derive_internal content, line_numbers, question_mark
+		add content, :derivation, id
 	end
 
 	def so_assume content, id = nil
@@ -295,10 +305,8 @@ class Proof
     n
   end
 
-	def derive_internal content, line_numbers, question_mark, id
-		check_admission content
+	def derive_internal content, line_numbers, question_mark
     @manager.derive self, content, line_numbers, question_mark
-		add content, :derivation, id
 	end
 
 	def process_reasons reasons

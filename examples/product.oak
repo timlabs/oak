@@ -173,7 +173,6 @@ proof
 									by t0,PN_def
 								so f[S-{x}] = y * f[(S-{x})-{y}] by f_def,PN_def
 								(S-{x})-{y} = S-{x,y} by set_drop_two
-								so thesis
 							end
 				
 							3: f[S-{y}] = x * f[S-{x,y}]
