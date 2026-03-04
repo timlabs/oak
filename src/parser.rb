@@ -609,7 +609,8 @@ class Parser
 					subtrees.collect! {|subtree| tree_from_grammar subtree}
 				end
 =end
-			when :word, :word_same_line, :definable, :definable_raw, :atom
+      when :word, :word_same_line, :definable, :definable_same_line,
+           :definable_raw, :atom
 				operator = standardize_operator node.text
 				subtrees = []
 			when :boolean
