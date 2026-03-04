@@ -129,6 +129,70 @@ def equal_up_to_variable_names? tree1, tree2, refs1 = {}, refs2 = {}, level = 0
 	end
 end
 
+def instantiated_by? tree1, tree2, refs1 = {}, refs2 = {}, level = 0
+	if tree1.operator.is_a? Symbol
+		return false unless tree1.operator == tree2.operator
+		return false unless tree1.subtrees.size == tree2.subtrees.size
+		pairs = [tree1.subtrees, tree2.subtrees].transpose
+		case tree1.operator
+			when *Tree::Quantifiers
+				last1, last2 = {}, {}
+        vars1, vars2 = tree1.subtrees[0].operator, tree2.subtrees[0].operator
+        return false unless vars1.size == vars2.size
+				vars1.zip(vars2).each_with_index {|(var1, var2), i|
+					refs1[var1], last1[var1] = [level,i], refs1[var1]
+					refs2[var2], last2[var2] = [level,i], refs2[var2]
+				}
+				result = pairs[1..-1].all? {|subtree1, subtree2|
+					instantiated_by? subtree1, subtree2, refs1, refs2, level+1
+				}
+				vars1.zip(vars2).each_with_index {|(var1, var2), i|
+					last1[var1] ? (refs1[var1] = last1[var1]) : (refs1.delete var1)
+					last2[var2] ? (refs2[var2] = last2[var2]) : (refs2.delete var2)
+				}
+				result
+			when :not, :and, :or, :implies, :iff, :equals, :predicate
+				pairs.all? {|subtree1, subtree2|
+					instantiated_by? subtree1, subtree2, refs1, refs2, level+1
+				}
+			else raise
+		end
+  elsif tree1.operator.is_a? String
+    if refs1[tree1.operator] == :pending
+      # instantiation must be a term
+      return false if tree2.boolean?
+      # the pending binding occurred at the top, so its instantiation cannot
+      # make use of any subsequent bindings
+      return false unless (refs2.keys & tree2.free_variables).empty?
+      refs1[tree1.operator] = tree2
+      true
+    elsif refs1[tree1.operator].is_a? Tree
+      # reference is a term and has no bindings (checked earlier), so the tree
+      # cannot have any bindings either, and must match exactly
+      return false unless (refs2.keys & tree2.free_variables).empty?
+      refs1[tree1.operator].eql? tree2
+    elsif refs1[tree1.operator] and refs2[tree2.operator]
+      refs1[tree1.operator] == refs2[tree2.operator] # both variables
+    elsif refs1[tree1.operator] or refs2[tree2.operator]
+			false # one is a constant, the other is a variable
+    else
+      tree1.operator == tree2.operator # both constants
+    end
+  else
+		raise
+	end
+end
+
+def instantiation_implication? tree
+  return false unless tree.operator == :implies
+  return false unless tree.subtrees[0].operator == :for_all
+  vars = tree.subtrees[0].subtrees[0].operator
+  pending = vars.map {|v| [v, :pending]}.to_h
+  pattern = tree.subtrees[0].subtrees[1]
+  instance = tree.subtrees[1]
+  instantiated_by? pattern, instance, pending
+end
+
 def first_orderize tree, by_arity = false
 	subtrees = tree.subtrees.collect {|subtree| first_orderize subtree, by_arity}
 	if tree.operator == :predicate

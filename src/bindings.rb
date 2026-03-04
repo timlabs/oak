@@ -190,7 +190,10 @@ class Bindings
 		elsif self_implication? tree
 			tree = tree_for_true # make things easy for external prover
 			return {:tree => tree}
-		end
+		elsif instantiation_implication? tree
+			tree = tree_for_true # make things easy for external prover
+			return {:tree => tree}
+    end
 
 		# finally, handle tie-ins
 		cited = cited_tree cited_lines, true
