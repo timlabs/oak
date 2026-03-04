@@ -96,15 +96,16 @@ def equal_up_to_variable_names? tree1, tree2, refs1 = {}, refs2 = {}, level = 0
 		case tree1.operator
 			when *Tree::Quantifiers
 				last1, last2 = {}, {}
-				zipped = tree1.subtrees[0].operator.zip tree2.subtrees[0].operator
-				zipped.each_with_index {|(var1, var2), i|
+        vars1, vars2 = tree1.subtrees[0].operator, tree2.subtrees[0].operator
+        return false unless vars1.size == vars2.size
+				vars1.zip(vars2).each_with_index {|(var1, var2), i|
 					refs1[var1], last1[var1] = [level,i], refs1[var1]
 					refs2[var2], last2[var2] = [level,i], refs2[var2]
 				}
 				result = pairs[1..-1].all? {|subtree1, subtree2|
 					equal_up_to_variable_names? subtree1, subtree2, refs1, refs2, level+1
 				}
-				zipped.each_with_index {|(var1, var2), i|
+				vars1.zip(vars2).each_with_index {|(var1, var2), i|
 					last1[var1] ? (refs1[var1] = last1[var1]) : (refs1.delete var1)
 					last2[var2] ? (refs2[var2] = last2[var2]) : (refs2.delete var2)
 				}
