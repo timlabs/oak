@@ -675,7 +675,7 @@ class Parser
 						raise ParseException, '"with" not allowed in negative quantifier' if with
 						tree = conjunction_tree [conditions_tree, such_that, body].compact
 						tree = Tree.new :for_some, [variables_tree, tree].compact
-						tree = Tree.new :not, [tree]
+						Tree.new :not, [tree]
 					when :existential, :define, :take
 						tie_ins = []
 						[variables, conditions].transpose.each {|variable, condition|

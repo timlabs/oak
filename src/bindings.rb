@@ -198,18 +198,25 @@ class Bindings
 		# finally, handle tie-ins
 		cited = cited_tree cited_lines, true
 		tree = nil
-		if content.body
+    binds, body = content.binds, content.body
+		if body
+      # thesis does not create a binding within the proof, but we need to check
+      # it as if it does, so its body will get tie-ins, just as with end block
+      if body.operator == :for_some and binds.empty?
+        binds = body.subtrees[0].operator
+        body = body.subtrees[1]
+      end
 			# apply active tie-ins to the body, as long as they do not use or bind
 			# vars which content is rebinding
 			tie_ins = @tie_ins.values.flatten.select {|tie_in|
 				uses_or_binds = tie_in.line.uses + tie_in.line.binds
-				(uses_or_binds & content.binds).empty?
+				(uses_or_binds & binds).empty?
 			}
-			tied_in = tied_in_for content.body, tie_ins
+			tied_in = tied_in_for body, tie_ins
 			tied_in = tied_in.collect {|match, used| match}
-			tree = implication_tree tied_in, content.body
+			tree = implication_tree tied_in, body
 		end
-		tree = bind_variables content.binds, tree, :for_some
+		tree = bind_variables binds, tree, :for_some
 		tree = implication_tree [cited], tree
 		tree = deduplicate tree
 		{:tree => tree}
