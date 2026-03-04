@@ -53,9 +53,7 @@ class Proof
 				status = :exited
 				break
 			end
-			if content.is_a? Content
-				content = process_content content, proof.theses[-1]
-			end
+			content = process_content content, proof.theses if content.is_a? Content
 			# puts "content for line #{fileline} is: #{content.inspect}"
 			id = {label: label, filename: filename, fileline: fileline}
 			case action
@@ -136,8 +134,8 @@ class Proof
     end
   end
 
-	def self.process_content content, thesis
-		if not thesis
+	def self.process_content content, theses
+		if not theses[-1]
 			return content unless content.uses.include? 'thesis'
 			raise ProofException, 'thesis used outside of proof block'
 		elsif content.uses.include? 'thesis'
@@ -149,14 +147,18 @@ class Proof
 				raise ProofException, "cannot use thesis in tie-in"
 			end
 			begin # content was just a Tree
-				tree = substitute content.sentence, {'thesis' => thesis.sentence}
+				tree = substitute content.sentence, {'thesis' => theses[-1].sentence}
 			rescue SubstituteException => e
 				message = "cannot quantify variable #{e}: conflicts with thesis"
 				raise ProofException, message
 			end
 			return Content.new tree
 		else
-			conflict = (thesis.uses & content.binds).first
+      conflict = nil
+      theses.reverse_each.find {|thesis|
+        next if not thesis # may be nil due to placeholders at beginning
+        conflict = (thesis.uses & content.binds).first
+      }
 			return content unless conflict
 			raise ProofException, "cannot bind variable #{conflict}: part of thesis"
 		end
